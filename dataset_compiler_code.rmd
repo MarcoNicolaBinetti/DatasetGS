@@ -13,3 +13,13 @@ knitr::opts_chunk$set(echo = TRUE)
 #test - editing code- second attempt
 ```
 
+```{r}
+system2("git", args = c("config", "--global", "user.name", "'MarcoNicolaBinetti'"))
+system2("git", args = c("config", "--global", "user.email", "'marco.nicola.binetti@gmail.com'"))
+
+
+system("git config --global user.name")
+system("git config --global user.email")
+
+```
+
