@@ -11,15 +11,200 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## libraries
 ```{r}
+library(Hmisc)
+library(data.table)
+
+library(R.utils)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(naniar)
+library(geosphere)
+library(zoo)
+library(stringr)
+library(tidytext)
+library(rworldmap)
+library(sp)
+library(gridExtra)
+
+library(elevatr)
+
+library(classInt)
+library("ggplot2")
+library(devtools)
+library(DT)
+library(dvmisc)
+library(ggpubr)
+library(gtools)
+library(foreign)
+library(GADMTools)
+library(maps)
+
+
+library(rpart)
+library(rpart.plot)
+library(spdep)
+library(lubridate)
+
+
+library(WDI)
+library(readxl)
+library(haven)
+
+library(reshape)
+
+library(geojsonio)
+library(gcookbook)
+
+library(rjson)
+library(countrycode)
+
+library(roll)
+```
+
+# Remove lists 
+```{r, include=FALSE}
+## remove lists
+rm(list=ls())
+```
+
+# Funtions
+```{r}
+# calcolate mode
+mode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+# calculate percent
+pct <- function(x) {((x/lag(x) - 1) * 100)}
+
+# exclude
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+## drop NAs from column
+Drop_NA <- function(dataset, col_name){
+  col_name <- enquo(col_name)
+  dataset %>%
+    drop_na((!!col_name)) %>%
+    as.data.frame()
+}
+
+## create 1 and 2 period lags (grouping by a variable)
+Lag_12 <- function(dataset,col_name,x){
+  {
+    col_name <- enquo(col_name)
+    dataset %>%
+      group_by(!!col_name) %>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,1),
+                    .names = paste0("{.col}_lag_",1)))%>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,2),
+                    .names = paste0("{.col}_lag_",2)))
+    
+  } 
+}
+
+## create 1 and 2 period lags 
+Lag_12_ngby <- function(dataset,x){
+  {
+    dataset %>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,1),
+                    .names = paste0("{.col}_lag_",1)))%>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,2),
+                    .names = paste0("{.col}_lag_",2)))
+    
+  } 
+}
+
+## assign 0 to NAs
+Nas_to_0 <- function(dataset, x) {
+  
+  dataset %>% mutate_at(all_of(x), ~replace(., is.na(.), 0))
+  
+}
 
 ```
 
-## importing Dfs
+
+# importing and reshaping Dfs
+
+### V-dem (at the moment, this is only to have a full, objective list of countries, then we can also use it to add some covariates to our anaylses)
+```{r}
+### creating base dataframe (1989-2017)
+
+
+```
+
+
+
+### ICEWS
+#### link df
+#### Importing ICEWS
+```{r}
+
+
+```
+
+#### Reshaping ICEWS
 ```{r}
 
 ```
 
-## export
+
+### EMDAT
+#### link df
+#### Importing EMDAT
+```{r}
+
+
+```
+
+#### Reshaping EMDAT
+```{r}
+
+```
+
+
+
+### UCDP GED
+#### link df
+#### Importing UCDP GED
+```{r}
+
+
+```
+
+#### Reshaping UCDP GED
+```{r}
+
+```
+
+
+### ESD
+#### link df
+#### Importing ESD
+```{r}
+
+
+```
+
+#### Reshaping ESD
+```{r}
+
+```
+
+
+## Merge datasets
+```{r}
+
+```
+
+## export final df
 ```{r}
 
 ```
