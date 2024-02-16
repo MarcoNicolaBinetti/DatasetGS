@@ -63,8 +63,10 @@ library(roll)
 rm(list=ls())
 ```
 
-# Funtions
+# Funtions 
 ```{r}
+# more lines of code
+
 # calcolate mode
 mode <- function(v) {
   uniqv <- unique(v)
