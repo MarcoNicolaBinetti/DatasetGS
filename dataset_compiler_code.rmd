@@ -25,10 +25,8 @@ library(zoo)
 library(stringr)
 library(tidytext)
 library(rworldmap)
-library(sp)
 library(gridExtra)
 
-library(elevatr)
 
 library(classInt)
 library("ggplot2")
@@ -42,8 +40,6 @@ library(GADMTools)
 library(maps)
 
 
-library(rpart)
-library(rpart.plot)
 library(spdep)
 library(lubridate)
 
@@ -55,9 +51,7 @@ library(haven)
 library(reshape)
 
 library(geojsonio)
-library(gcookbook)
 
-library(rjson)
 library(countrycode)
 
 library(roll)
@@ -77,8 +71,6 @@ mode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-# calculate percent
-pct <- function(x) {((x/lag(x) - 1) * 100)}
 
 # exclude
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -128,19 +120,90 @@ Nas_to_0 <- function(dataset, x) {
   
 }
 
+
+download_and_create_folder <- function(file_name, desktop_path, folder_name, url) {
+  
+  # Combine the desktop path with the folder name
+  folder_path <- file.path(desktop_path,"CodeGlobalLab", folder_name)
+  
+  
+  # Check if the folder exists
+  if (!file.exists(folder_path)) {
+    # If the folder doesn't exist, create it
+    dir.create(folder_path)
+    cat("Folder", folder_path, "created.\n")
+  } else {
+    # If the folder already exists, do nothing
+    cat("Folder", folder_path, "already exists.\n")
+  }
+  
+  # Specify the file path where you want to save the downloaded file
+  file_path <- paste0(folder_path, "/", file_name)
+  
+  # Download the file
+  download.file(url, file_path, mode = "wb")
+}
+
 ```
 
-
-# importing and reshaping Dfs
-
-### V-dem (at the moment, this is only to have a full, objective list of countries, then we can also use it to add some covariates to our anaylses)
+# Setting directory
 ```{r}
-### creating base dataframe (1989-2017)
-
-
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 ```
 
 
+# Creating folder for datasets
+```{r}
+# Define the path to the desktop folder
+
+# Define the name of the folder to check/create
+folder_name <- "CodeGlobalLab"
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", folder_name, "already exists on the desktop.\n")
+}
+```
+
+
+
+# Importing and reshaping Dfs
+
+### Polity 2
+#### Create folder and download
+```{r}
+folder_name<-"polity2"
+download_and_create_folder("p5v2018.xls",
+                           desktop_path,
+                           folder_name,
+                           "http://www.systemicpeace.org/inscr/p5v2018.xls")
+```
+#### Import
+```{r}
+file_path<-file.path(desktop_path,"CodeGlobalLab", folder_name, "p5v2018.xls")
+## import  dataset
+Polity2<- read_excel(file_path)
+```
+# Create base
+```{r}
+## assign ISO3C
+Polity2$iso3c <- countrycode(Polity2$country, "country.name", "iso3c")
+## subset years of interests
+Polity2<-subset(Polity2, Polity2$year>1988 & Polity2$year<2018)
+## subset only columns of interest
+df_Base<-Polity2[c("iso3c",
+                "year")]
+
+
+```
 
 ### ICEWS
 #### link df
@@ -157,10 +220,160 @@ Nas_to_0 <- function(dataset, x) {
 
 
 ### EMDAT
-#### link df
+#### link df: https://www.emdat.be/database
 #### Importing EMDAT
 ```{r}
+## setting url access dataset
+URL_df<-paste0(Url_main,"EmDat/EM_dat.rds")
+## import  dataset
+EMDAT<- readRDS(URL_df)
+```
 
+
+```{r}
+EM_dat<-EMDAT
+##subset years
+EM_dat$Year<-as.numeric(EM_dat$Year)
+EM_dat<-subset(EM_dat, EM_dat$Year>=1980)
+
+#select variables of interests
+EM_dat<-EM_dat[c("Dis No",
+                 "Year",
+                 "Start Year",
+                 "End Year",
+                 "Start Month",
+                 "End Month",
+                 "Disaster Group",
+                 "Disaster Subgroup",
+                 "Disaster Type",
+                 "Disaster Subtype",
+                 "ISO",
+                 "Country")]
+
+#rename variables
+names(EM_dat)[names(EM_dat) == "Year"] <- "year"
+names(EM_dat)[names(EM_dat) == "Country"] <- "country_Emdat"
+
+#create  dates event and start datasets
+EM_dat$Date.start <- paste0(EM_dat$`Start Year`,
+                            "-",
+                            EM_dat$`Start Month`)
+
+EM_dat$Date.start<-as.yearmon(EM_dat$Date.start)
+
+
+EM_dat$Date.end <- paste0(EM_dat$`End Year`,
+                            "-",
+                            EM_dat$`End Month`)
+
+EM_dat$Date.end<-as.yearmon(EM_dat$Date.end)
+
+#drop events without date
+EM_dat<-EM_dat[!(is.na(EM_dat$`Start Month`)),]
+EM_dat<-EM_dat[!(is.na(EM_dat$`End Month`)),]
+
+#as date
+EM_dat$Date.start<-as.Date(EM_dat$Date.start)
+EM_dat$Date.end<-as.Date(EM_dat$Date.end)
+
+
+#rename countries
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Czechoslovakia"] <- "Czech Republic (the)"
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Germany Fed Rep"] <- "Germany"
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Korea (the Republic of)"] <- "Korea South"
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Korea (the Democratic People's Republic of)"] <- "Korea North"
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Germany Fed Rep"] <- "Germany"
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Serbia Montenegro"] <- "Serbia"
+EM_dat$country_Emdat[EM_dat$country_Emdat=="Yugoslavia"] <- "Serbia"
+
+#create iso3c
+EM_dat$iso3c <- countrycode(EM_dat$country_Emdat, "country.name", "iso3c")
+
+#drop iso3c NAs
+EM_dat<-EM_dat[!is.na(EM_dat$iso3c), ]
+
+
+#subset variables
+EM_dat<-EM_dat[c("Dis No",
+                 "iso3c",
+                 "Disaster Subgroup",
+                 "Date.start",
+                 "Date.end")]
+#sort dataset
+EM_dat<-EM_dat[
+  with(EM_dat, order(iso3c, Date.start)),
+]
+
+
+#reshape dataset
+EM_dat<-EM_dat %>%
+  group_by(iso3c, `Dis No`, `Disaster Subgroup`) %>%
+  summarise(date = list(seq(floor_date(min(Date.start),unit = "month"),
+                            floor_date(max(Date.end), unit = "month"),
+                            by = "month"))) %>%
+  tidyr::unnest(cols = c(date))
+
+#sort dataframe
+EM_dat<-EM_dat[
+  with(EM_dat, order(iso3c, date)),
+]
+
+#create dummy for  count
+EM_dat$count<-1
+
+# count events
+EM_dat<- EM_dat %>%
+  group_by(iso3c, `Disaster Subgroup`, date ) %>%
+  summarize(count = sum(count))
+
+#reshape
+EM_dat<-reshape2::dcast(EM_dat, date+iso3c~`Disaster Subgroup`)
+
+
+## create date vectro for EMDAT
+Date<-as.data.frame(seq(as.Date("1960-1-1"), as.Date("2020-12-31"), by = "month"))
+names(Date)[1] <- "Date.month"
+Date$Dummy<-1
+Date$Date.month<-as.yearmon(Date$Date.month)
+
+#merge with CY date
+#vector countries
+EM_dat_C<-as.data.frame(unique(EM_dat$iso3c))
+names(EM_dat_C)[1] <- "iso3c"
+EM_dat_C$Dummy<-1
+#assign dates
+EM_dat_CY<-left_join(EM_dat_C, Date)
+
+#merge with vector dates countries
+EM_dat$Date.month<-as.yearmon(EM_dat$date)
+EM_dat= left_join(EM_dat_CY, EM_dat, by = c("Date.month" = "Date.month", "iso3c" = "iso3c"))
+
+#correct names
+EM_dat<-janitor::clean_names(EM_dat)
+
+#list variables MDat
+List<- colnames(EM_dat)[!colnames(EM_dat) %in% c("iso3c", "dummy", "date_month", "date")]
+
+# assign 0s
+EM_dat<-Nas_to_0(EM_dat,List)
+
+## clean
+EM_dat <- EM_dat[ , ! names(EM_dat) %in% c("date")]
+
+#create variable year
+EM_dat$year<-as.double((substr(( c(EM_dat$date_month)), 5, 9)))
+
+
+#list variables MDat
+List<- colnames(EM_dat)[!colnames(EM_dat) %in% c("iso3c", "dummy", "date_month", "date")]
+
+# Lag 12
+EM_dat <-Lag_12(EM_dat,iso3c, List)
+
+# correct names
+df_EM_dat<-janitor::clean_names(EM_dat)
+# drop dummy
+df_EM_dat<-Drop_Var(df_EM_dat,dummy)
 
 ```
 
@@ -169,6 +382,191 @@ Nas_to_0 <- function(dataset, x) {
 
 ```
 
+### AidData
+#### link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
+#### Importing AidData
+```{r}
+## setting url access dataset
+URL_df<-paste0(Url_main,"Aiddata/AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.1.csv")
+## import  dataset
+Aiddata<- read.csv(URL_df)
+```
+
+#### Reshaping AidData - calculating total amount of aid
+```{r}
+df_Aiddata<-Aiddata
+
+## aggregate at country recipient level
+df_Aiddata<- df_Aiddata %>% 
+  group_by(recipient, year ) %>%
+  summarize(AidData_tot_commit = sum(commitment_amount_usd_constant_sum))
+
+#change names
+df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"] <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
+
+#assign ISO3
+df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_Aiddata<-df_Aiddata[!is.na(df_Aiddata$iso3c), ]
+
+#create Aiddata country date dataset
+df_Aiddata_C<-as.data.frame(unique(df_Aiddata$iso3c))
+names(df_Aiddata_C)[1] <- "iso3c"
+df_Aiddata_C$Dummy<-1
+Date_Y_AidData<-as.data.frame(seq(as.Date("1960-1-1"), as.Date("2013-12-31"), by = "year"))
+names(Date_Y_AidData)[1] <- "year"
+Date_Y_AidData$Dummy<-1
+Date_Y_AidData$year<-as.double((substr(( c(Date_Y_AidData$year)), 1, 4)))
+df_Aiddata_CY<-left_join(df_Aiddata_C,Date_Y_AidData)
+
+# merge with with aid data country year vector
+df_Aiddata<-left_join(df_Aiddata_CY,df_Aiddata, by = c("iso3c" = "iso3c","year"="year"))
+
+#drop duplicates (usual yuogoslavia and soviet union "problem" with name change to serbia and russia)
+df_Aiddata<-df_Aiddata %>% 
+                distinct(year, iso3c , .keep_all = TRUE)
+
+## merge with world Bank Population
+WorldBank_pop <- WDI(
+  country = "all",
+  indicator = c("Pop_tot"="SP.POP.TOTL"),
+  start = 1960,
+  end = 2020,
+  extra = TRUE,
+  cache = NULL,
+  latest = NULL,
+  language = "en"
+)
+
+## assign ISO3
+names(WorldBank_pop)[names(WorldBank_pop) == "country"] <- "country_wb"
+WorldBank_pop$iso3c <- countrycode(WorldBank_pop$country_wb, "country.name", "iso3c")
+
+# merge with aid data 
+df_Aiddata<-left_join(df_Aiddata,WorldBank_pop)
+
+##assign 0s and NAs
+List<-c("AidData_tot_commit")
+df_Aiddata<-Nas_to_0(df_Aiddata, List)
+
+#divide by population
+df_Aiddata$AidData_tot_commit_per_cap<-df_Aiddata$AidData_tot_commit/df_Aiddata$Pop_tot
+
+# keep var of interest
+df_Aiddata <- df_Aiddata[ , !names(df_Aiddata) %in% c("Dummy",
+                                                      "iso2c",
+                                                      "country_wb",
+                                                      "Pop_tot",
+                                                      "region",
+                                                      "capital",
+                                                      "longitude",
+                                                      "latitude",
+                                                      "income",
+                                                      "lending")]
+
+
+```
+
+#### Reshaping AidData - calculating total amount of aid by sector
+```{r}
+#load dataset
+df_Aiddata_sectoral<-Aiddata
+
+#create schort code
+df_Aiddata_sectoral$Short_code<-c((substr(( c(df_Aiddata_sectoral$coalesced_purpose_code)), 1, 2)))
+
+## rename codes
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="10"] <- "Social_Infra"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="11"] <- "Education"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="12"] <- "Health"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="13"] <- "Population_Policies"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="14"] <- "Water_Supply_Sanitation"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="15"] <- "Gov_Civ_Soc"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="16"] <- "Soc_Infra"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="20"] <- "Eco_Infra"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="21"] <- "Trans_Stor"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="22"] <- "Comm"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="23"] <- "Energy_Gen_Supp"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="24"] <- "Banking"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="25"] <- "Business"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="30"] <- "Production Sectors"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="31"] <- "Agri_For_Fish"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="32"] <- "Ind_Min_Cons"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="33"] <- "Trade_policy "
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="41"] <- "Env_Protection"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="42"] <- "Women"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="43"] <- "Other"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="51"] <- "Budget_Support"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="52"] <- "Food_Security"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="53"] <- "Commodity_Assistance"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="60"] <- "Debt"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="70"] <- "Humanitarian_Aid"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="72"] <- "Emergency_Response"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="73"] <- "Reconstruction_Relief"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="74"] <- "Disaster_Prevention"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="91"] <- "Administrative_costs"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="92"] <- "Support_NGO"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="93"] <- "Refugees_Donor"
+df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="99"] <- "Unallocated"
+
+
+#change names countries
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"] <- "Serbia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Serbia and Montenegro"] <- "Serbia"
+
+#assign ISO3
+df_Aiddata_sectoral$iso3c <- countrycode(df_Aiddata_sectoral$recipient, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_Aiddata_sectoral<-df_Aiddata_sectoral[!is.na(df_Aiddata_sectoral$iso3c), ]
+
+## aggregate at country recipient purpose level
+df_Aiddata_sectoral<- df_Aiddata_sectoral %>% 
+  group_by(iso3c, year,Short_code ) %>%
+  summarize(commitment_tot = sum(commitment_amount_usd_constant_sum))
+
+# merge with with aid data country year vector
+df_Aiddata_sectoral<-left_join(df_Aiddata_CY,df_Aiddata_sectoral, by = c("iso3c" = "iso3c","year"="year"))
+
+## merge with wb
+df_Aiddata_sectoral<-left_join(df_Aiddata_sectoral,WorldBank_pop, by = c("iso3c" = "iso3c","year"="year"))
+
+#divide by population
+df_Aiddata_sectoral$commit_per_cap<-df_Aiddata_sectoral$commitment_tot/df_Aiddata_sectoral$Pop_tot
+
+# keep var of interest
+df_Aiddata_sectoral <- df_Aiddata_sectoral[ ,  names(df_Aiddata_sectoral) %in% c("iso3c",
+                                                                                  "year",
+                                                                                  "Short_code",
+                                                                                  "commit_per_cap",
+                                                                                  "commitment_tot")]
+
+#reshape
+dcast1 <- reshape2::dcast(df_Aiddata_sectoral, iso3c + year ~ Short_code, value.var="commit_per_cap")
+dcast2 <- reshape2::dcast(df_Aiddata_sectoral, iso3c + year ~ Short_code, value.var="commitment_tot")
+
+#rename vars
+cols_to_rename <- names(dcast1)[!(names(dcast1) %in% c("year", "iso3c"))]
+dcast1 <- dcast1 %>%
+  rename_with(~ paste0(., "_pc"), cols_to_rename)
+dcast2 <- dcast2 %>%
+  rename_with(~ paste0(., "_tot"), cols_to_rename)
+
+# merge with dcast1 and dcast2 with aid data country year vector
+df_Aiddata_sectoral<-left_join(df_Aiddata_CY, dcast1, by = c("iso3c" = "iso3c","year"="year"))
+df_Aiddata_sectoral<-left_join(df_Aiddata_sectoral, dcast2, by = c("iso3c" = "iso3c","year"="year"))
+
+
+#assign 0s
+df_Aiddata_sectoral[is.na(df_Aiddata_sectoral)] = 0
+
+
+#drop duplicates
+df_Aiddata_sectoral<-df_Aiddata_sectoral %>% 
+                distinct(year, iso3c , .keep_all = TRUE)
+```
 
 
 ### UCDP GED
