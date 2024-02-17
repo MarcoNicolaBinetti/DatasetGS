@@ -47,7 +47,6 @@ library(lubridate)
 library(WDI)
 library(readxl)
 library(haven)
-library(readstata13)
 
 
 library(reshape)
