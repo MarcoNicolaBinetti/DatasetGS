@@ -47,6 +47,8 @@ library(lubridate)
 library(WDI)
 library(readxl)
 library(haven)
+library(readstata13)
+
 
 library(reshape)
 
@@ -126,7 +128,7 @@ Nas_to_0 <- function(dataset, x) {
 download_and_create_folder <- function(file_name, desktop_path, folder_name, url) {
   
   # Combine the desktop path with the folder name
-  folder_path <- file.path(desktop_path,"CodeGlobalLab", folder_name)
+  folder_path <- file.path(desktop_path,main_folder_name, folder_name)
   
   
   # Check if the folder exists
@@ -146,9 +148,61 @@ download_and_create_folder <- function(file_name, desktop_path, folder_name, url
   download.file(url, file_path, mode = "wb")
 }
 
+
+
+
+download_create_folder_and_unzip <- function(url, destination_folder) {
+  # Download the zip file
+  download.file(url, destfile = "temp.zip", mode = "wb")
+  
+  # Unzip the downloaded file
+  unzip("temp.zip", exdir = destination_folder)
+  
+  # Delete the temporary zip file
+  file.remove("temp.zip")
+}
+
+
+
+# Example usage
+url <- "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip"
+destination_folder <- "path_to_your_destination_folder"
+download_and_unzip(url, destination_folder)
+
+
+download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
+  
+  # Combine the desktop path with the folder name
+  folder_path <- file.path(desktop_path,main_folder_name, folder_name)
+  
+  
+  # Check if the folder exists
+  if (!file.exists(folder_path)) {
+    # If the folder doesn't exist, create it
+    dir.create(folder_path)
+    cat("Folder", folder_path, "created.\n")
+  } else {
+    # If the folder already exists, do nothing
+    cat("Folder", folder_path, "already exists.\n")
+  }
+  
+  # Specify the file path where you want to save the downloaded file
+  file_path <- folder_path
+  
+  # Download the file
+  download.file(url, destfile = "temp.zip", mode = "wb")
+  
+  # Unzip the downloaded file
+  unzip("temp.zip", exdir = file_path)
+  
+  # Delete the temporary zip file
+  file.remove("temp.zip")
+}
+
 ```
 
-# Setting directory
+
+# Setting directory for datasets' folders
 ```{r}
 desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 ```
@@ -159,19 +213,19 @@ desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 # Define the path to the desktop folder
 
 # Define the name of the folder to check/create
-folder_name <- "CodeGlobalLab"
+main_folder_name <- "DFGlobalLab"
 
 # Combine the desktop path with the folder name
-folder_path <- file.path(desktop_path, folder_name)
+folder_path <- file.path(desktop_path, main_folder_name)
 
 # Check if the folder exists
 if (!file.exists(folder_path)) {
   # If the folder doesn't exist, create it
   dir.create(folder_path)
-  cat("Folder", folder_name, "created on the desktop.\n")
+  cat("Folder", main_folder_name, "created on the desktop.\n")
 } else {
   # If the folder already exists, do nothing
-  cat("Folder", folder_name, "already exists on the desktop.\n")
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
 }
 ```
 
@@ -182,15 +236,15 @@ if (!file.exists(folder_path)) {
 ### Polity 2
 #### Create folder and download
 ```{r}
-folder_name<-"polity2"
+sub_folder_name<-"polity2"
 download_and_create_folder("p5v2018.xls",
                            desktop_path,
-                           folder_name,
+                           sub_folder_name,
                            "http://www.systemicpeace.org/inscr/p5v2018.xls")
 ```
 #### Import
 ```{r}
-file_path<-file.path(desktop_path,"CodeGlobalLab", folder_name, "p5v2018.xls")
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xls")
 ## import  dataset
 Polity2<- read_excel(file_path)
 ```
@@ -222,13 +276,13 @@ df_Base<-Polity2[c("iso3c",
 
 
 ### EMDAT
-#### link df: https://www.emdat.be/database
+#### link df: https://www.emdat.be/database (for EMdat there is no API and a format to download. thus I sugest to manually create a subfolder named EMDAT in the folder DFGlobalLab and save there the EMdat dataset manually downloaded from here: https://public.emdat.be/data. on February 17th I downloaded the dataset selecting both natural and technological disasters in the form "classification", and selecting all the continets in the from "countries". For the time period I selected 1980 - 2020. I transofremd the file in a STATA dataset and uploaded the file on github under the name emdat) 
 #### Importing EMDAT
 ```{r}
-## setting url access dataset
-URL_df<-paste0(Url_main,"EmDat/EM_dat.rds")
+sub_folder_name<-"EMDAT"
+URL_df<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta")
 ## import  dataset
-EMDAT<- readRDS(URL_df)
+EMDAT<- haven::read_dta(URL_df)
 ```
 
 
@@ -386,13 +440,21 @@ df_EM_dat<-Drop_Var(df_EM_dat,dummy)
 
 ### AidData
 #### link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
-#### Importing AidData
+#### Create folder and download
+#### Create folder and download
 ```{r}
-## setting url access dataset
-URL_df<-paste0(Url_main,"Aiddata/AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.1.csv")
-## import  dataset
-Aiddata<- read.csv(URL_df)
+sub_folder_name<-"Aidata"
+download_create_folder_and_unzip(desktop_path,
+                           sub_folder_name,
+                           "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
 ```
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
+## import  dataset
+Aiddata<- read.csv(file_path)
+```
+
 
 #### Reshaping AidData - calculating total amount of aid
 ```{r}
