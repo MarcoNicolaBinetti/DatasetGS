@@ -242,6 +242,55 @@ df_Base<-Polity2[c("iso3c",
 #### link df
 #### Importing ICEWS
 ```{r}
+# #import datasets
+# ldf <- list() # creates a list
+# 
+# for (k in 1995:2018){
+# 
+#  year<-paste0("",k,"")
+#  File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
+#  df<- read.delim(File, header = TRUE, quote = "")
+#  df<-df[c(2,6,7,8,11)]
+#  names(df)[1] <- "Event.Date"
+#  names(df)[2] <- "Event.Text"
+#  names(df)[3] <- "CAMEO.Code"
+#  names(df)[4] <- "Intensity"
+#  names(df)[5] <- "Target.Country"
+# 
+#  ldf[[k]]<-df
+# 
+# }
+# 
+# #bind datasets
+# df_ICWES <- do.call(rbind, ldf)
+# # drop list
+# rm(ldf)
+# 
+# #correct entries (f*ck 2015,2016 datastes)
+# df_ICWES$Event.Text<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Event.Text, perl = TRUE)
+# df_ICWES$Target.Country<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Target.Country, perl = TRUE)
+# 
+# #create dummy event
+# df_ICWES$Event_ICEWS<-1
+# #set date
+# df_ICWES$Date.month<-as.yearmon(df_ICWES$Event.Date)
+# 
+# ## create year
+# df_ICWES$year <- as.integer(c((substr(( c(df_ICWES$Date.month)), 5, 8))))
+# 
+# #set ISO3C
+# df_ICWES$iso3c <- countrycode(df_ICWES$Target.Country, "country.name", "iso3c")
+# #drop NA
+# df_ICWES<-Drop_NA(df_ICWES, iso3c)
+# 
+# #drop countries that are not in the UCDP list
+# df_ICWES<-subset(df_ICWES, df_ICWES$iso3c %in%List_cntrs_iso3c)
+# 
+# 
+# URL_df<-paste0("C:/Users/marco/Desktop/prediction competition/df_ICWES.rds")
+# 
+# #saving icews df
+# saveRDS(df_ICWES, URL_df)
 
 
 ```
