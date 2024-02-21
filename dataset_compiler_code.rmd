@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## libraries
+## Libraries
 ```{r}
 library(Hmisc)
 library(data.table)
@@ -77,6 +77,12 @@ mode <- function(v) {
 
 # exclude
 '%!in%' <- function(x,y)!('%in%'(x,y))
+
+drop_columns <- function(data, columns_to_drop) {
+  data <- data[, names(data) %!in% columns_to_drop, drop = FALSE]
+  return(data)
+}
+
 
 ## drop NAs from column
 Drop_NA <- function(dataset, col_name){
@@ -212,9 +218,13 @@ if (!file.exists(folder_path)) {
 # Importing and reshaping Dfs
 
 ### Polity 2
-#### Create folder and download
+#### Set subfolder name
 ```{r}
 sub_folder_name<-"polity2"
+```
+
+#### Create folder and download
+```{r}
 download_and_create_folder("p5v2018.xls",
                            desktop_path,
                            sub_folder_name,
@@ -227,82 +237,54 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xl
 ## import  dataset
 Polity2<- read_excel(file_path)
 ```
-# Create base
+
+# Create base - at year and mnth level
 ```{r}
+df_Polity2<-Polity2
+
+# Create base at year level
 ## assign ISO3C
-Polity2$iso3c <- countrycode(Polity2$country, "country.name", "iso3c")
+df_Polity2$iso3c <- countrycode(df_Polity2$country, "country.name", "iso3c")
 ## subset years of interests
-Polity2<-subset(Polity2, Polity2$year>1988 & Polity2$year<2018)
+df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2022)
 ## subset only columns of interest
-df_Base<-Polity2[c("iso3c",
-                "year")]
-```
+df_Base_Y<-df_Polity2[c("country",
+                        "iso3c",
+                        "year")]
+## drop iso3c NA
+df_Base_Y<-Drop_NA(df_Base_Y, iso3c)
+## correct names
+df_Base_Y<-janitor::clean_names(df_Base_Y)
 
-### ICEWS
-#### link df
-#### Importing ICEWS
-```{r}
-# #import datasets
-# ldf <- list() # creates a list
-# 
-# for (k in 1995:2018){
-# 
-#  year<-paste0("",k,"")
-#  File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
-#  df<- read.delim(File, header = TRUE, quote = "")
-#  df<-df[c(2,6,7,8,11)]
-#  names(df)[1] <- "Event.Date"
-#  names(df)[2] <- "Event.Text"
-#  names(df)[3] <- "CAMEO.Code"
-#  names(df)[4] <- "Intensity"
-#  names(df)[5] <- "Target.Country"
-# 
-#  ldf[[k]]<-df
-# 
-# }
-# 
-# #bind datasets
-# df_ICWES <- do.call(rbind, ldf)
-# # drop list
-# rm(ldf)
-# 
-# #correct entries (f*ck 2015,2016 datastes)
-# df_ICWES$Event.Text<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Event.Text, perl = TRUE)
-# df_ICWES$Target.Country<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Target.Country, perl = TRUE)
-# 
-# #create dummy event
-# df_ICWES$Event_ICEWS<-1
-# #set date
-# df_ICWES$Date.month<-as.yearmon(df_ICWES$Event.Date)
-# 
-# ## create year
-# df_ICWES$year <- as.integer(c((substr(( c(df_ICWES$Date.month)), 5, 8))))
-# 
-# #set ISO3C
-# df_ICWES$iso3c <- countrycode(df_ICWES$Target.Country, "country.name", "iso3c")
-# #drop NA
-# df_ICWES<-Drop_NA(df_ICWES, iso3c)
-# 
-# #drop countries that are not in the UCDP list
-# df_ICWES<-subset(df_ICWES, df_ICWES$iso3c %in%List_cntrs_iso3c)
-# 
-# 
-# URL_df<-paste0("C:/Users/marco/Desktop/prediction competition/df_ICWES.rds")
-# 
-# #saving icews df
-# saveRDS(df_ICWES, URL_df)
+
+# Create base at month level
+## set list of countries
+Countries<-as.data.frame(unique(df_Base_Y$country))
+names(Countries)[1] <- "country"
+Countries$Dummy<-1
+## assign ISO3C
+Countries$iso3c <- countrycode(Countries$country, "country.name", "iso3c")
+## set list of months
+Date<-as.data.frame(seq(as.Date("1980-1-1"), as.Date("2021-12-31"), by = "month"))
+names(Date)[1] <- "Date.month"
+Date$Dummy<-1
+Date$Date.month<-as.yearmon(Date$Date.month)
+## create base
+df_Base_YM<-left_join(Countries,Date)
+## drop dummy
+List<-c("Dummy")
+df_Base_YM<-drop_columns(df_Base_YM,List)
+## create year variable
+df_Base_YM$year <- as.integer(c((substr(( c(df_Base_YM$Date.month)), 5, 8))))
+
+## correct names
+df_Base_YM<-janitor::clean_names(df_Base_YM)
 
 
 ```
-
-#### Reshaping ICEWS
-```{r}
-
-```
-
 
 ### EMDAT
-#### link df: https://www.emdat.be/database (for EMdat there is no API and a format to download. thus I sugest to manually create a subfolder named EMDAT in the folder DFGlobalLab and save there the EMdat dataset manually downloaded from here: https://public.emdat.be/data. on February 17th I downloaded the dataset selecting both natural and technological disasters in the form "classification", and selecting all the continets in the from "countries". For the time period I selected 1980 - 2020. I transofremd the file in a STATA dataset and uploaded the file on github under the name emdat) 
+#### Link df: https://www.emdat.be/database (for EMdat there is no API and a format to download. thus I sugest to manually create a subfolder named EMDAT in the folder DFGlobalLab and save there the EMdat dataset manually downloaded from here: https://public.emdat.be/data. on February 17th I downloaded the dataset selecting both natural and technological disasters in the form "classification", and selecting all the continets in the from "countries". For the time period I selected 1980 - 2020. I transofremd the file in a STATA dataset and uploaded the file on github under the name emdat) 
 #### Set subfolder name
 ```{r}
 sub_folder_name<-"EMDAT"
@@ -314,7 +296,7 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta"
 EMDAT<- haven::read_dta(file_path)
 ```
 
-#### Reshaping EMDAT
+#### Reshaping EMDAT - adjusting names of countries, setting variables etc.
 ```{r}
 EM_dat<-EMDAT
 ##subset years
@@ -385,10 +367,12 @@ EM_dat<-EM_dat[c("DisNo",
 EM_dat<-EM_dat[
   with(EM_dat, order(iso3c, Date.start)),
 ]
+```
 
-
+#### Reshaping EMDAT - getting it in a country-year-month panel format
+```{r}
 #reshape dataset
-EM_dat<-EM_dat %>%
+EM_dat_ym<-EM_dat %>%
   group_by(iso3c, `DisNo`, `DisasterSubgroup`) %>%
   summarise(date = list(seq(floor_date(min(Date.start),unit = "month"),
                             floor_date(max(Date.end), unit = "month"),
@@ -396,81 +380,90 @@ EM_dat<-EM_dat %>%
   tidyr::unnest(cols = c(date))
 
 #sort dataframe
-EM_dat<-EM_dat[
-  with(EM_dat, order(iso3c, date)),
+EM_dat_ym<-EM_dat_ym[
+  with(EM_dat_ym, order(iso3c, date)),
 ]
 
 #create dummy for  count
-EM_dat$count<-1
+EM_dat_ym$count<-1
 
 # count events
-EM_dat<- EM_dat %>%
+EM_dat_ym<- EM_dat_ym %>%
   group_by(iso3c, `DisasterSubgroup`, date ) %>%
   summarize(count = sum(count))
 
 #reshape
-EM_dat<-reshape2::dcast(EM_dat, date+iso3c~`DisasterSubgroup`)
+EM_dat_ym<-reshape2::dcast(EM_dat_ym, date+iso3c~`DisasterSubgroup`)
 
-
-## create date vector for EMDAT
-Date<-as.data.frame(seq(as.Date("1960-1-1"), as.Date("2018-12-31"), by = "month"))
-names(Date)[1] <- "Date.month"
-Date$Dummy<-1
-Date$Date.month<-as.yearmon(Date$Date.month)
-
-#merge with CY date
-#vector countries
-EM_dat_C<-as.data.frame(unique(EM_dat$iso3c))
-names(EM_dat_C)[1] <- "iso3c"
-EM_dat_C$Dummy<-1
-#assign dates
-EM_dat_CY<-left_join(EM_dat_C, Date)
 
 #merge with vector dates countries
-EM_dat$Date.month<-as.yearmon(EM_dat$date)
-EM_dat= left_join(EM_dat_CY, EM_dat, by = c("Date.month" = "Date.month", "iso3c" = "iso3c"))
-
-#correct names
-EM_dat<-janitor::clean_names(EM_dat)
+EM_dat_ym$Date_month<-as.yearmon(EM_dat_ym$date)
+EM_dat_ym= left_join(df_Base_YM, EM_dat_ym, by = c("date_month" = "Date_month", "iso3c" = "iso3c"))
 
 #list variables MDat
-List<- colnames(EM_dat)[!colnames(EM_dat) %in% c("iso3c", "dummy", "date_month", "date")]
+List<- colnames(EM_dat_ym)[colnames(EM_dat_ym) %!in% c("iso3c", "dummy", "date_month", "date")]
 
 # assign 0s
-EM_dat<-Nas_to_0(EM_dat,List)
+EM_dat_ym<-Nas_to_0(EM_dat_ym,List)
 
 ## drop date
-EM_dat <- EM_dat[ , ! names(EM_dat) %in% c("date")]
+List<-c("date")
+EM_dat_ym<-drop_columns(EM_dat_ym,List)
 
 #create variable year
-EM_dat$year<-as.double((substr(( c(EM_dat$date_month)), 5, 9)))
+EM_dat_ym$year<-as.double((substr(( c(EM_dat_ym$date_month)), 5, 9)))
 
-## collapse to the counry-year level. for eacou country count the numbet of month experiencing the generic disaster D
-EM_dat_y<- EM_dat %>% 
-  group_by(iso3c, year ) %>%
-  summarize(ext_ter_n_m = sum(extra_terrestrial),
-            geo_n_m = sum(geophysical),
-            hydro_n_m = sum(hydrological),
-            indu_n_m = sum(industrial_accident),
-            meteo_n_m = sum(meteorological),
-            misc_n_m = sum(miscellaneous_accident),
-            transport_n_m = sum(transport),
-            bio_n_m = sum(biological),
-            climat_n_m = sum(climatological))
+#correct names
+EM_dat_ym<-janitor::clean_names(EM_dat_ym)
 
 ## create dummy variables to account if a country in a given month experienced a disaster or not
 # Specify the names of the variables you want to recode
-List<- colnames(EM_dat_y)[!colnames(EM_dat_y) %in% c("iso3c", "year")]
+List<- colnames(EM_dat_ym)[!colnames(EM_dat_ym) %in% c("iso3c",
+                                                       "year",
+                                                       "date_month",
+                                                       "country")]
 # Recode each selected variable
-EM_dat_y[List] <- lapply(EM_dat_y[List], function(x) ifelse(x > 0, 1, 0))
+EM_dat_ym[List] <- lapply(EM_dat_ym[List], function(x) ifelse(x > 0, 1, 0))
 
-## rename variables
-# Rename selected variables
-names(EM_dat_y)[names(EM_dat_y) %in% List] <- sub("_n_m$", "_dummy", names(EM_dat_y)[names(EM_dat_y) %in% List])
+# Rename variables by adding "_dummy" suffix
+for (var in List) {
+  new_name <- paste0(var, "_dummy")
+  colnames(EM_dat_ym)[colnames(EM_dat_ym) == var] <- new_name
+}
+
+
+```
+
+#### Reshaping EMDAT - getting it in a country-year panel format
+```{r}
+# collapse to the counry-year level. for each country count the number of months experiencing the generic disaster D
+EM_dat_y<- EM_dat_ym %>% 
+  group_by(iso3c, year ) %>%
+  summarize(ext_ter_n_m = sum(extra_terrestrial_dummy),
+            geo_n_m = sum(geophysical_dummy),
+            hydro_n_m = sum(hydrological_dummy),
+            indu_n_m = sum(industrial_accident_dummy),
+            meteo_n_m = sum(meteorological_dummy),
+            misc_n_m = sum(miscellaneous_accident_dummy),
+            transport_n_m = sum(transport_dummy),
+            bio_n_m = sum(biological_dummy),
+            climat_n_m = sum(climatological_dummy))
+
+# create dummy variables to account if a country in a given month experienced a disaster or not
+## Specify the names of the variables you want to recode
+List<- colnames(EM_dat_y)[!colnames(EM_dat_y) %in% c("iso3c", "year")]
+## Create new variables with "_dummy" suffix
+for (variable in List) {
+  # Extract the name without suffix
+  new_name <- sub("_n_m$", "_dummy", variable)
+  
+  # Create new variable with suffix "_dummy"
+  EM_dat_y[[new_name]] <- ifelse(EM_dat_y[[variable]] == 0, 0, 1)
+}
 
 
 ## merge with Base
-EM_dat_y= left_join(df_Base, EM_dat_y, by = c("year" = "year", "iso3c" = "iso3c"))
+EM_dat_y= left_join(df_Base_Y, EM_dat_y, by = c("year" = "year", "iso3c" = "iso3c"))
 
 #list variables MDat
 List<- colnames(EM_dat_y)[!colnames(EM_dat_y) %in% c("iso3c", "year")]
@@ -486,9 +479,153 @@ EM_dat_y<-janitor::clean_names(EM_dat_y)
 
 ```
 
+### UCDP GED
+#### Link df: https://ucdp.uu.se/downloads/index.html#ged_global
+#### Set subfldder name
+```{r}
+sub_folder_name<-"UCDP"
+```
+
+#### Create folder and download
+```{r}
+download_create_folder_and_unzip(desktop_path,
+                           sub_folder_name,
+                           "https://ucdp.uu.se/downloads/ged/ged231-csv.zip")
+```
+
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "GEDEvent_v23_1.csv")
+## import  dataset
+UCDP_GED<- read.csv(file_path)
+```
+
+
+#### Reshaping UCDP GED - adjusting names of countries, setting variables etc.
+```{r}
+df_UCDP_GED<-UCDP_GED
+
+#assign ISO3
+df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c")
+```
+
+#### Reshaping UCDP GED - getting it in a country-year-month panel format
+```{r}
+
+```
+
+#### Reshaping UCDP GED - getting it in a country-year-month panel format
+```{r}
+## aggregate at country iso3c level
+df_UCDP_GED<- df_UCDP_GED %>% 
+  group_by(iso3c, year, type_of_violence) %>%
+  summarize(n_fatalities = sum(best))
+
+#reshape
+df_UCDP_GED<-reshape2::dcast(df_UCDP_GED, year+iso3c~`type_of_violence`)
+
+## merge with Base
+df_UCDP_GED= left_join(df_Base, df_UCDP_GED, by = c("year" = "year", "iso3c" = "iso3c"))
+
+#list variables ged
+List<- colnames(df_UCDP_GED)[!colnames(df_UCDP_GED) %in% c("iso3c", "year")]
+
+# assign 0s
+df_UCDP_GED<-Nas_to_0(df_UCDP_GED,List)
+
+#rename variables
+names(df_UCDP_GED)[names(df_UCDP_GED) == "1"] <- "StateBased_conf_fat"
+names(df_UCDP_GED)[names(df_UCDP_GED) == "2"] <- "NonState_conf_fat"
+names(df_UCDP_GED)[names(df_UCDP_GED) == "3"] <- "OneSided_fat"
+
+## create dummy variable conflict ongoin (at least 25 battle-related fatalities in a given year in a given country)
+df_UCDP_GED$dummy_conf<-ifelse(df_UCDP_GED$StateBased_conf_fat>24,1,0)
+
+
+```
+
+### ICEWS
+#### Link df
+
+#### Set subfolder name
+```{r}
+sub_folder_name <- "ICEWS"
+```
+
+#### Creating folder for ICEWS
+```{r}
+folder_path <- file.path(desktop_path,main_folder_name, sub_folder_name)
+
+# Check if folder already exists
+if (!file.exists(folder_path)) {
+  # If not, create the folder
+  dir.create(folder_path)
+  print(paste("Folder", folder_path, "created."))
+} else {
+  print(paste("Folder", folder_path, "already exists."))
+}
+```
+
+#### Importing ICEWS
+```{r}
+#import datasets
+ldf <- list() # creates a list
+
+for (k in 1995:2017){
+
+ year<-paste0("",k,"")
+ File<-paste0(folder_path,"/years/events",".",year,".tab")
+ df<- read.delim(File, header = TRUE, quote = "")
+ df<-df[c(2,6,7,8,11)]
+ names(df)[1] <- "Event.Date"
+ names(df)[2] <- "Event.Text"
+ names(df)[3] <- "CAMEO.Code"
+ names(df)[4] <- "Intensity"
+ names(df)[5] <- "Target.Country"
+
+ ldf[[k]]<-df
+
+}
+
+#bind datasets
+df_ICWES <- do.call(rbind, ldf)
+# drop list
+rm(ldf)
+
+#correct entries (f*ck 2015,2016 datastes)
+df_ICWES$Event.Text<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Event.Text, perl = TRUE)
+df_ICWES$Target.Country<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Target.Country, perl = TRUE)
+
+#create dummy event
+df_ICWES$Event_ICEWS<-1
+#set date
+df_ICWES$Date.month<-as.yearmon(df_ICWES$Event.Date)
+
+## create year
+df_ICWES$year <- as.integer(c((substr(( c(df_ICWES$Date.month)), 5, 8))))
+
+#set ISO3C
+df_ICWES$iso3c <- countrycode(df_ICWES$Target.Country, "country.name", "iso3c")
+#drop NA
+df_ICWES<-Drop_NA(df_ICWES, iso3c)
+
+
+
+URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
+
+#saving icews df
+saveRDS(df_ICWES, URL_df)
+
+
+```
+
+#### Reshaping ICEWS - calculating number of verbal support a country receives in a given year
+```{r}
+
+```
 
 ### AidData
-#### link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0#### Create folder and download
+#### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0#### Create folder and download
 #### Set name folder
 ```{r}
 sub_folder_name<-"Aidata"
@@ -709,67 +846,8 @@ df_Aiddata<-Nas_to_0(df_Aiddata,List)
 ```
 
 
-### UCDP GED
-#### link df: https://ucdp.uu.se/downloads/index.html#ged_global
-#### Set subfldder name
-```{r}
-sub_folder_name<-"UCDP"
-```
-
-#### Create folder and download
-```{r}
-download_create_folder_and_unzip(desktop_path,
-                           sub_folder_name,
-                           "https://ucdp.uu.se/downloads/ged/ged231-csv.zip")
-```
-
-#### Import
-```{r}
-file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "GEDEvent_v23_1.csv")
-## import  dataset
-UCDP_GED<- read.csv(file_path)
-```
-
-
-#### Reshaping UCDP GED
-```{r}
-df_UCDP_GED<-UCDP_GED
-
-#assign ISO3
-df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c")
-
-
-## aggregate at country iso3c level
-df_UCDP_GED<- df_UCDP_GED %>% 
-  group_by(iso3c, year, type_of_violence) %>%
-  summarize(n_fatalities = sum(best))
-
-#reshape
-df_UCDP_GED<-reshape2::dcast(df_UCDP_GED, year+iso3c~`type_of_violence`)
-
-## merge with Base
-df_UCDP_GED= left_join(df_Base, df_UCDP_GED, by = c("year" = "year", "iso3c" = "iso3c"))
-
-#list variables ged
-List<- colnames(df_UCDP_GED)[!colnames(df_UCDP_GED) %in% c("iso3c", "year")]
-
-# assign 0s
-df_UCDP_GED<-Nas_to_0(df_UCDP_GED,List)
-
-#rename variables
-names(df_UCDP_GED)[names(df_UCDP_GED) == "1"] <- "StateBased_conf_fat"
-names(df_UCDP_GED)[names(df_UCDP_GED) == "2"] <- "NonState_conf_fat"
-names(df_UCDP_GED)[names(df_UCDP_GED) == "3"] <- "OneSided_fat"
-
-## create dummy variable conflict ongoin (at least 25 battle-related fatalities in a given year in a given country)
-df_UCDP_GED$dummy_conf<-ifelse(df_UCDP_GED$StateBased_conf_fat>24,1,0)
-
-
-```
-
-
 ### ESD
-#### link df https://ucdp.uu.se/downloads/index.html#externalsupport
+#### Link df https://ucdp.uu.se/downloads/index.html#externalsupport
 #### Create folder and download
 ```{r}
 sub_folder_name<-"UCDP"
@@ -785,7 +863,7 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "ucdp-esd-t
 ESD<- haven::read_dta(file_path)
 ```
 
-#### reshaping dataset - calculating total amount of aid by type per recipient country per each year
+#### Reshaping dataset - calculating total amount of aid by type per recipient country per each year
 ```{r}
 df_ESD<-ESD
 ##subset years
@@ -856,7 +934,7 @@ df_ESD_y<-Nas_to_0(df_ESD_y,List)
 #List_supp_type <- setdiff(List, elements_to_drop)
 
 ```
-#### reshaping dataset - calculating total amount of aid by type per each year
+#### Reshaping dataset - calculating total amount of aid by type per each year
 ```{r}
 df_ESD<-ESD
 ##subset years
