@@ -303,6 +303,9 @@ EM_dat<-EMDAT
 ##subset years
 EM_dat<-subset(EM_dat, EM_dat$StartYear>=1980)
 
+# drop technological disasters
+EM_dat<-subset(EM_dat,EM_dat$DisasterGroup=="Natural")
+
 #select variables of interests
 EM_dat<-EM_dat[c("DisNo",
                  "StartYear",
@@ -456,12 +459,14 @@ EM_dat_y<- EM_dat_ym %>%
   summarize(ext_ter_n_m = sum(extra_terrestrial_dummy),
             geo_n_m = sum(geophysical_dummy),
             hydro_n_m = sum(hydrological_dummy),
-            indu_n_m = sum(industrial_accident_dummy),
             meteo_n_m = sum(meteorological_dummy),
-            misc_n_m = sum(miscellaneous_accident_dummy),
-            transport_n_m = sum(transport_dummy),
             bio_n_m = sum(biological_dummy),
             climat_n_m = sum(climatological_dummy))
+
+#            indu_n_m = sum(industrial_accident_dummy),
+#            transport_n_m = sum(transport_dummy),
+#            misc_n_m = sum(miscellaneous_accident_dummy),
+
 
 # create dummy variables to account if a country in a given month experienced a disaster or not
 ## Specify the names of the variables you want to recode
@@ -786,7 +791,16 @@ df_ICWES_g2g<-janitor::clean_names(df_ICWES_g2g)
 ## merge with emdat country month level dataset in order to identify declarations 
 df_ICWES_g2g= left_join(df_ICWES_g2g, EM_dat_ym, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
 
+# keep only observations occurred during a disaster or at max 2 months by it
+## List of dummy variables
+dummy_vars <- grep("dummy", names(df_ICWES_g2g), value = TRUE)
 
+## Create the 'disaster' variable
+df_ICWES_g2g$disaster <- as.numeric(rowSums(df_ICWES_g2g[dummy_vars]) > 0)
+## drop non disaster observations
+df_ICWES_g2g_dis<-subset(df_ICWES_g2g,df_ICWES_g2g$disaster==1)
+
+df_ICWES_g2g_dis$Express_exist<-1
 ```
 
 ##### Remove from environment df_ICWES to save memory
@@ -806,34 +820,56 @@ rm(df_ICWES)
 # df_ICWES_m<-reshape2::dcast(df_ICWES_m, Date.month+iso3c~Event.Text)
 
 ```
-
+NB: devo calcolare il numero di paesi che fa dichiarazioni, non il numero di dichiarazioni!
 ##### Calculating number of verbal support a country receives during natural disaster per month
 ```{r}
-# keep only observations occurred during a disaster or at max 2 months by it
-## List of dummy variables
-dummy_vars <- grep("dummy", names(df_ICWES_g2g), value = TRUE)
 
-## Create the 'disaster' variable
-df_ICWES_g2g$disaster <- as.numeric(rowSums(df_ICWES_g2g[dummy_vars]) > 0)
-## drop non disaster observations
-df_ICWES_g2g_dis<-subset(df_ICWES_g2g,df_ICWES_g2g$disaster==1)
-
-df_ICWES_g2g_dis$Express_exist<-1
 
 # count events
 # aggregate at country year month level
 df_ICWES_g2g_dis_m<- df_ICWES_g2g_dis %>% 
-  group_by(iso3c_target, year, date_month, event_text) %>%
+  group_by(iso3c_target, year, event_text) %>%
   summarize(count = sum(Express_exist))
 
 
 #reshape
-df_ICWES_g2g_dis_m<-reshape2::dcast(df_ICWES_g2g_dis_m, date_month+iso3c_target~event_text)
+df_ICWES_g2g_dis_m<-reshape2::dcast(df_ICWES_g2g_dis_m, iso3c_target+year~event_text)
 
-## rename variables
-names(df_ICWES_g2g_dis_m)[names(df_ICWES_g2g_dis_m) == "Year"] <- "year"
-names(df_ICWES_g2g_dis_m)[names(df_ICWES_g2g_dis_m) == "Country"] <- "country_Emdat"
+# rename variables
+## Named vector of column name mappings
+column_names_mapping <- c(
+  "iso3c_target" = "iso3c",
+  "year" = "year",
+  "Express intent to cooperate" = "cooperate_dis",
+  "Express intent to cooperate economically" = "econo_dis",
+  "Express intent to ease economic sanctions boycott or embargo" = "embargo_dis",
+  "Express intent to engage in diplomatic cooperation such as policy support" = "diplo_dis",
+  "Express intent to engage in material cooperation" = "material_coop_dis",
+  "Express intent to provide economic aid" = "economic_aid_dis",
+  "Express intent to provide humanitarian aid" = "human_aid_dis",
+  "Express intent to provide material aid" = "material_aid_dis"
+)
 
+# Rename columns using named vector
+names(df_ICWES_g2g_dis_m) <- column_names_mapping[names(df_ICWES_g2g_dis_m)]
+
+#list variables 
+List<- colnames(df_ICWES_g2g_dis_m)[colnames(df_ICWES_g2g_dis_m) %!in% c("iso3c", "year")]
+
+# assign 0s
+df_ICWES_g2g_dis_m<-Nas_to_0(df_ICWES_g2g_dis_m,List)
+
+## sum
+df_ICWES_g2g_dis_m$NormAgr<-df_ICWES_g2g_dis_m$cooperate_dis+
+                            df_ICWES_g2g_dis_m$econo_dis+
+                            df_ICWES_g2g_dis_m$material_aid_dis+
+                            df_ICWES_g2g_dis_m$economic_aid_dis+
+                            df_ICWES_g2g_dis_m$human_aid_dis+
+                            df_ICWES_g2g_dis_m$material_coop_dis
+
+# assign NAs
+
+## collapse at country year level
 
 ```
 
