@@ -238,7 +238,7 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xl
 Polity2<- read_excel(file_path)
 ```
 
-# Create base - at year and mnth level
+# Create bases - at year and month levels
 ```{r}
 df_Polity2<-Polity2
 
@@ -246,7 +246,7 @@ df_Polity2<-Polity2
 ## assign ISO3C
 df_Polity2$iso3c <- countrycode(df_Polity2$country, "country.name", "iso3c")
 ## subset years of interests
-df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2022)
+df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2020)
 ## subset only columns of interest
 df_Base_Y<-df_Polity2[c("country",
                         "iso3c",
@@ -296,7 +296,8 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta"
 EMDAT<- haven::read_dta(file_path)
 ```
 
-#### Reshaping EMDAT - adjusting names of countries, setting variables etc.
+#### Reshaping EMDAT
+##### Adjusting names of countries, setting variables etc.
 ```{r}
 EM_dat<-EMDAT
 ##subset years
@@ -342,13 +343,18 @@ EM_dat$Date.start<-as.Date(EM_dat$Date.start)
 EM_dat$Date.end<-as.Date(EM_dat$Date.end)
 
 #rename countries
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Czechoslovakia"] <- "Czech Republic (the)"
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Germany Fed Rep"] <- "Germany"
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Korea (the Republic of)"] <- "Korea South"
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Korea (the Democratic People's Republic of)"] <- "Korea North"
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Germany Fed Rep"] <- "Germany"
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Serbia Montenegro"] <- "Serbia"
-EM_dat$country_Emdat[EM_dat$country_Emdat=="Yugoslavia"] <- "Serbia"
+# Define replacements using a named vector
+replacements <- c(
+  "Czechoslovakia" = "Czech Republic (the)",
+  "Germany Fed Rep" = "Germany",
+  "Korea (the Republic of)" = "Korea South",
+  "Korea (the Democratic People's Republic of)" = "Korea North",
+  "Serbia Montenegro" = "Serbia",
+  "Yugoslavia" = "Serbia"
+)
+
+# Apply replacements using named vector and %in% operator
+EM_dat$country_Emdat <- ifelse(EM_dat$country_Emdat %in% names(replacements), replacements[EM_dat$country_Emdat], EM_dat$country_Emdat)
 
 #create iso3c
 EM_dat$iso3c <- countrycode(EM_dat$country_Emdat, "country.name", "iso3c")
@@ -369,7 +375,7 @@ EM_dat<-EM_dat[
 ]
 ```
 
-#### Reshaping EMDAT - getting it in a country-year-month panel format
+##### Getting it in a country-year-month panel format
 ```{r}
 #reshape dataset
 EM_dat_ym<-EM_dat %>%
@@ -417,7 +423,7 @@ EM_dat_ym$year<-as.double((substr(( c(EM_dat_ym$date_month)), 5, 9)))
 EM_dat_ym<-janitor::clean_names(EM_dat_ym)
 
 ## create dummy variables to account if a country in a given month experienced a disaster or not
-# Specify the names of the variables you want to recode
+# Specify the names of the variables to recode
 List<- colnames(EM_dat_ym)[!colnames(EM_dat_ym) %in% c("iso3c",
                                                        "year",
                                                        "date_month",
@@ -431,10 +437,18 @@ for (var in List) {
   colnames(EM_dat_ym)[colnames(EM_dat_ym) == var] <- new_name
 }
 
+## create lags
+# Specify the names of the variables to recode
+List<- colnames(EM_dat_ym)[!colnames(EM_dat_ym) %in% c("iso3c",
+                                                       "year",
+                                                       "date_month",
+                                                       "country")]
+#code lags
+EM_dat_ym<-Lag_12(EM_dat_ym, iso3c, List)
 
 ```
 
-#### Reshaping EMDAT - getting it in a country-year panel format
+##### Getting it in a country-year panel format
 ```{r}
 # collapse to the counry-year level. for each country count the number of months experiencing the generic disaster D
 EM_dat_y<- EM_dat_ym %>% 
@@ -501,51 +515,114 @@ UCDP_GED<- read.csv(file_path)
 ```
 
 
-#### Reshaping UCDP GED - adjusting names of countries, setting variables etc.
+#### Reshaping UCDP GED
+##### Adjusting names of countries, setting variables etc.
 ```{r}
 df_UCDP_GED<-UCDP_GED
 
 #assign ISO3
 df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c")
+
+#create year month date
+            df_UCDP_GED$month <- c((substr(( c(df_UCDP_GED$date_start)), 6, 7)))
+            df_UCDP_GED$day<- c((substr(( c(df_UCDP_GED$date_start)), 9, 10)))
+
+            df_UCDP_GED$day.month.year <- as.character(paste0(df_UCDP_GED$month,
+                                                          "/",
+                                                          df_UCDP_GED$day,
+                                                          "/",
+                                                          df_UCDP_GED$year))
+
+            df_UCDP_GED$month.year <- as.character(paste0(df_UCDP_GED$year,
+                                                      "-",
+                                                      df_UCDP_GED$month))
+
+            df_UCDP_GED$Date<-as.Date(df_UCDP_GED$day.month.year, format = "%m/%d/%Y")
+            df_UCDP_GED$date_month<-as.yearmon(df_UCDP_GED$month.year)
 ```
 
-#### Reshaping UCDP GED - getting it in a country-year-month panel format
+##### Getting it in a country-year-month panel format
 ```{r}
+# aggregate at country year month level
+df_UCDP_GED_m<- df_UCDP_GED %>% 
+  group_by(iso3c, year, month, date_month, type_of_violence) %>%
+  summarize(n_fatalities = sum(best))
+
+
+# reshape
+df_UCDP_GED_m<-reshape2::dcast(df_UCDP_GED_m, year+date_month+iso3c~`type_of_violence`)
+
+## merge with Base
+df_UCDP_GED_m= left_join(df_Base_YM, df_UCDP_GED_m, by = c("date_month" = "date_month","year" = "year", "iso3c" = "iso3c"))
+
+# list variables ged
+List<- colnames(df_UCDP_GED_m)[colnames(df_UCDP_GED_m) %!in% c("iso3c",
+                                                               "year",
+                                                               "country",
+                                                               "date_month")]
+
+# assign 0s
+df_UCDP_GED_m<-Nas_to_0(df_UCDP_GED_m,List)
+
+#rename variables
+names(df_UCDP_GED_m)[names(df_UCDP_GED_m) == "1"] <- "StateBased_conf_fat"
+names(df_UCDP_GED_m)[names(df_UCDP_GED_m) == "2"] <- "NonState_conf_fat"
+names(df_UCDP_GED_m)[names(df_UCDP_GED_m) == "3"] <- "OneSided_fat"
+
+# create dummy variable conflict ongoin (at least 25 battle-related fatalities in a given year in a given country)
+df_UCDP_GED_m$dummy_conf<-ifelse(df_UCDP_GED_m$StateBased_conf_fat>24,1,0)
+
+# list variables ged
+List<- colnames(df_UCDP_GED_m)[colnames(df_UCDP_GED_m) %!in% c("iso3c",
+                                                               "year",
+                                                               "country",
+                                                               "date_month")]
+
+# Replace values with NA for years before 1989
+df_UCDP_GED_m[df_UCDP_GED_m$year < 1989, List] <- NA
+
+
+## create lags
+df_UCDP_GED_m<-Lag_12(df_UCDP_GED_m, iso3c, List)
 
 ```
 
-#### Reshaping UCDP GED - getting it in a country-year-month panel format
+##### Getting it in a country-year panel format
 ```{r}
 ## aggregate at country iso3c level
-df_UCDP_GED<- df_UCDP_GED %>% 
+df_UCDP_GED_Y<- df_UCDP_GED %>% 
   group_by(iso3c, year, type_of_violence) %>%
   summarize(n_fatalities = sum(best))
 
 #reshape
-df_UCDP_GED<-reshape2::dcast(df_UCDP_GED, year+iso3c~`type_of_violence`)
+df_UCDP_GED_Y<-reshape2::dcast(df_UCDP_GED_Y, year+iso3c~`type_of_violence`)
 
 ## merge with Base
-df_UCDP_GED= left_join(df_Base, df_UCDP_GED, by = c("year" = "year", "iso3c" = "iso3c"))
+df_UCDP_GED_Y= left_join(df_Base_Y, df_UCDP_GED_Y, by = c("year" = "year", "iso3c" = "iso3c"))
 
 #list variables ged
-List<- colnames(df_UCDP_GED)[!colnames(df_UCDP_GED) %in% c("iso3c", "year")]
+List<- colnames(df_UCDP_GED_Y)[colnames(df_UCDP_GED_Y) %!in% c("iso3c", "year")]
 
 # assign 0s
-df_UCDP_GED<-Nas_to_0(df_UCDP_GED,List)
+df_UCDP_GED_Y<-Nas_to_0(df_UCDP_GED_Y,List)
 
 #rename variables
-names(df_UCDP_GED)[names(df_UCDP_GED) == "1"] <- "StateBased_conf_fat"
-names(df_UCDP_GED)[names(df_UCDP_GED) == "2"] <- "NonState_conf_fat"
-names(df_UCDP_GED)[names(df_UCDP_GED) == "3"] <- "OneSided_fat"
+names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "1"] <- "StateBased_conf_fat"
+names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "2"] <- "NonState_conf_fat"
+names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "3"] <- "OneSided_fat"
 
 ## create dummy variable conflict ongoin (at least 25 battle-related fatalities in a given year in a given country)
-df_UCDP_GED$dummy_conf<-ifelse(df_UCDP_GED$StateBased_conf_fat>24,1,0)
+df_UCDP_GED_Y$dummy_conf<-ifelse(df_UCDP_GED_Y$StateBased_conf_fat>24,1,0)
 
+#list variables ged
+List<- colnames(df_UCDP_GED_Y)[colnames(df_UCDP_GED_Y) %!in% c("iso3c", "year")]
 
+## create lags
+df_UCDP_GED_Y<-Lag_12(df_UCDP_GED_Y, iso3c, List)
 ```
 
 ### ICEWS
-#### Link df
+#### Link df: https://dataverse.harvard.edu/dataverse/icews?q=&types=files&sort=dateSort&order=desc&page=5 (in the Dropboy folder you find in the folder ICWES and subfoder years all the original .tab files of events from the dataset. just copy them in the local foder that is created with the following code)
 
 #### Set subfolder name
 ```{r}
@@ -566,22 +643,28 @@ if (!file.exists(folder_path)) {
 }
 ```
 
-#### Importing ICEWS
+#### Importing ICEWS from row data
 ```{r}
 #import datasets
 ldf <- list() # creates a list
 
-for (k in 1995:2017){
+for (k in 1995:2021){
 
  year<-paste0("",k,"")
- File<-paste0(folder_path,"/years/events",".",year,".tab")
+ File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
  df<- read.delim(File, header = TRUE, quote = "")
- df<-df[c(2,6,7,8,11)]
- names(df)[1] <- "Event.Date"
- names(df)[2] <- "Event.Text"
- names(df)[3] <- "CAMEO.Code"
- names(df)[4] <- "Intensity"
- names(df)[5] <- "Target.Country"
+ df<-df[c(1:11)]
+ names(df)[1] <- "event_id"
+ names(df)[2] <- "event_date"
+ names(df)[3] <- "source_name"
+ names(df)[4] <- "source_sector"
+ names(df)[5] <- "source_country"
+ names(df)[6] <- "event_text"
+ names(df)[7] <- "cameo_code"
+ names(df)[8] <- "intensity"
+ names(df)[9] <- "target_name"
+ names(df)[10] <- "target_sectors"
+ names(df)[11] <- "target_country"
 
  ldf[[k]]<-df
 
@@ -593,33 +676,168 @@ df_ICWES <- do.call(rbind, ldf)
 rm(ldf)
 
 #correct entries (f*ck 2015,2016 datastes)
-df_ICWES$Event.Text<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Event.Text, perl = TRUE)
-df_ICWES$Target.Country<-gsub("[^\\p{L}0-9\\s]","",df_ICWES$Target.Country, perl = TRUE)
+## Define the columns to apply the transformation to
+List <- c("source_name", "source_sector", "source_country", "target_name", "target_country")
 
+## Apply gsub function to selected columns using mutate_at
+df_ICWES <- df_ICWES %>% 
+  mutate_at(vars(List), ~gsub("[^\\p{L}0-9\\s]", "", ., perl = TRUE))
+
+```
+
+#### Saving ICEWS events as a full rds file to save time when loading it
+```{r}
+URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
+# saving icews df
+saveRDS(df_ICWES, URL_df)
+
+```
+
+#### Importing ICEWS from the rds. file. this helps to skip the "Importing ICEWS from row data" block of code
+```{r}
+# importing icews df
+df_ICWES <- readRDS(URL_df)
+```
+
+#### Reshaping ICEWS 
+##### Adjusting names of countries, setting variables etc.
+```{r}
 #create dummy event
 df_ICWES$Event_ICEWS<-1
 #set date
-df_ICWES$Date.month<-as.yearmon(df_ICWES$Event.Date)
+df_ICWES$Date.month<-as.yearmon(df_ICWES$event_date)
 
 ## create year
 df_ICWES$year <- as.integer(c((substr(( c(df_ICWES$Date.month)), 5, 8))))
 
 #set ISO3C
-df_ICWES$iso3c <- countrycode(df_ICWES$Target.Country, "country.name", "iso3c")
+df_ICWES$iso3c_target <- countrycode(df_ICWES$target_country, "country.name", "iso3c")
+df_ICWES$iso3c_source <- countrycode(df_ICWES$source_country, "country.name", "iso3c")
 #drop NA
-df_ICWES<-Drop_NA(df_ICWES, iso3c)
+df_ICWES<-Drop_NA(df_ICWES, iso3c_target)
+df_ICWES<-Drop_NA(df_ICWES, iso3c_source)
+
+# keep only state based events
+## create dummy if sender is government and receiver is government
+df_ICWES$gov_sender<-ifelse(grepl("Govern", df_ICWES$source_sector),1,0)
+df_ICWES$gov_target<-ifelse(grepl("Govern", df_ICWES$target_sectors),1,0)
+```
+
+##### subsetting events of interest
+```{r}
+## subset dataset
+df_ICWES_g2g<-subset(df_ICWES, df_ICWES$gov_sender==1 &
+                               df_ICWES$gov_target==1)
+
+# Define the columns to apply the transformation to
+List <- c("event_text")
+
+# Apply gsub function to selected columns using mutate_at
+df_ICWES_g2g <- df_ICWES_g2g %>% 
+  mutate_at(vars(List), ~gsub("[^\\p{L}0-9\\s]", "", ., perl = TRUE))
+
+# keep only expressions to cooperate
+## create var =1 if event is an expression of intent
+df_ICWES_g2g$express_int<-ifelse(grepl("Express intent to", df_ICWES_g2g$event_text),1,0)
+## keep only expressions of intent to cooperate
+df_ICWES_g2g<-subset(df_ICWES_g2g, df_ICWES_g2g$express_int==1)
+
+# keep only expressions between two different countries
+## create dummy variable to identfy cross-country expressions
+df_ICWES_g2g$inter_gov <-0
+df_ICWES_g2g$inter_gov[df_ICWES_g2g$iso3c_source!=df_ICWES_g2g$iso3c_target] <-1  
+## keeping only inter_gov expressions
+df_ICWES_g2g<-subset(df_ICWES_g2g, df_ICWES_g2g$inter_gov==1)
+
+# drop inter gov expressions of intent to cooperate clearly unrelated to humanitarian aid
+## List of strings to drop
+List <- c("Express intent to cooperate militarily",
+          "Express intent to cooperate on judicial matters",
+          "Express intent to institute political reform",
+          "Express intent to meet or negotiate",
+          "Express intent to provide military aid",
+          "Express intent to release persons or property",
+          "Express intent to yield",
+          "Express intent to change leadership",
+          "Express intent to cooperate on intelligence",
+          "Express intent to deescalate military engagement",
+          "Express intent to mediate",
+          "Express intent to provide military protection or peacekeeping",
+          "Express intent to settle dispute",
+          "Express intent to ease administrative sanctions",
+          "Express intent to accept mediation")
+
+## Dropping observations containing strings in the list
+df_ICWES_g2g <- subset(df_ICWES_g2g, (event_text %!in% List))
 
 
+# drop useless vars
+List<-c("gov_sender",
+        "gov_target",
+        "express_int",
+        "inter_gov")
 
-URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
+df_ICWES_g2g<-drop_columns(df_ICWES_g2g,List)
 
-#saving icews df
-saveRDS(df_ICWES, URL_df)
+## correct names
+df_ICWES_g2g<-janitor::clean_names(df_ICWES_g2g)
+
+
+## merge with emdat country month level dataset in order to identify declarations 
+df_ICWES_g2g= left_join(df_ICWES_g2g, EM_dat_ym, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
 
 
 ```
 
-#### Reshaping ICEWS - calculating number of verbal support a country receives in a given year
+##### Remove from environment df_ICWES to save memory
+```{r}
+rm(df_ICWES)
+```
+
+
+##### Calculating number of verbal support a country receives per month
+```{r}
+# # count events
+# df_ICWES_m<- df_ICWES %>% 
+#   group_by(iso3c, Event.Text, Date.month ) %>%
+#   summarize(Event_ICEWS = sum(Event_ICEWS))
+# 
+# #reshape
+# df_ICWES_m<-reshape2::dcast(df_ICWES_m, Date.month+iso3c~Event.Text)
+
+```
+
+##### Calculating number of verbal support a country receives during natural disaster per month
+```{r}
+# keep only observations occurred during a disaster or at max 2 months by it
+## List of dummy variables
+dummy_vars <- grep("dummy", names(df_ICWES_g2g), value = TRUE)
+
+## Create the 'disaster' variable
+df_ICWES_g2g$disaster <- as.numeric(rowSums(df_ICWES_g2g[dummy_vars]) > 0)
+## drop non disaster observations
+df_ICWES_g2g_dis<-subset(df_ICWES_g2g,df_ICWES_g2g$disaster==1)
+
+df_ICWES_g2g_dis$Express_exist<-1
+
+# count events
+# aggregate at country year month level
+df_ICWES_g2g_dis_m<- df_ICWES_g2g_dis %>% 
+  group_by(iso3c_target, year, date_month, event_text) %>%
+  summarize(count = sum(Express_exist))
+
+
+#reshape
+df_ICWES_g2g_dis_m<-reshape2::dcast(df_ICWES_g2g_dis_m, date_month+iso3c_target~event_text)
+
+## rename variables
+names(df_ICWES_g2g_dis_m)[names(df_ICWES_g2g_dis_m) == "Year"] <- "year"
+names(df_ICWES_g2g_dis_m)[names(df_ICWES_g2g_dis_m) == "Country"] <- "country_Emdat"
+
+
+```
+
+##### Calculating number of verbal support a country receives during conflict per month
 ```{r}
 
 ```
@@ -645,7 +863,8 @@ Aiddata<- read.csv(file_path)
 ```
 
 
-#### Reshaping AidData - calculating total amount of aid
+#### Reshaping AidData 
+##### Calculating total amount of aid
 ```{r}
 df_Aiddata<-Aiddata
 
@@ -730,7 +949,7 @@ df_Aiddata<-Nas_to_0(df_Aiddata,List)
 
 ```
 
-#### Reshaping AidData - calculating total amount of aid by sector per recipient country per each year
+##### Calculating total amount of aid by sector per recipient country per each year
 ```{r}
 #load dataset
 df_Aiddata_sectoral<-Aiddata
@@ -739,39 +958,44 @@ df_Aiddata_sectoral<-Aiddata
 df_Aiddata_sectoral$Short_code<-c((substr(( c(df_Aiddata_sectoral$coalesced_purpose_code)), 1, 2)))
 
 ## rename codes
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="10"] <- "Social_Infra"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="11"] <- "Education"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="12"] <- "Health"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="13"] <- "Population_Policies"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="14"] <- "Water_Supply_Sanitation"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="15"] <- "Gov_Civ_Soc"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="16"] <- "Soc_Infra"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="20"] <- "Eco_Infra"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="21"] <- "Trans_Stor"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="22"] <- "Comm"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="23"] <- "Energy_Gen_Supp"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="24"] <- "Banking"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="25"] <- "Business"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="30"] <- "Production Sectors"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="31"] <- "Agri_For_Fish"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="32"] <- "Ind_Min_Cons"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="33"] <- "Trade_policy "
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="41"] <- "Env_Protection"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="42"] <- "Women"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="43"] <- "Other"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="51"] <- "Budget_Support"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="52"] <- "Food_Security"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="53"] <- "Commodity_Assistance"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="60"] <- "Debt"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="70"] <- "Humanitarian_Aid"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="72"] <- "Emergency_Response"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="73"] <- "Reconstruction_Relief"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="74"] <- "Disaster_Prevention"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="91"] <- "Administrative_costs"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="92"] <- "Support_NGO"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="93"] <- "Refugees_Donor"
-df_Aiddata_sectoral$Short_code[df_Aiddata_sectoral$Short_code=="99"] <- "Unallocated"
+# Define replacements using a named vector
+replacements <- c(
+  "10" = "Social_Infra",
+  "11" = "Education",
+  "12" = "Health",
+  "13" = "Population_Policies",
+  "14" = "Water_Supply_Sanitation",
+  "15" = "Gov_Civ_Soc",
+  "16" = "Soc_Infra",
+  "20" = "Eco_Infra",
+  "21" = "Trans_Stor",
+  "22" = "Comm",
+  "23" = "Energy_Gen_Supp",
+  "24" = "Banking",
+  "25" = "Business",
+  "30" = "Production Sectors",
+  "31" = "Agri_For_Fish",
+  "32" = "Ind_Min_Cons",
+  "33" = "Trade_policy",
+  "41" = "Env_Protection",
+  "42" = "Women",
+  "43" = "Other",
+  "51" = "Budget_Support",
+  "52" = "Food_Security",
+  "53" = "Commodity_Assistance",
+  "60" = "Debt",
+  "70" = "Humanitarian_Aid",
+  "72" = "Emergency_Response",
+  "73" = "Reconstruction_Relief",
+  "74" = "Disaster_Prevention",
+  "91" = "Administrative_costs",
+  "92" = "Support_NGO",
+  "93" = "Refugees_Donor",
+  "99" = "Unallocated"
+)
 
+# Apply replacements using named vector and %in% operator
+df_Aiddata_sectoral$Short_code <- replacements[as.character(df_Aiddata_sectoral$Short_code)]
 
 #change names countries
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"] <- "Serbia"
@@ -840,7 +1064,7 @@ df_Aiddata<-Nas_to_0(df_Aiddata,List)
 
 ```
 
-#### Reshaping AidData - calculating total amount of aid by sector commited worldwide per each year
+##### Calculating total amount of aid by sector commited worldwide per each year
 ```{r}
 
 ```
