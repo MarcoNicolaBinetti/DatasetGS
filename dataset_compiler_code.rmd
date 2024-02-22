@@ -194,12 +194,14 @@ desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 ```
 
 
-# Creating folder for datasets
+# Set main folder name
 ```{r}
-# Define the path to the desktop folder
-
 # Define the name of the folder to check/create
 main_folder_name <- "DFGlobalLab"
+```
+
+# Creating folder for datasets
+```{r}
 
 # Combine the desktop path with the folder name
 folder_path <- file.path(desktop_path, main_folder_name)
@@ -463,6 +465,7 @@ EM_dat_y<- EM_dat_ym %>%
             bio_n_m = sum(biological_dummy),
             climat_n_m = sum(climatological_dummy))
 
+## in case we want to add the technological disasters
 #            indu_n_m = sum(industrial_accident_dummy),
 #            transport_n_m = sum(transport_dummy),
 #            misc_n_m = sum(miscellaneous_accident_dummy),
@@ -700,6 +703,7 @@ saveRDS(df_ICWES, URL_df)
 
 #### Importing ICEWS from the rds. file. this helps to skip the "Importing ICEWS from row data" block of code
 ```{r}
+URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
 # importing icews df
 df_ICWES <- readRDS(URL_df)
 ```
@@ -742,10 +746,20 @@ df_ICWES_g2g <- df_ICWES_g2g %>%
   mutate_at(vars(List), ~gsub("[^\\p{L}0-9\\s]", "", ., perl = TRUE))
 
 # keep only expressions to cooperate
-## create var =1 if event is an expression of intent
-df_ICWES_g2g$express_int<-ifelse(grepl("Express intent to", df_ICWES_g2g$event_text),1,0)
+## create var =1 if event is an expression of intent or else
+df_ICWES_g2g <- df_ICWES_g2g %>%
+  mutate(
+    express_int = as.integer(grepl("Express intent to", event_text)),
+    engage_symb = as.integer(grepl("Engage in symbolic act", event_text)),
+    make_emp = as.integer(grepl("Make empathetic comment", event_text)),
+    express_accord = as.integer(grepl("Express accord", event_text))
+  )
+
 ## keep only expressions of intent to cooperate
-df_ICWES_g2g<-subset(df_ICWES_g2g, df_ICWES_g2g$express_int==1)
+df_ICWES_g2g<-subset(df_ICWES_g2g, df_ICWES_g2g$express_int==1 |
+                       df_ICWES_g2g$engage_symb==1 |
+                       df_ICWES_g2g$make_emp==1 |
+                       df_ICWES_g2g$express_accord==1)
 
 # keep only expressions between two different countries
 ## create dummy variable to identfy cross-country expressions
@@ -781,7 +795,6 @@ List<-c("gov_sender",
         "gov_target",
         "express_int",
         "inter_gov")
-
 df_ICWES_g2g<-drop_columns(df_ICWES_g2g,List)
 
 ## correct names
@@ -800,6 +813,7 @@ df_ICWES_g2g$disaster <- as.numeric(rowSums(df_ICWES_g2g[dummy_vars]) > 0)
 ## drop non disaster observations
 df_ICWES_g2g_dis<-subset(df_ICWES_g2g,df_ICWES_g2g$disaster==1)
 
+# create dummy variable to count events
 df_ICWES_g2g_dis$Express_exist<-1
 ```
 
@@ -809,37 +823,25 @@ rm(df_ICWES)
 ```
 
 
-##### Calculating number of verbal support a country receives per month
+##### Calculating number of countries sending verbal support during and after natural disaster
 ```{r}
-# # count events
-# df_ICWES_m<- df_ICWES %>% 
-#   group_by(iso3c, Event.Text, Date.month ) %>%
-#   summarize(Event_ICEWS = sum(Event_ICEWS))
-# 
-# #reshape
-# df_ICWES_m<-reshape2::dcast(df_ICWES_m, Date.month+iso3c~Event.Text)
-
-```
-NB: devo calcolare il numero di paesi che fa dichiarazioni, non il numero di dichiarazioni!
-##### Calculating number of verbal support a country receives during natural disaster per month
-```{r}
-
-
 # count events
 # aggregate at country year month level
-df_ICWES_g2g_dis_m<- df_ICWES_g2g_dis %>% 
+df_ICWES_g2g_dis_y<- df_ICWES_g2g_dis %>% 
   group_by(iso3c_target, year, event_text) %>%
-  summarize(count = sum(Express_exist))
+  summarize(count_senders = n_distinct(source_country))
 
 
 #reshape
-df_ICWES_g2g_dis_m<-reshape2::dcast(df_ICWES_g2g_dis_m, iso3c_target+year~event_text)
+df_ICWES_g2g_dis_y<-reshape2::dcast(df_ICWES_g2g_dis_y, iso3c_target+year~event_text)
 
 # rename variables
 ## Named vector of column name mappings
 column_names_mapping <- c(
   "iso3c_target" = "iso3c",
   "year" = "year",
+  "Engage in symbolic act" = "eng_simb_dis",
+  "Express accord" = "expr_acc_dis",
   "Express intent to cooperate" = "cooperate_dis",
   "Express intent to cooperate economically" = "econo_dis",
   "Express intent to ease economic sanctions boycott or embargo" = "embargo_dis",
@@ -847,29 +849,64 @@ column_names_mapping <- c(
   "Express intent to engage in material cooperation" = "material_coop_dis",
   "Express intent to provide economic aid" = "economic_aid_dis",
   "Express intent to provide humanitarian aid" = "human_aid_dis",
-  "Express intent to provide material aid" = "material_aid_dis"
+  "Express intent to provide material aid" = "material_aid_dis",
+  "Make empathetic comment" = "make_emp_dis"
 )
 
 # Rename columns using named vector
-names(df_ICWES_g2g_dis_m) <- column_names_mapping[names(df_ICWES_g2g_dis_m)]
+names(df_ICWES_g2g_dis_y) <- column_names_mapping[names(df_ICWES_g2g_dis_y)]
 
 #list variables 
-List<- colnames(df_ICWES_g2g_dis_m)[colnames(df_ICWES_g2g_dis_m) %!in% c("iso3c", "year")]
+List<- colnames(df_ICWES_g2g_dis_y)[colnames(df_ICWES_g2g_dis_y) %!in% c("iso3c", "year")]
 
 # assign 0s
-df_ICWES_g2g_dis_m<-Nas_to_0(df_ICWES_g2g_dis_m,List)
+df_ICWES_g2g_dis_y<-Nas_to_0(df_ICWES_g2g_dis_y,List)
 
 ## sum
-df_ICWES_g2g_dis_m$NormAgr<-df_ICWES_g2g_dis_m$cooperate_dis+
-                            df_ICWES_g2g_dis_m$econo_dis+
-                            df_ICWES_g2g_dis_m$material_aid_dis+
-                            df_ICWES_g2g_dis_m$economic_aid_dis+
-                            df_ICWES_g2g_dis_m$human_aid_dis+
-                            df_ICWES_g2g_dis_m$material_coop_dis
+df_ICWES_g2g_dis_y$NormAgr <- rowSums(df_ICWES_g2g_dis_m[c("cooperate_dis",
+                                                           "econo_dis",
+                                                           "material_aid_dis",
+                                                           "economic_aid_dis",
+                                                           "human_aid_dis",
+                                                           "material_coop_dis",
+                                                           "eng_simb_dis",
+                                                           "expr_acc_dis",
+                                                           "make_emp_dis")])
+```
 
-# assign NAs
+##### Calculating average number of countries sending verbal support during and after natural disaster per year
+```{r}
+# calculate 2 years average
 
-## collapse at country year level
+df_ICWES_g2g_dis_y_small <- df_ICWES_g2g_dis_y %>% 
+  group_by(year) %>%
+  summarize(year_mean_NormAgr = mean(NormAgr))
+
+
+## calculate 2 years average
+df_ICWES_g2g_dis_y_small <- df_ICWES_g2g_dis_y_small %>%
+  arrange(year) %>%
+  mutate(two_year_year_mean_NormAgr_avg = (lag(year_mean_NormAgr) + year_mean_NormAgr) / 2) %>%
+  filter(!is.na(two_year_year_mean_NormAgr_avg)) %>%
+  ungroup()
+```
+
+##### Calculating wich countries received more normative agreement than the 2 years average
+```{r}
+## merge with emdat country month level dataset in order to identify declarations 
+df_ICWES_g2g_dis_y= left_join(df_ICWES_g2g_dis_y, df_ICWES_g2g_dis_y_small, by = c("year"="year"))
+
+df_ICWES_g2g_dis_y$dummy_agreement<-ifelse(df_ICWES_g2g_dis_y$NormAgr> df_ICWES_g2g_dis_y$two_year_year_mean_NormAgr_avg,1,0)
+
+
+# keep var of interest
+df_ICWES_g2g_dis_y <- df_ICWES_g2g_dis_y[ , names(df_ICWES_g2g_dis_y) %in% c("iso3c",
+                                                                              "year",
+                                                                              "dummy_agreement",
+                                                                              "two_year_year_mean_NormAgr_avg",
+                                                                              "NormAgr")]
+
+
 
 ```
 
@@ -975,7 +1012,7 @@ df_Aiddata <- df_Aiddata[ , !names(df_Aiddata) %in% c("Dummy",
                                                       "income",
                                                       "lending")]
 ## merge with Base
-df_Aiddata= left_join(df_Base, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Aiddata= left_join(df_Base_Y, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
 
 #list variables MDat
 List<- colnames(df_Aiddata)[!colnames(df_Aiddata) %in% c("iso3c", "year")]
@@ -1090,19 +1127,63 @@ df_Aiddata_sectoral<-df_Aiddata_sectoral %>%
                 distinct(year, iso3c , .keep_all = TRUE)
 
 ## merge with Base
-df_Aiddata= left_join(df_Base, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Aiddata_sectoral= left_join(df_Base_Y, df_Aiddata_sectoral, by = c("year" = "year", "iso3c" = "iso3c"))
 
 #list variables MDat
-List<- colnames(df_Aiddata)[!colnames(df_Aiddata) %in% c("iso3c", "year")]
+List<- colnames(df_Aiddata_sectoral)[!colnames(df_Aiddata_sectoral) %in% c("iso3c", "year")]
 
 # assign 0s
-df_Aiddata<-Nas_to_0(df_Aiddata,List)
+df_Aiddata_sectoral<-Nas_to_0(df_Aiddata_sectoral,List)
 
 ```
 
+NB: This is crap, bus be redone
 ##### Calculating total amount of aid by sector commited worldwide per each year
 ```{r}
+# calculate five years average
 
+df_Aiddata_sectoral_small <- df_Aiddata_sectoral %>% 
+  group_by(year) %>%
+  summarize(year_mean_aid = mean(Humanitarian_Aid_tot))
+
+
+## calculate 2 years average
+df_Aiddata_sectoral_small <- df_Aiddata_sectoral_small %>%
+  arrange(year) %>%
+  mutate(two_year_year_mean_aid = (lag(year_mean_aid) + year_mean_aid) / 2) %>%
+  filter(!is.na(year_mean_aid)) %>%
+  ungroup()
+
+## merge with emdat country month level dataset in order to identify declarations 
+df_Aiddata_sectoral= left_join(df_Aiddata_sectoral, df_Aiddata_sectoral_small, by = c("year"="year"))
+
+df_Aiddata_sectoral$dummy_aid<-ifelse(df_Aiddata_sectoral$Humanitarian_Aid_tot> df_Aiddata_sectoral$two_year_year_mean_aid,1,0)
+
+
+# keep var of interest
+df_Aiddata_sectoral <- df_Aiddata_sectoral[ , names(df_Aiddata_sectoral) %in% c("iso3c",
+                                                                              "year",
+                                                                              "dummy_aid",
+                                                                              "two_year_year_mean_aid",
+                                                                              "Humanitarian_Aid_tot")]
+```
+
+
+## attempt code var humanitarian
+```{r}
+
+df= left_join(df_ICWES_g2g_dis_y, df_Aiddata_sectoral, by = c("year" = "year", "iso3c" = "iso3c"))
+
+df <- df %>%
+  mutate(GlobSol = case_when(
+    dummy_agreement == 1 & dummy_aid == 1 ~ 1,
+    dummy_agreement == 1 & dummy_aid == 0 ~ 2,
+    dummy_agreement == 0 & dummy_aid == 1 ~ 3,
+    dummy_agreement == 0 & dummy_aid == 0 ~ 4
+  ))
+
+
+df<-left_join(df_ICWES_g2g_dis_y)
 ```
 
 
