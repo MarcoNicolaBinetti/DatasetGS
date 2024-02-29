@@ -66,8 +66,6 @@ rm(list=ls())
 
 # Funtions 
 ```{r}
-# more lines of code
-
 # calculate mode
 mode <- function(v) {
   uniqv <- unique(v)
@@ -760,6 +758,7 @@ List <- c("Express intent to cooperate militarily",
           "Express intent to meet or negotiate",
           "Express intent to provide military aid",
           "Express intent to release persons or property",
+          "Express intent to ease economic sanctions boycott or embargo",
           "Express intent to yield",
           "Express intent to change leadership",
           "Express intent to cooperate on intelligence",
@@ -792,7 +791,7 @@ df_ICWES_g2g_dis5k= left_join(df_ICWES_g2g, EM_dat_5k_processed_2, by = c("date_
 df_ICWES_g2g_dis50k= left_join(df_ICWES_g2g, EM_dat_50k_processed_2, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
 
 
-process_disaster_data <- function(df) {
+process_ICEWS_1 <- function(df) {
   # List of dummy variables
   dummy_vars <- grep("dummy", names(df), value = TRUE)
   
@@ -806,11 +805,9 @@ process_disaster_data <- function(df) {
 }
 
 # Process each dataset
-df_ICWES_g2g_dis1k <- process_disaster_data(df_ICWES_g2g_dis1k)
-df_ICWES_g2g_dis5k <- process_disaster_data(df_ICWES_g2g_dis5k)
-df_ICWES_g2g_dis50k <- process_disaster_data(df_ICWES_g2g_dis50k)
-
-
+df_ICWES_g2g_dis1k <- process_ICEWS_1(df_ICWES_g2g_dis1k)
+df_ICWES_g2g_dis5k <- process_ICEWS_1(df_ICWES_g2g_dis5k)
+df_ICWES_g2g_dis50k <- process_ICEWS_1(df_ICWES_g2g_dis50k)
 
 ```
 
@@ -819,90 +816,178 @@ df_ICWES_g2g_dis50k <- process_disaster_data(df_ICWES_g2g_dis50k)
 #rm(df_ICWES)
 ```
 
-
 ##### Calculating number of countries sending verbal support during and after natural disaster
 ```{r}
-# count events
-# aggregate at country year month level
-df_ICWES_g2g_dis_y<- df_ICWES_g2g_dis %>% 
-  group_by(iso3c_target, year, event_text) %>%
-  summarize(count_senders = n_distinct(source_country))
 
+process_ICEWS_2 <- function(df) {
+  
+  
+  # count speakers
+  ## aggregate at country year month level
+  df<- df %>% 
+    group_by(iso3c_target, year, event_text) %>%
+    summarize(count_senders = n_distinct(source_country))
+  
+  
+  #reshape
+  df<-reshape2::dcast(df, iso3c_target+year~event_text)
+  
+  # rename variables
+  ## Named vector of column name mappings
+  column_names_mapping <- c(
+    "iso3c_target" = "iso3c",
+    "year" = "year",
+    "Engage in symbolic act" = "eng_simb_dis",
+    "Express accord" = "expr_acc_dis",
+    "Express intent to cooperate" = "cooperate_dis",
+    "Express intent to cooperate economically" = "econo_dis",
+    "Express intent to engage in diplomatic cooperation such as policy support" = "diplo_dis",
+    "Express intent to engage in material cooperation" = "material_coop_dis",
+    "Express intent to provide economic aid" = "economic_aid_dis",
+    "Express intent to provide humanitarian aid" = "human_aid_dis",
+    "Express intent to provide material aid" = "material_aid_dis",
+    "Make empathetic comment" = "make_emp_dis"
+  )
+  
+  # Rename columns using named vector
+  names(df) <- column_names_mapping[names(df)]
+  
+  #list variables 
+  List<- colnames(df)[colnames(df) %!in% c("iso3c", "year")]
+  
+  # assign 0s
+  df<-Nas_to_0(df,List)
+  
+  ## sum
+  df$NormAgr <- rowSums(df[c("cooperate_dis",
+                             "econo_dis",
+                             "material_aid_dis",
+                             "economic_aid_dis",
+                             "human_aid_dis",
+                             "diplo_dis",
+                             "material_coop_dis",
+                             "eng_simb_dis",
+                             "expr_acc_dis",
+                             "make_emp_dis")])
+  return(df)
 
-#reshape
-df_ICWES_g2g_dis_y<-reshape2::dcast(df_ICWES_g2g_dis_y, iso3c_target+year~event_text)
+  }
 
-# rename variables
-## Named vector of column name mappings
-column_names_mapping <- c(
-  "iso3c_target" = "iso3c",
-  "year" = "year",
-  "Engage in symbolic act" = "eng_simb_dis",
-  "Express accord" = "expr_acc_dis",
-  "Express intent to cooperate" = "cooperate_dis",
-  "Express intent to cooperate economically" = "econo_dis",
-  "Express intent to ease economic sanctions boycott or embargo" = "embargo_dis",
-  "Express intent to engage in diplomatic cooperation such as policy support" = "diplo_dis",
-  "Express intent to engage in material cooperation" = "material_coop_dis",
-  "Express intent to provide economic aid" = "economic_aid_dis",
-  "Express intent to provide humanitarian aid" = "human_aid_dis",
-  "Express intent to provide material aid" = "material_aid_dis",
-  "Make empathetic comment" = "make_emp_dis"
-)
+df_ICWES_dis1k_y<-process_ICEWS_2(df_ICWES_g2g_dis1k)
+df_ICWES_dis5k_y<-process_ICEWS_2(df_ICWES_g2g_dis5k)
+df_ICWES_dis50k_y<-process_ICEWS_2(df_ICWES_g2g_dis50k)
 
-# Rename columns using named vector
-names(df_ICWES_g2g_dis_y) <- column_names_mapping[names(df_ICWES_g2g_dis_y)]
-
-#list variables 
-List<- colnames(df_ICWES_g2g_dis_y)[colnames(df_ICWES_g2g_dis_y) %!in% c("iso3c", "year")]
-
-# assign 0s
-df_ICWES_g2g_dis_y<-Nas_to_0(df_ICWES_g2g_dis_y,List)
-
-## sum
-df_ICWES_g2g_dis_y$NormAgr <- rowSums(df_ICWES_g2g_dis_y[c("cooperate_dis",
-                                                           "econo_dis",
-                                                           "material_aid_dis",
-                                                           "economic_aid_dis",
-                                                           "human_aid_dis",
-                                                           "material_coop_dis",
-                                                           "eng_simb_dis",
-                                                           "expr_acc_dis",
-                                                           "make_emp_dis")])
 ```
+
+##### Merge ICEWS counts with panel countries that experienced disaster
+```{r}
+
+# Function to summarize data by year
+process_ICEWS_4 <- function(df_EMdat, df_ICEWS_input ) {
+
+# Identify columns containing the string "lag"
+lag_columns <- grep("lag", names(df_EMdat), value = TRUE)
+
+# Drop columns containing the string "lag"
+df <- df_EMdat[, !names(df_EMdat) %in% lag_columns]
+
+# List of dummy variables
+  dummy_vars <- grep("dummy", names(df), value = TRUE)
+  
+# Create the 'disaster' variable
+  df$disaster <- as.numeric(rowSums(df[dummy_vars]) > 0)
+
+# keep only disaster years
+  df<-subset(df,df$disaster>0)
+  
+  
+# drop useless vars
+List<-dummy_vars
+
+df<-drop_columns(df,List)
+  
+## merge dataframes
+df_ICEWS_EMDAT= left_join(df, df_ICEWS_input, by = c("iso3c" = "iso3c", "year"="year"))
+
+  #list variables 
+  List<- c("cooperate_dis",
+           "econo_dis",
+           "material_aid_dis",
+           "economic_aid_dis",
+           "human_aid_dis",
+           "diplo_dis",
+           "material_coop_dis",
+           "eng_simb_dis",
+           "expr_acc_dis",
+           "make_emp_dis",
+           "NormAgr")
+  
+# Assign 0s
+  df_ICEWS_EMDAT <- df_ICEWS_EMDAT %>%
+    mutate(across(List, ~ replace_na(., 0)))
+
+# Replace values with NA for years before 1995
+df_ICEWS_EMDAT[df_ICEWS_EMDAT$year < 1995, List] <- NA
+  
+  return(df_ICEWS_EMDAT)
+}
+
+df_ICEWS_EMDAT_1ky<-process_ICEWS_4(EM_dat_1k_processed_3,df_ICWES_dis1k_y)  
+df_ICEWS_EMDAT_5ky<-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
+df_ICEWS_EMDAT_50ky<-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
+
+```
+
+
 
 ##### Calculating average number of countries sending verbal support during and after natural disaster per year
 ```{r}
-# calculate 2 years average
+# calculate average Norm agree per year
 
-df_ICWES_g2g_dis_y_small <- df_ICWES_g2g_dis_y %>% 
-  group_by(year) %>%
-  summarize(year_mean_NormAgr = mean(NormAgr))
+# Function to summarize data by year
+process_ICEWS_3 <- function(df_input) {
+  df_output <- df_input %>%
+    group_by(year) %>%
+    summarize(year_mean_NormAgr = mean(NormAgr))
+  return(df_output)
+}
+
+# Summarize each dataset
+df_ICWES_dis1k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_50ky)
 
 
-## calculate 2 years average
-df_ICWES_g2g_dis_y_small <- df_ICWES_g2g_dis_y_small %>%
-  arrange(year) %>%
-  mutate(two_year_year_mean_NormAgr_avg = (lag(year_mean_NormAgr) + year_mean_NormAgr) / 2) %>%
-  filter(!is.na(two_year_year_mean_NormAgr_avg)) %>%
-  ungroup()
 ```
 
-##### Calculating wich countries received more normative agreement than the 2 years average
+##### Calculating wich countries received more normative agreement than the average
 ```{r}
-## merge with emdat country month level dataset in order to identify declarations 
-df_ICWES_g2g_dis_y= left_join(df_ICWES_g2g_dis_y, df_ICWES_g2g_dis_y_small, by = c("year"="year"))
 
-df_ICWES_g2g_dis_y$dummy_agreement<-ifelse(df_ICWES_g2g_dis_y$NormAgr> df_ICWES_g2g_dis_y$two_year_year_mean_NormAgr_avg,1,0)
+# Function to summarize data by year
+process_ICEWS_4 <- function(df_input,df_input_2) {
+  
+  ## merge with emdat country month level dataset in order to identify declarations 
+df_input= left_join(df_input_2, df_input, by = c("year"="year"))
+
+df_input$dummy_agreement<-ifelse(df_input$NormAgr> df_input$year_mean_NormAgr,1,0)
 
 
 # keep var of interest
-df_ICWES_g2g_dis_y <- df_ICWES_g2g_dis_y[ , names(df_ICWES_g2g_dis_y) %in% c("iso3c",
+df_output <- df_input[ , names(df_input) %in% c("iso3c",
                                                                               "year",
                                                                               "dummy_agreement",
-                                                                              "two_year_year_mean_NormAgr_avg",
-                                                                              "NormAgr")]
+                                                                              "year_mean_NormAgr",
+                                                                              "NormAgr")]  
+  return(df_output)
+}
 
+
+
+
+# Summarize each dataset
+df_ICWES_dis1k_y <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICWES_dis1k_y)
+df_ICWES_dis5k_y <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICWES_dis5k_y)
+df_ICWES_dis50k_y <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis50k_y)
 
 
 ```
@@ -1007,15 +1092,23 @@ df_Aiddata <- df_Aiddata[ , !names(df_Aiddata) %in% c("Dummy",
                                                       "longitude",
                                                       "latitude",
                                                       "income",
-                                                      "lending")]
+                                                      "lending",
+                                                      "recipient")]
 ## merge with Base
 df_Aiddata= left_join(df_Base_Y, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
 
-#list variables MDat
+#list variables aidata
 List<- colnames(df_Aiddata)[!colnames(df_Aiddata) %in% c("iso3c", "year")]
 
 # assign 0s
 df_Aiddata<-Nas_to_0(df_Aiddata,List)
+
+# list variables aidata
+List<- colnames(df_Aiddata)[colnames(df_Aiddata) %in% c("AidData_tot_commit",
+                                                         "AidData_tot_commit_per_cap")]
+
+# Replace values with NA for years after 2013
+df_Aiddata[df_Aiddata$year > 2013, List] <- NA
 
 ```
 
@@ -1070,7 +1163,7 @@ df_Aiddata_sectoral$Short_code <- replacements[as.character(df_Aiddata_sectoral$
 #change names countries
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"] <- "Serbia"
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Serbia and Montenegro"] <- "Serbia"
-df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"] <- "Russia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Soviet Union"] <- "Russia"
 
 #assign ISO3
 df_Aiddata_sectoral$iso3c <- countrycode(df_Aiddata_sectoral$recipient, "country.name", "iso3c")
@@ -1132,54 +1225,78 @@ List<- colnames(df_Aiddata_sectoral)[!colnames(df_Aiddata_sectoral) %in% c("iso3
 # assign 0s
 df_Aiddata_sectoral<-Nas_to_0(df_Aiddata_sectoral,List)
 
+# list variables aidata
+List<- colnames(df_Aiddata_sectoral)[colnames(df_Aiddata_sectoral) %!in% c("country",
+                                                         "iso3c",
+                                                        "year")]
+
+# Replace values with NA for years after 2013
+df_Aiddata_sectoral[df_Aiddata_sectoral$year > 2013, List] <- NA
+
 ```
 
-NB: This is crap, bus be redone
 ##### Calculating total amount of aid by sector commited worldwide per each year
 ```{r}
-# calculate five years average
+# calculate average
+df_aid_sec<-df_Aiddata_sectoral
 
-df_Aiddata_sectoral_small <- df_Aiddata_sectoral %>% 
+df_aid_sec$Hum_plus_ER_aid_tot<-df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
+df_aid_sec$ln_Hum_plus_ER_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
+
+df_Aiddata_sectoral_small <- df_aid_sec %>% 
   group_by(year) %>%
-  summarize(year_mean_aid = mean(Humanitarian_Aid_tot))
-
-
-## calculate 2 years average
-df_Aiddata_sectoral_small <- df_Aiddata_sectoral_small %>%
-  arrange(year) %>%
-  mutate(two_year_year_mean_aid = (lag(year_mean_aid) + year_mean_aid) / 2) %>%
-  filter(!is.na(year_mean_aid)) %>%
-  ungroup()
+  summarize(year_mean_Haid = mean(Humanitarian_Aid_tot),
+            year_mean_ERaid = mean(Emergency_Response_tot),
+            year_mean_Hum_plus_ERaid = mean(Hum_plus_ER_aid_tot),
+            year_mean_ln_Hum_plus_ERaid = mean(ln_Hum_plus_ER_aid_tot))
 
 ## merge with emdat country month level dataset in order to identify declarations 
-df_Aiddata_sectoral= left_join(df_Aiddata_sectoral, df_Aiddata_sectoral_small, by = c("year"="year"))
+df_aid_sec= left_join(df_aid_sec, df_Aiddata_sectoral_small, by = c("year"="year"))
 
-df_Aiddata_sectoral$dummy_aid<-ifelse(df_Aiddata_sectoral$Humanitarian_Aid_tot> df_Aiddata_sectoral$two_year_year_mean_aid,1,0)
+df_aid_sec$dummy_Haid<-ifelse(df_aid_sec$Humanitarian_Aid_tot> df_aid_sec$year_mean_Haid,1,0)
+df_aid_sec$dummy_ERaid<-ifelse(df_aid_sec$Emergency_Response_tot> df_aid_sec$year_mean_ERaid,1,0)
+df_aid_sec$dummy_Hplus_ERaid<-ifelse(df_aid_sec$Hum_plus_ER_aid_tot> df_aid_sec$year_mean_Hum_plus_ERaid,1,0)
+df_aid_sec$dummy_lnHplus_ERaid<-ifelse(df_aid_sec$ln_Hum_plus_ER_aid_tot> df_aid_sec$year_mean_ln_Hum_plus_ERaid,1,0)
 
 
 # keep var of interest
-df_Aiddata_sectoral <- df_Aiddata_sectoral[ , names(df_Aiddata_sectoral) %in% c("iso3c",
-                                                                              "year",
-                                                                              "dummy_aid",
-                                                                              "two_year_year_mean_aid",
-                                                                              "Humanitarian_Aid_tot")]
+df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
+                                                      "year",
+                                                      "dummy_Haid",
+                                                      "dummy_ERaid",
+                                                      "dummy_Hplus_ERaid",
+                                                      "dummy_lnHplus_ERaid",
+                                                      "Hum_plus_ER_aid_tot",
+                                                      "Humanitarian_Aid_tot",
+                                                      "Emergency_Response_tot",
+                                                      "ln_Hum_plus_ER_aid_tot",
+                                                      "year_mean_Haid",
+                                                      "year_mean_ERaid",
+                                                      "year_mean_Hum_plus_ERaid",
+                                                      "year_mean_ln_Hum_plus_ERaid")]
 ```
 
 
 ## attempt code var humanitarian
 ```{r}
-df= left_join(df_ICWES_g2g_dis_y, df_Aiddata_sectoral, by = c("year" = "year", "iso3c" = "iso3c"))
+df= left_join(df_ICWES_dis50k_y, df_aid_sec, by = c("year" = "year", "iso3c" = "iso3c"))
+#drop NA
+df<-Drop_NA(df, dummy_Hplus_ERaid)
+df<-Drop_NA(df, dummy_agreement)
 
 df <- df %>%
   mutate(GlobSol = case_when(
-    dummy_agreement == 1 & dummy_aid == 1 ~ 1,
-    dummy_agreement == 1 & dummy_aid == 0 ~ 2,
-    dummy_agreement == 0 & dummy_aid == 1 ~ 3,
-    dummy_agreement == 0 & dummy_aid == 0 ~ 4
+    dummy_agreement == 1 & dummy_Hplus_ERaid == 1 ~ 1,
+    dummy_agreement == 1 & dummy_Hplus_ERaid == 0 ~ 2,
+    dummy_agreement == 0 & dummy_Hplus_ERaid == 1 ~ 3,
+    dummy_agreement == 0 & dummy_Hplus_ERaid == 0 ~ 4
   ))
 
+table(df$GlobSol)
+```
 
 
+```{r}
 ctrs_1<-subset(df, df$GlobSol==1)
 ctrs_2<-subset(df, df$GlobSol==2)
 ctrs_3<-subset(df, df$GlobSol==3)
@@ -1205,9 +1322,73 @@ sort(unique(ctrs_4$iso3c))
 ```
 
 
+## experimenting visualizations
+
 ```{r}
-df<-left_join(df_ICWES_g2g_dis_y)
+df_2006<-subset(df,df$year==2007)
+
+
+df_g<-df_2006
+# List of variables to scale
+vars_to_scale <- c("NormAgr", "Hum_plus_ER_aid_tot")
+
+# Scale selected variables to range from 0 to 1
+df_g <- df_g
+df_g$aid_scaled <- df_g$Hum_plus_ER_aid_tot/100000
+
+  
 ```
+
+
+```{r}
+xlim<-mean(df_g$year_mean_NormAgr)
+ylim<-mean(df_g$year_mean_Hum_plus_ERaid)
+
+# Plot the dataset
+ggplot(df_g, aes(x = NormAgr, y = aid_scaled)) +
+  geom_point() +
+  labs(x = "NormAgr", y = "aid_scaled", title = "Scatter Plot of X1 vs X2")+
+  geom_vline(xintercept = xlim, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = (ylim/100000), linetype = "dashed", color = "blue")+
+  geom_point(aes(colour = factor(GlobSol)))+
+  theme(panel.background = element_blank())  
+```
+
+
+```{r}
+
+xlim<-mean(df_g$year_mean_NormAgr)
+ylim<-mean(df_g$year_mean_Hum_plus_ERaid)
+
+# Plot the dataset
+ggplot(df_g, aes(x = NormAgr, y = aid_scaled)) +
+  geom_point() +
+  labs(x = "NormAgr", y = "aid_scaled", title = "Scatter Plot of X1 vs X2")+
+  geom_vline(xintercept = xlim, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = (ylim/100000), linetype = "dashed", color = "blue")+
+  xlim(xlim - 15 , xlim + 45) +  # Adjust some_padding as needed
+  ylim((ylim/100000)-800,(ylim/100000)+8000) + # Adjust some_padding as needed
+  geom_point(aes(colour = factor(GlobSol)))+
+  theme(panel.background = element_blank())  
+
+
+
+
+```
+
+```{r}
+df_t<-df
+
+df_t$GlobSol <- factor(df_t$GlobSol)
+df_t$year <- factor(df_t$year)
+
+# Plotting using ggplot2 with stacked bars and year labels
+ggplot(df_t, aes(x = year, fill = GlobSol)) +
+  geom_bar(position = "stack") +
+  labs(x = "Year", y = "Count", title = "Stacked Distribution of GlobSol Over Years")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Tilting the x-axis labels by 45 degrees
+```
+
 
 
 ### ESD
