@@ -1369,7 +1369,9 @@ ggplot(df_g, aes(x = NormAgr, y = aid_scaled)) +
   xlim(xlim - 15 , xlim + 45) +  # Adjust some_padding as needed
   ylim((ylim/100000)-800,(ylim/100000)+8000) + # Adjust some_padding as needed
   geom_point(aes(colour = factor(GlobSol)))+
-  theme(panel.background = element_blank())  
+  theme(panel.background = element_blank())+
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray")  
 
 
 
@@ -1390,6 +1392,47 @@ ggplot(df_t, aes(x = year, fill = GlobSol)) +
 ```
 
 
+```{r}
+# Assuming your dataset is named df
+df_t_s <- df_t %>%
+  group_by(year, GlobSol) %>%
+  summarise(count = n()) %>%
+  ungroup()
+
+
+df_proportions <- df_t_s %>%
+  group_by(year) %>%
+  mutate(proportion = count / sum(count)) %>%
+  ungroup()
+
+# Now, plot the proportions over time
+ggplot(df_proportions, aes(x = year, y = proportion, fill = factor(GlobSol))) +
+  geom_bar(stat = "identity") +
+  labs(x = "Year", y = "Proportion of Events", title = "Proportion of Events for Each Category of GlobSol Over Time") +
+  scale_fill_manual(values = c("#FF9999", "#66CCCC", "#99CC66", "#FFCC66"), name = "GlobSol") +  # Manually set colors for each category
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Tilting the x-axis labels by 45 degrees
+```
+
+
+```{r}
+# Reshape
+df_t_s <- dcast(df_t_s, year ~ GlobSol)
+
+df_t_s$sum<-df_t_s$`1`+df_t_s$`2`+df_t_s$`3`+df_t_s$`4`
+
+df_t_s$op<-df_t_s$`1`/df_t_s$sum
+df_t_s$tp<-df_t_s$`2`/df_t_s$sum
+df_t_s$rp<-df_t_s$`3`/df_t_s$sum
+df_t_s$fp<-df_t_s$`4`/df_t_s$sum
+  
+  
+# Plotting using ggplot2 with unstacked bars and year labels
+ggplot(df_t, aes(x = year, fill = GlobSol)) +
+  geom_bar(position = "identity") +  # Change position to "identity"
+  labs(x = "Year", y = "Count", title = "Distribution of GlobSol Over Years") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Tilting the x-axis labels by 45 degrees
+```
 
 ### ESD
 #### Link df https://ucdp.uu.se/downloads/index.html#externalsupport
