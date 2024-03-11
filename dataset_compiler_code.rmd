@@ -189,6 +189,7 @@ download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
 # Setting directory for datasets' folders
 ```{r}
 desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+#desktop_path <- file.path("Users","katrenrogers","Documents")
 ```
 
 
@@ -196,6 +197,7 @@ desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 ```{r}
 # Define the name of the folder to check/create
 main_folder_name <- "DFGlobalLab"
+#main_folder_name <- "data"
 ```
 
 # Creating folder for datasets
@@ -236,6 +238,7 @@ download_and_create_folder("p5v2018.xls",
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xls")
 ## import  dataset
 Polity2<- read_excel(file_path)
+#Polity2<- read_excel("~/Documents/data/polity2/p5v2018.xls")
 ```
 
 # Create bases - at year and month levels
@@ -245,7 +248,6 @@ df_Polity2<-Polity2
 # Create base at year level
 ## subset years of interests
 df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2020)
-
 
 # Rename countries
   replacements <- c(
@@ -262,6 +264,13 @@ df_Polity2$iso3c <- countrycode(df_Polity2$country, "country.name", "iso3c")
 df_Base_Y<-df_Polity2[c("country",
                         "iso3c",
                         "year")]
+
+# Complete panel
+df_Base_Y<-df_Base_Y %>%
+  complete(iso3c,year=c(1981:2021)) %>%
+  group_by(iso3c) %>% fill(country) %>%
+  ungroup()
+
 ## drop iso3c NA
 df_Base_Y<-Drop_NA(df_Base_Y, iso3c)
 
@@ -271,7 +280,6 @@ df_Base_Y<-df_Base_Y %>%
 
 ## correct names
 df_Base_Y<-janitor::clean_names(df_Base_Y)
-
 
 # Create base at month level
 ## set list of countries
@@ -308,6 +316,7 @@ sub_folder_name<-"EMDAT"
 #### Importing dataset
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta")
+#file_path<-"~/Documents/data/emdat.dta"
 ## import  dataset
 EMDAT<- haven::read_dta(file_path)
 ```
@@ -497,6 +506,7 @@ download_create_folder_and_unzip(desktop_path,
 #### Import
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "GEDEvent_v23_1.csv")
+#file_path<-file.path("~/Documents/data/UCDP/GEDEvent_v23_1.csv")
 ## import  dataset
 UCDP_GED<- read.csv(file_path)
 ```
@@ -508,7 +518,8 @@ UCDP_GED<- read.csv(file_path)
 df_UCDP_GED<-UCDP_GED
 
 #assign ISO3
-df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c")
+df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c",
+                                 custom_match = c("Yemen (North Yemen)" = "YEM"))
 
 #create year month date
             df_UCDP_GED$month <- c((substr(( c(df_UCDP_GED$date_start)), 6, 7)))
@@ -683,6 +694,8 @@ saveRDS(df_ICWES, URL_df)
 #### Importing ICEWS from the rds. file. this helps to skip the "Importing ICEWS from row data" block of code
 ```{r}
 URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
+#URL_df<-"~/Documents/data/ICEWS/icews.rds"
+
 # importing icews df
 df_ICWES <- readRDS(URL_df)
 ```
@@ -813,7 +826,7 @@ df_ICWES_g2g_dis50k <- process_ICEWS_1(df_ICWES_g2g_dis50k)
 
 ##### Remove from environment df_ICWES to save memory
 ```{r}
-#rm(df_ICWES)
+rm(df_ICWES)
 ```
 
 ##### Calculating number of countries sending verbal support during and after natural disaster
@@ -998,7 +1011,8 @@ df_ICWES_dis50k_y <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis50k_y)
 ```
 
 ### AidData
-#### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0#### Create folder and download
+#### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
+#### Create folder and download
 #### Set name folder
 ```{r}
 sub_folder_name<-"Aidata"
@@ -1245,10 +1259,10 @@ df_aid_sec$ln_Hum_plus_ER_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_se
 
 df_Aiddata_sectoral_small <- df_aid_sec %>% 
   group_by(year) %>%
-  summarize(year_mean_Haid = mean(Humanitarian_Aid_tot),
-            year_mean_ERaid = mean(Emergency_Response_tot),
-            year_mean_Hum_plus_ERaid = mean(Hum_plus_ER_aid_tot),
-            year_mean_ln_Hum_plus_ERaid = mean(ln_Hum_plus_ER_aid_tot))
+  summarize(year_mean_Haid = mean(Humanitarian_Aid_tot, na.rm=T),
+            year_mean_ERaid = mean(Emergency_Response_tot, na.rm=T),
+            year_mean_Hum_plus_ERaid = mean(Hum_plus_ER_aid_tot, na.rm=T),
+            year_mean_ln_Hum_plus_ERaid = mean(ln_Hum_plus_ER_aid_tot, na.rm=T))
 
 ## merge with emdat country month level dataset in order to identify declarations 
 df_aid_sec= left_join(df_aid_sec, df_Aiddata_sectoral_small, by = c("year"="year"))
@@ -1276,10 +1290,43 @@ df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
                                                       "year_mean_ln_Hum_plus_ERaid")]
 ```
 
+## Add UNOCHA to 2019
+```{r}
+unocha<-read_excel("UNOCHA Funding received.xlsx")
+
+unocha_long <-pivot_longer(unocha,2:11, names_to="year", values_to="Hum_plus_ER_aid_tot") %>%
+  dplyr::rename(iso3c=`Country Code`) %>% 
+  drop_na(Hum_plus_ER_aid_tot) %>%
+  filter(year>2014) %>%
+  group_by(year) %>%
+  mutate(year_mean_Hum_plus_ERaid = mean(Hum_plus_ER_aid_tot)/6.5) %>% 
+  ungroup() 
+
+unocha_long$year<-as.numeric(unocha_long$year)
+
+unocha_long$dummy_Hplus_ERaid<-ifelse(unocha_long$Hum_plus_ER_aid_tot>unocha_long$year_mean_Hum_plus_ERaid,1,0)
+
+# Fill in blank varibales for bind 
+unocha_long <- unocha_long %>% 
+  mutate(Emergency_Response_tot = NA,
+         Humanitarian_Aid_tot= NA,
+         ln_Hum_plus_ER_aid_tot= NA,
+         year_mean_Haid = NA,
+            year_mean_ERaid = NA,
+            year_mean_ln_Hum_plus_ERaid = NA,
+            dummy_Haid = NA,
+            dummy_ERaid = NA,
+         dummy_lnHplus_ERaid = NA)
+ 
+# Join to full aid data
+df_aid_sec_joined<-rbind(df_aid_sec %>% filter(year<2014),unocha_long)
+
+
+```
 
 ## attempt code var humanitarian
 ```{r}
-df= left_join(df_ICWES_dis50k_y, df_aid_sec, by = c("year" = "year", "iso3c" = "iso3c"))
+df= left_join(df_ICWES_dis50k_y, df_aid_sec_joined, by = c("year" = "year", "iso3c" = "iso3c"))
 #drop NA
 df<-Drop_NA(df, dummy_Hplus_ERaid)
 df<-Drop_NA(df, dummy_agreement)
@@ -1325,34 +1372,46 @@ sort(unique(ctrs_4$iso3c))
 ## experimenting visualizations
 
 ```{r}
-df_2006<-subset(df,df$year==2007)
+# Rescale variables mean centred for each year
 
-
-df_g<-df_2006
-# List of variables to scale
-vars_to_scale <- c("NormAgr", "Hum_plus_ER_aid_tot")
-
-# Scale selected variables to range from 0 to 1
-df_g <- df_g
-df_g$aid_scaled <- df_g$Hum_plus_ER_aid_tot/100000
-
+df_g <- df %>%
+  mutate(aid_scaled = Hum_plus_ER_aid_tot-year_mean_Hum_plus_ERaid,
+         Norm_scaled = NormAgr-year_mean_NormAgr)
   
 ```
 
 
 ```{r}
-xlim<-mean(df_g$year_mean_NormAgr)
-ylim<-mean(df_g$year_mean_Hum_plus_ERaid)
+library(RColorBrewer)
+#xlim<-mean(df_g$Norm_scaled)
+#ylim<-mean(df_g$aid_scaled)
 
 # Plot the dataset
-ggplot(df_g, aes(x = NormAgr, y = aid_scaled)) +
-  geom_point() +
-  labs(x = "NormAgr", y = "aid_scaled", title = "Scatter Plot of X1 vs X2")+
-  geom_vline(xintercept = xlim, linetype = "dashed", color = "red") +
-  geom_hline(yintercept = (ylim/100000), linetype = "dashed", color = "blue")+
+p<-ggplot(df_g, aes(x = Norm_scaled, y = aid_scaled)) +
   geom_point(aes(colour = factor(GlobSol)))+
-  theme(panel.background = element_blank())  
+  labs(x = "Normative agreement", y = "Sharing Behaviour") +
+ geom_vline(xintercept = 0, linetype = "dashed", alpha=0.5) +
+ geom_hline(yintercept = 0, linetype = "dashed", alpha=0.5) +
+  scale_x_continuous(breaks=c(min(df_g$Norm_scaled),0,max(df_g$Norm_scaled)),
+                     labels=c("Low", "Mean","High"))+
+  scale_y_continuous(breaks=c(min(df_g$aid_scaled),0,max(df_g$aid_scaled)),
+                     labels=c("Low", "Mean","High"))+
+  scale_colour_brewer(palette="Set1",
+                     labels=c("Cosmopolitan","Liberal","Postcolonial","Realist"),
+                     name="") +
+  theme(panel.background = element_blank(),
+        axis.ticks=element_blank(),
+        legend.position=c(0.8,0.8))  
+
+print(p)
 ```
+## With labels
+```{r}
+
+p+geom_label(aes(100,100000000,label="China Earthquake 2008"),label.size=0, size=3)
+
+```
+
 
 
 ```{r}
