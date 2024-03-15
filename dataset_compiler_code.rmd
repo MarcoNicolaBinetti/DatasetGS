@@ -1450,20 +1450,21 @@ lab<-df_g %>%
            ifelse(year=="2004" & iso3c=="THA","Thailand",
            ifelse(year=="2004" & iso3c=="SOM","Somalia",
            ifelse(year=="2004" & iso3c=="IND","\nIndia",
-           ifelse(year=="2004" & iso3c=="LKA", "Sri Lanka",NA)))))) %>%
+           ifelse(year=="2004" & iso3c=="LKA", "\nSri Lanka",NA)))))) %>%
   filter(!is.na(label))
 
 add<-data.frame(year=2004,
                 Norm_scaled=6.4+20.44+1.44-2.56,
                 aid_scaled=108619633-7145305-20972991-3750192,
-                label="Boxing Day Earthquake")
+                label="Asian Tsunami")
 lab2<-rbind(lab %>% select(c(year,Norm_scaled,aid_scaled,label)),add)                
                   
                   
-p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),force=30,max.overlaps = 20)+
-  geom_point(data=subset(lab2,label=="Boxing Day Earthquake"))+
+p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),
+                  force=45)+
+  geom_point(data=subset(lab2,label=="Asian Tsunami"))+
   geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
-  ggtitle("Boxing day earthquake 2004")
+  ggtitle("Asian Tsunami 2004")
 
 ggsave("./plots/2004_scatter_20240315.png", width=8,height=5)
 
@@ -1479,14 +1480,14 @@ lab<-df_g %>%
 add<-data.frame(year=2005,
                 Norm_scaled=18.903226+42.903226-9.096774-1.903226,
                 aid_scaled=501130465+252954615+339708899+33043507,
-              label="Boxing Day \nEarthquake")
+              label="Asian Tsunami")
 lab2<-rbind(lab %>% select(c(year,Norm_scaled,aid_scaled,label)),add)                
                   
                   
-p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),force=5,max.overlaps = 20)+
-  geom_point(data=subset(lab2,label=="Boxing Day \nEarthquake"))+
+p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),force=20,max.overlaps = 20)+
+  geom_point(data=subset(lab2,label=="Asian Tsunami"))+
   geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
-  ggtitle("Boxing day earthquake 2004 (2005 impact)")
+  ggtitle("Asian Tsunami (2005 impact)")
 
 ggsave("./plots/2005_scatter_20240315.png", width=8,height=5)
 
