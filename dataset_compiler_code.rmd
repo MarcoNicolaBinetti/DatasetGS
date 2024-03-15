@@ -1395,7 +1395,7 @@ library(RColorBrewer)
 # Plot the dataset
 p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
  geom_point(aes(colour = factor(GlobSol))) +
-  #geom_text(aes(label=paste(iso3c,year)))+
+ #geom_text(aes(label=paste(iso3c,year)))+
  labs(x = "Normative agreement", y = "Sharing Behaviour") +
  geom_vline(xintercept = 0, linetype = "dashed", alpha=0.5) +
  geom_hline(yintercept = 0, linetype = "dashed", alpha=0.5) +
@@ -1442,6 +1442,53 @@ p+geom_text_repel(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,forc
   ggtitle("Labelled distribution of Normative Agreement and Sharing Behaviour, 1995-2019")
 
 ggsave("./plots/labelled_scatter_20240314.png", width=8,height=5)
+
+
+lab<-df_g %>% 
+  mutate(label=
+ ifelse(year=="2004" & iso3c=="IDN","Indonesia",
+           ifelse(year=="2004" & iso3c=="THA","Thailand",
+           ifelse(year=="2004" & iso3c=="SOM","Somalia",
+           ifelse(year=="2004" & iso3c=="IND","\nIndia",
+           ifelse(year=="2004" & iso3c=="LKA", "Sri Lanka",NA)))))) %>%
+  filter(!is.na(label))
+
+add<-data.frame(year=2004,
+                Norm_scaled=6.4+20.44+1.44-2.56,
+                aid_scaled=108619633-7145305-20972991-3750192,
+                label="Boxing Day Earthquake")
+lab2<-rbind(lab %>% select(c(year,Norm_scaled,aid_scaled,label)),add)                
+                  
+                  
+p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),force=30,max.overlaps = 20)+
+  geom_point(data=subset(lab2,label=="Boxing Day Earthquake"))+
+  geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
+  ggtitle("Boxing day earthquake 2004")
+
+ggsave("./plots/2004_scatter_20240315.png", width=8,height=5)
+
+lab<-df_g %>% 
+  mutate(label=
+ ifelse(year=="2005" & iso3c=="IDN","Indonesia",
+           ifelse(year=="2005" & iso3c=="THA","Thailand",
+           ifelse(year=="2005" & iso3c=="SOM","Somalia",
+           ifelse(year=="2005" & iso3c=="IND","India",
+           ifelse(year=="2005" & iso3c=="LKA", "Sri Lanka",NA)))))) %>%
+  filter(!is.na(label))
+
+add<-data.frame(year=2005,
+                Norm_scaled=18.903226+42.903226-9.096774-1.903226,
+                aid_scaled=501130465+252954615+339708899+33043507,
+              label="Boxing Day \nEarthquake")
+lab2<-rbind(lab %>% select(c(year,Norm_scaled,aid_scaled,label)),add)                
+                  
+                  
+p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),force=5,max.overlaps = 20)+
+  geom_point(data=subset(lab2,label=="Boxing Day \nEarthquake"))+
+  geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
+  ggtitle("Boxing day earthquake 2004 (2005 impact)")
+
+ggsave("./plots/2005_scatter_20240315.png", width=8,height=5)
 
 ```
 
