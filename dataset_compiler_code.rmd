@@ -418,7 +418,7 @@ List <- setdiff(names(df), c("country", "year", "iso3c", "count", "date_month", 
 
 # Assign 0s
 df <- df %>%
-  mutate(across(List, ~ replace_na(., 0)))
+  mutate(across(all_of(List), ~ replace_na(., 0)))
 
 # Drop date
 df <- select(df, -date)
@@ -457,7 +457,7 @@ process_EmDat_3 <- function(df, df_basey) {
   df <- df %>%
     group_by(iso3c, year) %>%
     summarize(
-      across(ends_with("_dummy"), ~sum)
+      across(ends_with("_dummy"), sum)
     )
   
   # create dummy variables
