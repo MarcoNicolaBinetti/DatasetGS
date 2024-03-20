@@ -36,7 +36,7 @@ library(dvmisc)
 library(ggpubr)
 library(gtools)
 library(foreign)
-library(GADMTools)
+#library(GADMTools)
 library(maps)
 
 
@@ -646,10 +646,11 @@ if (!file.exists(folder_path)) {
 #import datasets
 ldf <- list() # creates a list
 
-for (k in 1995:2021){
+for (k in 1995:2022){
 
  year<-paste0("",k,"")
- File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
+ #File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
+ File<-paste0("C:/Users/krogers/Documents/data/ICEWS/events.",year,".tab")
  df<- read.delim(File, header = TRUE, quote = "")
  df<-df[c(1:11)]
  names(df)[1] <- "event_id"
@@ -698,6 +699,7 @@ URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
 
 # importing icews df
 df_ICWES <- readRDS(URL_df)
+
 ```
 
 #### Reshaping ICEWS 
@@ -833,55 +835,12 @@ rm(df_ICWES)
 ```{r}
 
 process_ICEWS_2 <- function(df) {
-  
-  
   # count speakers
   ## aggregate at country year month level
   df<- df %>% 
-    group_by(iso3c_target, year, event_text) %>%
-    summarize(count_senders = n_distinct(source_country))
+    group_by(iso3c_target, year) %>%
+    summarize(NormAgr = n_distinct(source_country))
   
-  
-  #reshape
-  df<-reshape2::dcast(df, iso3c_target+year~event_text)
-  
-  # rename variables
-  ## Named vector of column name mappings
-  column_names_mapping <- c(
-    "iso3c_target" = "iso3c",
-    "year" = "year",
-    "Engage in symbolic act" = "eng_simb_dis",
-    "Express accord" = "expr_acc_dis",
-    "Express intent to cooperate" = "cooperate_dis",
-    "Express intent to cooperate economically" = "econo_dis",
-    "Express intent to engage in diplomatic cooperation such as policy support" = "diplo_dis",
-    "Express intent to engage in material cooperation" = "material_coop_dis",
-    "Express intent to provide economic aid" = "economic_aid_dis",
-    "Express intent to provide humanitarian aid" = "human_aid_dis",
-    "Express intent to provide material aid" = "material_aid_dis",
-    "Make empathetic comment" = "make_emp_dis"
-  )
-  
-  # Rename columns using named vector
-  names(df) <- column_names_mapping[names(df)]
-  
-  #list variables 
-  List<- colnames(df)[colnames(df) %!in% c("iso3c", "year")]
-  
-  # assign 0s
-  df<-Nas_to_0(df,List)
-  
-  ## sum
-  df$NormAgr <- rowSums(df[c("cooperate_dis",
-                             "econo_dis",
-                             "material_aid_dis",
-                             "economic_aid_dis",
-                             "human_aid_dis",
-                             "diplo_dis",
-                             "material_coop_dis",
-                             "eng_simb_dis",
-                             "expr_acc_dis",
-                             "make_emp_dis")])
   return(df)
 
   }
@@ -913,28 +872,6 @@ df <- df_EMdat[, !names(df_EMdat) %in% lag_columns]
 # keep only disaster years
   df<-subset(df,df$disaster>0)
   
-  
-# drop useless vars
-List<-dummy_vars
-
-df<-drop_columns(df,List)
-  
-## merge dataframes
-df_ICEWS_EMDAT= left_join(df, df_ICEWS_input, by = c("iso3c" = "iso3c", "year"="year"))
-
-  #list variables 
-  List<- c("cooperate_dis",
-           "econo_dis",
-           "material_aid_dis",
-           "economic_aid_dis",
-           "human_aid_dis",
-           "diplo_dis",
-           "material_coop_dis",
-           "eng_simb_dis",
-           "expr_acc_dis",
-           "make_emp_dis",
-           "NormAgr")
-  
 # Assign 0s
   df_ICEWS_EMDAT <- df_ICEWS_EMDAT %>%
     mutate(across(List, ~ replace_na(., 0)))
@@ -949,8 +886,9 @@ df_ICEWS_EMDAT_1ky<-process_ICEWS_4(EM_dat_1k_processed_3,df_ICWES_dis1k_y)
 df_ICEWS_EMDAT_5ky<-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
 df_ICEWS_EMDAT_50ky<-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
 
-```
 
+
+```
 
 
 ##### Calculating average number of countries sending verbal support during and after natural disaster per year
