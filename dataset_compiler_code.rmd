@@ -238,7 +238,6 @@ download_and_create_folder("p5v2018.xls",
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xls")
 ## import  dataset
 Polity2<- read_excel(file_path)
-#Polity2<- read_excel("~/Documents/data/polity2/p5v2018.xls")
 ```
 
 # Create bases - at year and month levels
@@ -316,7 +315,6 @@ sub_folder_name<-"EMDAT"
 #### Importing dataset
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta")
-#file_path<-"~/Documents/data/emdat.dta"
 ## import  dataset
 EMDAT<- haven::read_dta(file_path)
 ```
@@ -836,10 +834,17 @@ rm(df_ICWES)
 
 process_ICEWS_2 <- function(df) {
   # count speakers
-  ## aggregate at country year month level
+  ## aggregate at country year level
   df<- df %>% 
-    group_by(iso3c_target, year) %>%
+    dplyr::rename(iso3c=iso3c_target) %>%
+    group_by(iso3c, year) %>%
     summarize(NormAgr = n_distinct(source_country))
+  
+    #list variables 
+  List<- colnames(df)[colnames(df) %!in% c("iso3c", "year")]
+  
+  # assign 0s
+  df<-Nas_to_0(df,List)
   
   return(df)
 
@@ -872,12 +877,24 @@ df <- df_EMdat[, !names(df_EMdat) %in% lag_columns]
 # keep only disaster years
   df<-subset(df,df$disaster>0)
   
+  # drop useless vars
+List<-dummy_vars
+
+df<-drop_columns(df,List)
+  
+## merge dataframes
+df_ICEWS_EMDAT= left_join(df, df_ICEWS_input, by = c("iso3c" = "iso3c", "year"="year"))
+  
+  #list variables 
+  List<- c("NormAgr")
+  
 # Assign 0s
   df_ICEWS_EMDAT <- df_ICEWS_EMDAT %>%
     mutate(across(List, ~ replace_na(., 0)))
 
-# Replace values with NA for years before 1995
-df_ICEWS_EMDAT[df_ICEWS_EMDAT$year < 1995, List] <- NA
+# Delete years before 1995
+df_ICEWS_EMDAT<-df_ICEWS_EMDAT[df_ICEWS_EMDAT$year > 1994,]
+  
   
   return(df_ICEWS_EMDAT)
 }
@@ -887,20 +904,28 @@ df_ICEWS_EMDAT_5ky<-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
 df_ICEWS_EMDAT_50ky<-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
 
 
-
 ```
 
 
 ##### Calculating average number of countries sending verbal support during and after natural disaster per year
 ```{r}
-# calculate average Norm agree per year
 
-# Function to summarize data by year
+#Function to calculate the mean of current and previous years
 process_ICEWS_3 <- function(df_input) {
-  df_output <- df_input %>%
-    group_by(year) %>%
-    summarize(year_mean_NormAgr = mean(NormAgr))
-  return(df_output)
+
+    means <- c()
+  
+ for (year in unique(df_input$year)) {
+    # Calculate mean for the current year and all preceding years
+    value <- mean(df_input$NormAgr[df_input$year <= year])
+    
+    means <- c(means, value)
+ }
+  
+ # Create a year-level data frame
+ means_df <- data.frame(year = unique(df_input$year), year_mean_NormAgr = means)
+  
+ return(means_df)
 }
 
 # Summarize each dataset
@@ -925,10 +950,10 @@ df_input$dummy_agreement<-ifelse(df_input$NormAgr> df_input$year_mean_NormAgr,1,
 
 # keep var of interest
 df_output <- df_input[ , names(df_input) %in% c("iso3c",
-                                                                              "year",
-                                                                              "dummy_agreement",
-                                                                              "year_mean_NormAgr",
-                                                                              "NormAgr")]  
+                                                "year",
+                                                "dummy_agreement",
+                                                "year_mean_NormAgr",
+                                                "NormAgr")]  
   return(df_output)
 }
 
@@ -1195,38 +1220,121 @@ df_aid_sec<-df_Aiddata_sectoral
 df_aid_sec$Hum_plus_ER_aid_tot<-df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
 df_aid_sec$ln_Hum_plus_ER_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
 
-df_Aiddata_sectoral_small <- df_aid_sec %>% 
-  group_by(year) %>%
-  summarize(year_mean_Haid = mean(Humanitarian_Aid_tot, na.rm=T),
-            year_mean_ERaid = mean(Emergency_Response_tot, na.rm=T),
-            year_mean_Hum_plus_ERaid = mean(Hum_plus_ER_aid_tot, na.rm=T),
-            year_mean_ln_Hum_plus_ERaid = mean(ln_Hum_plus_ER_aid_tot, na.rm=T))
-
-## merge with emdat country month level dataset in order to identify declarations 
-df_aid_sec= left_join(df_aid_sec, df_Aiddata_sectoral_small, by = c("year"="year"))
-
-df_aid_sec$dummy_Haid<-ifelse(df_aid_sec$Humanitarian_Aid_tot> df_aid_sec$year_mean_Haid,1,0)
-df_aid_sec$dummy_ERaid<-ifelse(df_aid_sec$Emergency_Response_tot> df_aid_sec$year_mean_ERaid,1,0)
-df_aid_sec$dummy_Hplus_ERaid<-ifelse(df_aid_sec$Hum_plus_ER_aid_tot> df_aid_sec$year_mean_Hum_plus_ERaid,1,0)
-df_aid_sec$dummy_lnHplus_ERaid<-ifelse(df_aid_sec$ln_Hum_plus_ER_aid_tot> df_aid_sec$year_mean_ln_Hum_plus_ERaid,1,0)
-
-
-# keep var of interest
+# keep vars of interest
 df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
                                                       "year",
-                                                      "dummy_Haid",
-                                                      "dummy_ERaid",
-                                                      "dummy_Hplus_ERaid",
-                                                      "dummy_lnHplus_ERaid",
                                                       "Hum_plus_ER_aid_tot",
                                                       "Humanitarian_Aid_tot",
                                                       "Emergency_Response_tot",
-                                                      "ln_Hum_plus_ER_aid_tot",
-                                                      "year_mean_Haid",
-                                                      "year_mean_ERaid",
-                                                      "year_mean_Hum_plus_ERaid",
-                                                      "year_mean_ln_Hum_plus_ERaid")]
+                                                      "ln_Hum_plus_ER_aid_tot")]
+
 ```
+
+## Merge with emdat country year level dataset
+```{r}
+
+# Function to merge and find mean
+process_AID <- function(df_EMdat, df_aid_input) {
+
+# Identify columns containing the string "lag"
+lag_columns <- grep("lag", names(df_EMdat), value = TRUE)
+
+# Drop columns containing the string "lag"
+df <- df_EMdat[, !names(df_EMdat) %in% lag_columns]
+
+# List of dummy variables
+  dummy_vars <- grep("dummy", names(df), value = TRUE)
+  
+# Create the 'disaster' variable
+  df$disaster <- as.numeric(rowSums(df[dummy_vars]) > 0)
+
+# keep only disaster years
+  df<-subset(df,df$disaster>0)
+  
+  # drop useless vars
+List<-dummy_vars
+
+df<-drop_columns(df,List)
+  
+## merge dataframes
+df_AID_EMDAT= left_join(df, df_aid_input, by = c("iso3c" = "iso3c", "year"="year"))
+  
+  #list variables 
+  List<- c("Hum_plus_ER_aid_tot",
+           "Humanitarian_Aid_tot",
+           "Emergency_Response_tot",
+           "ln_Hum_plus_ER_aid_tot")
+  
+# Assign 0s
+  df_AID_EMDAT <- df_AID_EMDAT %>%
+    mutate(across(List, ~ replace_na(., 0)))
+
+# Delete years before 1995
+df_AID_EMDAT<-df_AID_EMDAT[df_AID_EMDAT$year > 1994,]
+  
+  return(df_AID_EMDAT)
+}
+
+df_AID_EMDAT_1ky<-process_AID(EM_dat_1k_processed_3,df_aid_sec)  
+df_AID_EMDAT_5ky<-process_AID(EM_dat_5k_processed_3,df_aid_sec)
+df_AID_EMDAT_50ky<-process_AID(EM_dat_50k_processed_3,df_aid_sec)
+
+```
+
+##### Calculating average aid sent during natural disaster year
+```{r}
+
+#Function to calculate the mean of current and previous years
+process_AID_2 <- function(df_input) {
+
+    means <- c()
+  
+ for (year in unique(df_input$year)) {
+    # Calculate mean for the current year and all preceding years
+    value <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year])
+    
+    means <- c(means, value)
+ }
+  
+ # Create a year-level data frame
+ means_df <- data.frame(year = unique(df_input$year), year_mean_Hum_plus_ERaid = means)
+  
+ return(means_df)
+}
+
+# Summarize each dataset
+df_AID_dis1k_y_small <- process_AID_2(df_AID_EMDAT_1ky)
+df_AID_dis5k_y_small <- process_AID_2(df_AID_EMDAT_5ky)
+df_AID_dis50k_y_small <- process_AID_2(df_AID_EMDAT_50ky)
+
+
+```
+
+
+##### Calculating wich countries received more sharing behaviour than the average
+```{r}
+
+# Function to summarize data by year
+process_AID_3 <- function(df_input,df_input_2) {
+  
+## merge mean with country year aid sec dataset 
+df_output= left_join(df_input_2, df_input, by = c("year"="year"))
+
+df_output$dummy_Hplus_ERaid<-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$year_mean_Hum_plus_ERaid,1,0)
+
+  return(df_output)
+}
+
+
+# Summarize each dataset
+df_AID_dis1k_y <- process_AID_3(df_AID_dis1k_y_small,df_AID_EMDAT_1ky)
+df_AID_dis5k_y <- process_AID_3(df_AID_dis5k_y_small,df_AID_EMDAT_5ky)
+df_AID_dis50k_y <- process_AID_3(df_AID_dis50k_y_small,df_AID_EMDAT_50ky)
+
+
+```
+
+
 
 ## Add UNOCHA to 2019
 ```{r}
@@ -1235,10 +1343,18 @@ unocha<-read_excel("UNOCHA Funding received.xlsx")
 unocha_long <-pivot_longer(unocha,2:11, names_to="year", values_to="Hum_plus_ER_aid_tot") %>%
   dplyr::rename(iso3c=`Country Code`) %>% 
   drop_na(Hum_plus_ER_aid_tot) %>%
-  filter(year>2014) %>% # from 2014
-  group_by(year) %>% # Generate annual mean - divide by ratio from analysis in compare-aid-data.R
-  mutate(year_mean_Hum_plus_ERaid = mean(Hum_plus_ER_aid_tot)/6.5) %>%
-  ungroup() 
+  filter(year>2014) # from 2014
+
+# Generate annual means
+   means <- c()
+ for (year in unique(unocha_long$year)) {
+    value <- mean(unocha_long$Hum_plus_ER_aid_tot[unocha_long$year <= year])
+    means <- c(means, value)
+ }  # Divide by ratio from analysis in compare-aid-data.R
+ means_df <- data.frame(year = unique(unocha_long$year), year_mean_Hum_plus_ERaid = means/3.9)
+
+ unocha_long <-unocha_long %>%
+   left_join(means_df)
 
 unocha_long$year<-as.numeric(unocha_long$year)
 
@@ -1248,16 +1364,10 @@ unocha_long$dummy_Hplus_ERaid<-ifelse(unocha_long$Hum_plus_ER_aid_tot>unocha_lon
 unocha_long <- unocha_long %>% 
   mutate(Emergency_Response_tot = NA,
          Humanitarian_Aid_tot= NA,
-         ln_Hum_plus_ER_aid_tot= NA,
-         year_mean_Haid = NA,
-            year_mean_ERaid = NA,
-            year_mean_ln_Hum_plus_ERaid = NA,
-            dummy_Haid = NA,
-            dummy_ERaid = NA,
-         dummy_lnHplus_ERaid = NA)
+         ln_Hum_plus_ER_aid_tot= NA)
  
 # Join to full aid data
-df_aid_sec_joined<-rbind(df_aid_sec %>% filter(year<2014),unocha_long)
+df_aid_sec_joined<-rbind(df_AID_dis50k_y %>% filter(year<2014),unocha_long)
 
 
 ```
@@ -1354,7 +1464,7 @@ p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
 print(p) + 
   ggtitle("Distribution of Normative Agreement and Sharing Behaviour, 1995-2019 \n(mean-centred by year)")
 
-ggsave("./plots/scatter_20240313.png", width=8,height=5)
+#ggsave("./plots/scatter_20240313.png", width=8,height=5)
 
 ```
 ## With labels

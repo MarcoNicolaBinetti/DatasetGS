@@ -28,9 +28,11 @@ mutate(mean_unocha=mean(unocha)) %>% ungroup()
 df<-full_join(df_aid_sec,unocha_long) %>%
   filter(year>2009,year<2020) %>%
   group_by(iso3c) %>%
-  mutate(n=sum(!is.na(unocha)))
+  mutate(n=sum(!is.na(unocha)))%>%
+  group_by(year) %>%
+  mutate(mean_aid=mean(Hum_plus_ER_aid_tot,na.r=T))
 
-# Check correlation with AidData in overlap years: 90 per cent!
+# Check correlation with AidData in overlap years - 0.8
 vars<- df[, sapply(df, is.numeric)]
 cor(vars,use = "complete.obs")
 
@@ -39,11 +41,34 @@ ggplot(subset(df,n>0)) +
   geom_line(aes(year,Hum_plus_ER_aid_tot,group=iso3c),colour="black") + 
   geom_line(aes(year,unocha,group=iso3c), colour="red") + facet_wrap(~iso3c)
 
-# Find ratio for mean aid level
+# Find ratio for mean aid level - 6.5
 unocha_short<-df %>%
   filter(year<2014)
 
-ratio<-mean(unocha_short$mean_unocha/unocha_short$year_mean_Hum_plus_ERaid, na.rm=T)
+ratio<-mean(unocha_short$mean_unocha/unocha_short$mean_aid, na.rm=T)
 
+
+# Join to disaster aid data
+df<-full_join(df_AID_dis50k_y,unocha_long) %>%
+  filter(year>2009,year<2014) %>%
+  group_by(iso3c) %>%
+  mutate(n=sum(!is.na(unocha)))
+
+means <- c()
+for (year in unique(df$year)) {
+  value <- mean(df$unocha[df$year <= year],na.rm=T)
+  means <- c(means, value)
+}  # Divide by ratio from analysis in compare-aid-data.R
+means_df <- data.frame(year = unique(df$year), mean_unocha2 = means)
+
+df <-df %>%
+  left_join(means_df)
+
+# Only 0.4 correlation with disaster aid...
+vars<- df[, sapply(df, is.numeric)]
+cor(vars,use = "complete.obs")
+
+# Find ratio for mean aid level - 3.9 (13.9 median)
+ratio<-mean(df$mean_unocha2/df$year_mean_Hum_plus_ERaid, na.rm=T)
 
 
