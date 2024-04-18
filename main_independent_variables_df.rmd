@@ -1,0 +1,393 @@
+---
+title: "main_independent_variables"
+author: "MNB"
+date: "4/18/2024"
+output: html_document
+---
+
+
+## Libraries
+```{r}
+library(Hmisc)
+library(data.table)
+
+library(R.utils)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(naniar)
+library(geosphere)
+library(zoo)
+library(stringr)
+library(tidytext)
+library(rworldmap)
+library(gridExtra)
+
+
+library(classInt)
+library("ggplot2")
+library(devtools)
+library(DT)
+library(dvmisc)
+library(ggpubr)
+library(gtools)
+library(foreign)
+#library(GADMTools)
+library(maps)
+
+
+library(spdep)
+library(lubridate)
+
+
+library(WDI)
+library(readxl)
+library(haven)
+
+
+library(reshape)
+
+library(geojsonio)
+
+library(countrycode)
+
+library(roll)
+```
+
+# Remove lists 
+```{r, include=FALSE}
+## remove lists
+rm(list=ls())
+```
+
+# Funtions 
+```{r}
+# calculate mode
+mode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+
+# exclude
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+drop_columns <- function(data, columns_to_drop) {
+  data <- data[, names(data) %!in% columns_to_drop, drop = FALSE]
+  return(data)
+}
+
+
+## drop NAs from column
+Drop_NA <- function(dataset, col_name){
+  col_name <- enquo(col_name)
+  dataset %>%
+    drop_na((!!col_name)) %>%
+    as.data.frame()
+}
+
+## create 1 and 2 period lags (grouping by a variable)
+Lag_12 <- function(dataset,col_name,x){
+  {
+    col_name <- enquo(col_name)
+    dataset %>%
+      group_by(!!col_name) %>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,1),
+                    .names = paste0("{.col}_lag_",1)))%>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,2),
+                    .names = paste0("{.col}_lag_",2)))
+    
+  } 
+}
+
+## create 1 and 2 period lags 
+Lag_12_ngby <- function(dataset,x){
+  {
+    dataset %>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,1),
+                    .names = paste0("{.col}_lag_",1)))%>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,2),
+                    .names = paste0("{.col}_lag_",2)))
+    
+  } 
+}
+
+## assign 0 to NAs
+Nas_to_0 <- function(dataset, x) {
+  
+  dataset %>% mutate_at(all_of(x), ~replace(., is.na(.), 0))
+  
+}
+
+
+download_and_create_folder <- function(file_name, desktop_path, folder_name, url) {
+  
+  # Combine the desktop path with the folder name
+  folder_path <- file.path(desktop_path,main_folder_name, folder_name)
+  
+  
+  # Check if the folder exists
+  if (!file.exists(folder_path)) {
+    # If the folder doesn't exist, create it
+    dir.create(folder_path)
+    cat("Folder", folder_path, "created.\n")
+  } else {
+    # If the folder already exists, do nothing
+    cat("Folder", folder_path, "already exists.\n")
+  }
+  
+  # Specify the file path where you want to save the downloaded file
+  file_path <- paste0(folder_path, "/", file_name)
+  
+  # Download the file
+  download.file(url, file_path, mode = "wb")
+}
+
+
+
+
+download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
+  
+  # Combine the desktop path with the folder name
+  folder_path <- file.path(desktop_path,main_folder_name, folder_name)
+  
+  
+  # Check if the folder exists
+  if (!file.exists(folder_path)) {
+    # If the folder doesn't exist, create it
+    dir.create(folder_path)
+    cat("Folder", folder_path, "created.\n")
+  } else {
+    # If the folder already exists, do nothing
+    cat("Folder", folder_path, "already exists.\n")
+  }
+  
+  # Specify the file path where you want to save the downloaded file
+  file_path <- folder_path
+  
+  # Download the file
+  download.file(url, destfile = "temp.zip", mode = "wb")
+  
+  # Unzip the downloaded file
+  unzip("temp.zip", exdir = file_path)
+  
+  # Delete the temporary zip file
+  file.remove("temp.zip")
+}
+
+```
+
+
+# Setting directory for datasets' folders
+```{r}
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+#desktop_path <- file.path("C:", "Users","krogers","Documents")
+```
+
+
+# Set main folder name
+```{r}
+# Define the name of the folder to check/create
+main_folder_name <- "DFGlobalLab"
+#main_folder_name <- "data"
+```
+
+# Creating folder for datasets
+```{r}
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, main_folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", main_folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
+}
+```
+
+# Importing and reshaping Dfs
+
+### Natural resource revenues
+
+#### Set subfolder name
+```{r}
+sub_folder_name<-"WorldBank"
+```
+
+#### Create folder
+```{r}
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", main_folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
+}
+```
+
+#### Importing dataset via API
+```{r}
+library(WDI)
+
+# WorldBank <- WDI(
+#   country = "all",
+#   indicator = c(
+#                 "Nat_rents"="NY.GDP.TOTL.RT.ZS",
+#                 "oil_rents"="NY.GDP.PETR.RT.ZS",
+#                 "gas_rents"="NY.GDP.NGAS.RT.ZS",
+#                 "minerals_rents"="NY.GDP.MINR.RT.ZS",
+#                 "GDP"="NY.GDP.MKTP.CD",
+#                 "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
+#                 "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
+#                 "Inflation"="FP.CPI.TOTL.ZG",
+#                 "Service_VA"="NV.SRV.TOTL.ZS",
+#                 "Manuf_VA"="NV.IND.MANF.ZS",
+#                 "Industry_VA"="NV.IND.TOTL.ZS",
+#                 "Agricolture_VA"="NV.AGR.TOTL.ZS",
+#                 "Pop_0_14"="SP.POP.0014.TO.ZS",
+#                 "Pop_tot"="SP.POP.TOTL",
+#                 "Pop_15_64"="SP.POP.1564.TO.ZS",
+#                 "Age_dep_ratio"="SP.POP.DPND",
+#                 "Age_dep_ratio_old"="SP.POP.DPND.OL",
+#                 "Age_dep_ratio_young"="SP.POP.DPND.YG",
+#                 "Inf_mort_rate"="SP.DYN.IMRT.IN",
+#                 "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
+#                 "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
+#                 "Trade"="NE.TRD.GNFS.ZS",
+#                 "Export_wb"="NE.EXP.GNFS.ZS",
+#                 "Import_wb"="NE.IMP.GNFS.ZS",
+#                 "FDI"="BX.KLT.DINV.WD.GD.ZS",
+#                 "FDI_out"="BX.KLT.DINV.WD.GD.ZS",
+#                 "Food_export"="TX.VAL.FOOD.ZS.UN",
+#                 "Food_import"="TM.VAL.FOOD.ZS.UN",
+#                 "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
+#                 "Urb_pop_grw_pct"="SP.URB.GROW",
+#                 "Rural_pop_grw_pct"="SP.RUR.TOTL.ZG",
+#                 "Rural_pop_pct"="SP.RUR.TOTL.ZS",
+#                 "Remittances_pct_GDP"="BX.TRF.PWKR.DT.GD.ZS",
+#                 "Cereal_prod"="AG.PRD.CREL.MT",
+#   ),
+#   start = 1990,
+#   end = 2020,
+#   extra = TRUE,
+#   cache = NULL,
+#   latest = NULL,
+#   language = "en"
+# )
+# 
+# #saving it
+# saveRDS(WorldBank, "WB/WorldBank.rds")
+
+#importing wb df
+df_WorldBank <- readRDS("WB/WorldBank.rds")
+
+#impute 0s to oda if NA for hicgh income countries
+
+# df_WorldBank$ODA_tot<-ifelse(is.na(df_WorldBank$ODA_tot) &
+#                                         df_WorldBank$income=="High income",
+#                                         0,
+#                                         df_WorldBank$ODA_tot)
+# 
+# df_WorldBank$ODA_tot_pCap<-ifelse(is.na(df_WorldBank$ODA_tot_pCap) &
+#                                         df_WorldBank$income=="High income",
+#                                         0,
+#                                         df_WorldBank$ODA_tot_pCap)
+# 
+# df_WorldBank$ODA_pct_GNI<-ifelse(is.na(df_WorldBank$ODA_pct_GNI) &
+#                                         df_WorldBank$income=="High income",
+#                                         0,
+#                                         df_WorldBank$ODA_pct_GNI)
+
+
+## assign ISO3
+names(df_WorldBank)[names(df_WorldBank) == "country"] <- "country_wb"
+df_WorldBank$iso3c <- countrycode(df_WorldBank$country_wb, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_WorldBank<-Drop_NA(df_WorldBank, iso3c)
+
+#sort dataframe
+df_WorldBank<-df_WorldBank[
+  with(df_WorldBank, order(iso3c, year)),
+]
+
+
+# create region numeric
+df_WorldBank$region_numeric <- as.factor(as.numeric( factor(df_WorldBank$region) ) )
+
+#drop countries that are not in the UCDP list
+df_WorldBank<-subset(df_WorldBank, df_WorldBank$iso3c %in%List_VDM_CNTRS)
+
+## drop iso3c NA
+df_WorldBank<-Drop_NA(df_WorldBank, iso3c)
+
+## reorder vars
+df_WorldBank<-df_WorldBank %>% relocate(iso3c,
+                                        region,
+                                        .after = country_wb)
+
+## clean 
+df_WorldBank <- df_WorldBank[ , ! names(df_WorldBank) %in% c("capital",
+                                                             "longitude",
+                                                             "latitude",
+                                                             "income", 
+                                                             "lending",
+                                                             "iso2c")]
+
+#list variables aiddata sectoral
+List<- colnames(df_WorldBank)[!colnames(df_WorldBank) %in% c("iso3c",
+                                                             "year",
+                                                             "region")]
+
+## lag variables of 1 to 2 years
+df_WorldBank<-Lag_12(df_WorldBank, iso3c, List)
+
+#correct names
+df_WorldBank<-janitor::clean_names(df_WorldBank)
+
+```
+
+
+
+### Humanitarian organizations
+```{r}
+
+```
+
+
+### Trade partners
+```{r}
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
