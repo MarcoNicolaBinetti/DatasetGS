@@ -1346,29 +1346,34 @@ unocha_long <-pivot_longer(unocha,2:11, names_to="year", values_to="Hum_plus_ER_
   filter(year>2014) # from 2014
 
 # Generate annual means
-   means <- c()
- for (year in unique(unocha_long$year)) {
-    value <- mean(unocha_long$Hum_plus_ER_aid_tot[unocha_long$year <= year])
-    means <- c(means, value)
- }  # Divide by ratio from analysis in compare-aid-data.R
- means_df <- data.frame(year = unique(unocha_long$year), year_mean_Hum_plus_ERaid = means/3.9)
+#   means <- c()
+# for (year in unique(unocha_long$year)) {
+#    value <- mean(unocha_long$Hum_plus_ER_aid_tot[unocha_long$year <= year])
+#    means <- c(means, value)
+# }  # Divide by ratio from analysis in compare-aid-data.R
+# means_df <- data.frame(year = unique(unocha_long$year), year_mean_Hum_plus_ERaid = means/3.9)
 
- unocha_long <-unocha_long %>%
-   left_join(means_df)
+# unocha_long <-unocha_long %>%
+#   left_join(means_df)
 
 unocha_long$year<-as.numeric(unocha_long$year)
 
-unocha_long$dummy_Hplus_ERaid<-ifelse(unocha_long$Hum_plus_ER_aid_tot>unocha_long$year_mean_Hum_plus_ERaid,1,0)
+#unocha_long$dummy_Hplus_ERaid<-ifelse(unocha_long$Hum_plus_ER_aid_tot>unocha_long$year_mean_Hum_plus_ERaid,1,0)
 
 # Fill in blank variables for bind 
 unocha_long <- unocha_long %>% 
   mutate(Emergency_Response_tot = NA,
          Humanitarian_Aid_tot= NA,
-         ln_Hum_plus_ER_aid_tot= NA)
+         ln_Hum_plus_ER_aid_tot= NA,
+         year_mean_Hum_plus_ERaid = NA)
  
-# Join to full aid data
-df_aid_sec_joined<-rbind(df_AID_dis50k_y %>% filter(year<2014),unocha_long)
+# Join to full aid data and fill mean threshold from 2013
+df_aid_sec_joined<-rbind(df_AID_dis50k_y %>% filter(year<2014),unocha_long) %>%
+  arrange(year) %>%
+  ungroup() %>%
+  fill(year_mean_Hum_plus_ERaid)
 
+df_aid_sec_joined$dummy_Hplus_ERaid<-ifelse(df_aid_sec_joined$Hum_plus_ER_aid_tot>df_aid_sec_joined$year_mean_Hum_plus_ERaid,1,0)
 
 ```
 
@@ -1489,7 +1494,7 @@ p+geom_text_repel(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,forc
   geom_point(data=lab,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
   ggtitle("Labelled distribution of Normative Agreement and Sharing Behaviour, 1995-2019")
 
-ggsave("./plots/labelled_scatter_20240314.png", width=8,height=5)
+#ggsave("./plots/labelled_scatter_20240314.png", width=8,height=5)
 
 
 lab<-df_g %>% 
@@ -1514,7 +1519,7 @@ p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),
   geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
   ggtitle("Asian Tsunami 2004")
 
-ggsave("./plots/2004_scatter_20240315.png", width=8,height=5)
+#ggsave("./plots/2004_scatter_20240315.png", width=8,height=5)
 
 lab<-df_g %>% 
   mutate(label=
@@ -1537,7 +1542,7 @@ p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),fo
   geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
   ggtitle("Asian Tsunami (2005 impact)")
 
-ggsave("./plots/2005_scatter_20240315.png", width=8,height=5)
+#ggsave("./plots/2005_scatter_20240315.png", width=8,height=5)
 
 ```
 
@@ -1585,7 +1590,7 @@ ggplot(df_t, aes(x = year, fill = GlobSol)) +
                               "Communitarian"))# Tilting the x-axis labels by 45 degrees
 
 
-ggsave("./plots/stacked_20240313.png", width=10,height=6)
+#ggsave("./plots/stacked_20240313.png", width=10,height=6)
 ```
 
 
@@ -1614,7 +1619,7 @@ ggplot(df_proportions, aes(x = year, y = proportion, fill = factor(GlobSol))) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
         panel.background = element_blank()) # Tilting the x-axis labels by 45 degrees
 
-ggsave("./plots/proportion_20240313.png", width=10,height=6)
+#ggsave("./plots/proportion_20240313.png", width=10,height=6)
 ```
 ```{r}
 sum<-df_g %>%
@@ -1630,7 +1635,7 @@ ggplot(sum) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
         panel.background = element_blank())
 
-ggsave("./plots/mean_NormAgr_20240313.png", width=10,height=6)
+#ggsave("./plots/mean_NormAgr_20240313.png", width=10,height=6)
   
 ggplot(sum) +
 geom_line(aes(year,year_mean_Hum_plus_ERaid/1000000), colour="#FD7702",size=1)+
@@ -1640,7 +1645,7 @@ geom_line(aes(year,year_mean_Hum_plus_ERaid/1000000), colour="#FD7702",size=1)+
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
         panel.background = element_blank())
 
-ggsave("./plots/mean_Sharing_20240313.png", width=10,height=6)
+#ggsave("./plots/mean_Sharing_20240313.png", width=10,height=6)
   
 
 ```
