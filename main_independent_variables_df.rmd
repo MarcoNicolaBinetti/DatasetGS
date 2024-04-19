@@ -183,40 +183,6 @@ download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
 ```
 
 
-# Setting directory for datasets' folders
-```{r}
-desktop_path <- file.path("C:", "Users", "marco", "Desktop")
-#desktop_path <- file.path("C:", "Users","krogers","Documents")
-```
-
-
-# Set main folder name
-```{r}
-# Define the name of the folder to check/create
-main_folder_name <- "DFGlobalLab"
-#main_folder_name <- "data"
-```
-
-# Creating folder for datasets
-```{r}
-
-# Combine the desktop path with the folder name
-folder_path <- file.path(desktop_path, main_folder_name)
-
-# Check if the folder exists
-if (!file.exists(folder_path)) {
-  # If the folder doesn't exist, create it
-  dir.create(folder_path)
-  cat("Folder", main_folder_name, "created on the desktop.\n")
-} else {
-  # If the folder already exists, do nothing
-  cat("Folder", main_folder_name, "already exists on the desktop.\n")
-}
-```
-
-
-# Importing and reshaping Dfs
-
 
 # Setting directory for datasets' folders
 ```{r}
@@ -402,7 +368,7 @@ WorldBank <- WDI(
                 "Remittances_pct_GDP"="BX.TRF.PWKR.DT.GD.ZS",
                 "Cereal_prod"="AG.PRD.CREL.MT"
   ),
-  start = 1985,
+  start = 1980,
   end = 2020,
   extra = TRUE,
   cache = NULL,
@@ -473,11 +439,6 @@ df_HOD_Dec_2021<-Drop_NA(df_HOD_Dec_2021, iso3c)
 df_HOD_Dec_2021$c_name<- countrycode(df_HOD_Dec_2021$COUNTHQ, "cown", "country.name")
 
 
-# Rearrange columns
-df_HOD_Dec_2021 <- df_HOD_Dec_2021[, c("name", "iso3c", setdiff(names(df_HOD_Dec_2021), c("name", "iso3c")))]
-df_HOD_Dec_2021 <- df_HOD_Dec_2021[, c("name", "c_name", setdiff(names(df_HOD_Dec_2021), c("name", "c_name")))]
-
-
 # keep vars of interest
 df_HOD_Dec_2021 <- df_HOD_Dec_2021[c("COUNTHQ",
                                        "iso3c",
@@ -514,7 +475,7 @@ df_HOD_Dec_2021_long$count <- 1
 ## collapse dataset
 df_HOD_cy <- df_HOD_Dec_2021_long %>%
   group_by(iso3c, year) %>%
-  summarise(count = sum(count))
+  summarise(count_HO = sum(count))
 
 # create lags
 List<-c("count")
@@ -522,13 +483,41 @@ df_HOD_cy <- Lag_12(df_HOD_cy, iso3c, List)
 
 
 ## subset years of interest
-df_HOD_cy<-subset(df_HOD_cy, df_HOD_cy$year>1990)
+df_HOD_cy<-subset(df_HOD_cy, df_HOD_cy$year>1980)
 
 ```
 
 
 ### Trade partners
+#### Set subfolder name
 ```{r}
+sub_folder_name<-"UN Comtrade"
+```
+
+#### Create folder
+```{r}
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", main_folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
+}
+```
+#### manually add to the folder the single csv files from the cloud
+
+
+#### import and compose dataset
+```{r}
+
+## set path
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "TradeData_")
 
 #import datasets
 ldf <- list() # creates a list
@@ -536,7 +525,7 @@ ldf <- list() # creates a list
 for (k in 1994:2021){
 
  year<-paste0("",k,"")
- File<-paste0("C:/Users/marco/Desktop/DFGlobalLab/UN Comtrade/TradeData_",year,".csv")
+ File<-paste0(file_path,year,".csv")
  #File<-paste0("C:/Users/krogers/Documents/data/ICEWS/events.",year,".tab")
  df<- read.csv(File, header = TRUE, quote = "")
  ldf[[k]]<-df
@@ -548,21 +537,137 @@ df_UNcomtrade <- do.call(rbind, ldf)
 # drop list
 rm(ldf)
 
-#correct entries (f*ck 2015,2016 datastes)
-## Define the columns to apply the transformation to
-List <- c("source_name", "source_sector", "source_country", "target_name", "target_country")
-
-## Apply gsub function to selected columns using mutate_at
-df_ICWES <- df_ICWES %>% 
-  mutate_at(vars(List), ~gsub("[^\\p{L}0-9\\s]", "", ., perl = TRUE))
+#saving it
+namefile<-"df_UNcomtrade.rds"
+folder_path_UNcom <- file.path(desktop_path,main_folder_name, sub_folder_name, namefile)
+saveRDS(df_UNcomtrade, folder_path_UNcom)
 
 ```
 
 
+#### clean and reshape
+##### import from main folder
+```{r}
+#importing wb df
+df_UNcomtrade <- readRDS(folder_path_UNcom)
+
+```
+
+##### Count number of export partners for each country
+```{r}
+## subset export partners
+df_UNcomtrade_export<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="X")
+
+# collapse dataset
+df_UNcomtrade_export <- df_UNcomtrade_export %>%
+    group_by(ReporterISO, RefYear) %>%
+    summarise(exp_part = n_distinct(PartnerCode))
+
+# left join with base year
+df_UNcomtrade_export <- left_join(df_Base_Y, df_UNcomtrade_export, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
+
+## subset years for which we have data
+df_UNcomtrade_export<-subset(df_UNcomtrade_export, df_UNcomtrade_export$year>1993)
 
 
+```
+
+##### Count number of import partners for each country
+```{r}
+## subset export partners
+df_UNcomtrade_import<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="M")
+
+# collapse dataset
+df_UNcomtrade_import <- df_UNcomtrade_import %>%
+    group_by(ReporterISO, RefYear) %>%
+    summarise(impo_part = n_distinct(PartnerCode))
+
+# left join with base year
+df_UNcomtrade_import <- left_join(df_Base_Y, df_UNcomtrade_import, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
+
+## subset years for which we have data
+df_UNcomtrade_import<-subset(df_UNcomtrade_import, df_UNcomtrade_import$year>1993)
+
+```
+
+##### Count number of trade partners for each country
+```{r}
+
+# collapse dataset
+df_UNcomtrade_imp_exp <- df_UNcomtrade %>%
+    group_by(ReporterISO, RefYear) %>%
+    summarise(trade_part = n_distinct(PartnerCode))
+
+# left join with base year
+df_UNcomtrade_imp_exp <- left_join(df_Base_Y, df_UNcomtrade_imp_exp, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
+
+## subset years for which we have data
+df_UNcomtrade_imp_exp<-subset(df_UNcomtrade_imp_exp, df_UNcomtrade_imp_exp$year>1993)
+
+```
+
+##### Combine export and import
+```{r}
+# left join dfs
+df_UNcomtrade_main <- left_join(df_UNcomtrade_export, df_UNcomtrade_import, by = c("year" = "year","country" = "country", "iso3c" = "iso3c"))
+df_UNcomtrade_main <- left_join(df_UNcomtrade_main, df_UNcomtrade_imp_exp, by = c("year" = "year","country" = "country", "iso3c" = "iso3c"))
+
+#list variables aiddata sectoral
+List<- colnames(df_UNcomtrade_main)[!colnames(df_UNcomtrade_main) %in% c("iso3c",
+                                                             "year",
+                                                             "country")]
+
+## lag variables of 1 to 2 years
+df_UNcomtrade_main<-Lag_12(df_UNcomtrade_main, iso3c, List)
+
+```
 
 
+# Merge datasets main independent and controls
+```{r}
+## add world bank variables
+df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
+## add humanitarian dfs
+df_Ind_var <- left_join(df_Ind_var, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
+
+```
+
+# Export
+## Set subfolder name
+```{r}
+sub_folder_name<-"Compiled"
+```
+
+## Create folder
+```{r}
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", main_folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
+}
+```
+
+## Export file
+```{r}
+#saving it
+namefile<-"df_Ind_var"
+folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+saveRDS(WorldBank, folder_path_wb)
+```
+
+
+# Exit
+```{r}
+
+```
 
 
 
