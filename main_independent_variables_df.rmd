@@ -327,7 +327,7 @@ if (!file.exists(folder_path)) {
 }
 ```
 
-#### Importing dataset via API
+#### Importing WB dataset via API
 ```{r}
 library(WDI)
 
@@ -375,14 +375,21 @@ WorldBank <- WDI(
   latest = NULL,
   language = "en"
 )
+```
 
+#### Setting path to save DF
+```{r}
 #saving it
 namefile<-"WorldBank.rds"
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+```
+
+#### Saving DF
+```{r}
 saveRDS(WorldBank, folder_path_wb)
 ```
 
-#### importing DF from folder
+#### Importing DF from folder
 ```{r}
 #importing wb df
 df_WorldBank <- readRDS(folder_path_wb)
@@ -478,7 +485,7 @@ df_HOD_cy <- df_HOD_Dec_2021_long %>%
   summarise(count_HO = sum(count))
 
 # create lags
-List<-c("count")
+List<-c("count_HO")
 df_HOD_cy <- Lag_12(df_HOD_cy, iso3c, List)
 
 
@@ -526,7 +533,6 @@ for (k in 1994:2021){
 
  year<-paste0("",k,"")
  File<-paste0(file_path,year,".csv")
- #File<-paste0("C:/Users/krogers/Documents/data/ICEWS/events.",year,".tab")
  df<- read.csv(File, header = TRUE, quote = "")
  ldf[[k]]<-df
 
@@ -658,9 +664,10 @@ if (!file.exists(folder_path)) {
 ## Export file
 ```{r}
 #saving it
-namefile<-"df_Ind_var"
+namefile<-"df_Ind_var.rds"
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
-saveRDS(WorldBank, folder_path_wb)
+saveRDS(df_Ind_var, folder_path_wb)
+
 ```
 
 

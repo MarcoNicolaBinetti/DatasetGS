@@ -1,0 +1,532 @@
+---
+title: "analisi preliminare"
+author: "MNB"
+date: "4/25/2024"
+output: html_document
+---
+
+# load libraries
+```{r}
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(naniar)
+library(ggplot2)
+library(nnet)
+library(stargazer)
+library(brms)
+```
+
+
+# Remove lists 
+```{r, include=FALSE}
+## remove lists
+rm(list=ls())
+```
+
+# Functions
+```{r}
+# exclude
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+# Function to scale a variable to the 0-1 range
+scale_0_1 <- function(x) {
+  (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+}
+
+```
+
+
+# Import DFs
+## Set folders
+```{r}
+## set url
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+main_folder_name <- "DFGlobalLab"
+sub_folder_name <- "Compiled"
+```
+
+## Import Globsol dataset
+```{r}
+# set DF
+DF<-c("globsol_20240313.rds")
+# load DF
+Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
+# importing DF 
+df_Globsol <- readRDS(Df_path)
+
+```
+
+## Import Independent and control variables
+```{r}
+# set DF
+DF<-c("df_ind_var.rds")
+# load DF
+Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
+# importing DF 
+df_IndVars <- readRDS(Df_path)
+
+```
+
+# Merge dfs
+```{r}
+df_full <- left_join(df_Globsol, df_IndVars, by = c("year" = "year", "iso3c" = "iso3c"))
+
+## remove useless vars
+# keep var of interest
+df_full <- df_full[ , names(df_full) %!in% c("country.x",
+                                            "country.y",
+                                            "country_wb",
+                                            "disaster")] 
+```
+
+# start analysis
+## preprocess data
+```{r}
+
+## select vars if interest
+df_model_data <- df_full[ , names(df_full) %in% c("GlobSol",
+                                                   "count_HO_lag_1",
+                                                   "nat_rents_lag_1",
+                                                   "trade_part_lag_1",
+                                                   "pop_tot_lag_1",
+                                                   "gdp_lag_1",
+                                                   "inflation_lag_1",
+                                                   "food_import",
+                                                   "urb_pop_pct",
+                                                  "oil_rents_lag_1",
+                                                  "gas_rents_lag_1",
+                                                  "minerals_rents_lag_1",
+                                                  "trade_lag_1",
+                        "iso3c",
+                        "year")] 
+
+## drop NAs
+df_model_data <- na.omit(df_model_data)
+
+# List of variable names to scale
+variables_to_scale <- c("count_HO_lag_1",
+                        "nat_rents_lag_1",
+                        "trade_part_lag_1",
+                        "pop_tot_lag_1",
+                        "gdp_lag_1",
+                        "inflation_lag_1",
+                        "food_import",
+                        "urb_pop_pct",
+                        "trade_lag_1",
+                                                  "oil_rents_lag_1",
+                                                  "gas_rents_lag_1",
+                                                  "minerals_rents_lag_1")
+
+# Apply  scaling function to the specified variables
+df_scaled<-df_model_data
+df_scaled[variables_to_scale] <- lapply(df_scaled[variables_to_scale], scale_0_1)
+
+## set fixed effects
+df_scaled$iso3c <- as.factor(df_scaled$iso3c)
+df_scaled$year <- as.factor(df_scaled$year)
+
+# Check the distribution of the Globsol variable
+table(df_scaled$GlobSol)
+
+#add index column to data frame
+df_scaled$index <- 1:nrow(df_scaled)
+```
+
+## Export file
+```{r}
+#saving it
+namefile<-"df_full.csv"
+folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+write.csv(df_scaled, folder_path_wb, row.names = FALSE)  # row.names = FALSE to exclude row indices
+
+# List of column names to pivot
+pivot_cols <- c("count_HO_lag_1",
+                        "nat_rents_lag_1",
+                        "trade_part_lag_1",
+                        "pop_tot_lag_1",
+                        "gdp_lag_1",
+                        "inflation_lag_1",
+                        "food_import",
+                        "urb_pop_pct",
+                        "trade_lag_1",
+                        "oil_rents_lag_1",
+                        "gas_rents_lag_1",
+                        "minerals_rents_lag_1")
+
+# Pivot from wide to long
+df_long <- df_scaled %>%
+  pivot_longer(
+    cols = all_of(pivot_cols),  # Use the list of column names
+    names_to = "Variable",      # Name for the reshaped column
+    values_to = "Value"         # Name for the values in the reshaped column
+  )
+
+
+```
+
+
+
+```{r}
+# Sample wide dataset
+df_scaled <- data.frame(
+  ID = 1:4,
+  GlobSol = c("A", "B", "C", "D"),  # Categorical variable
+  Var1 = c(10, 20, 30, 40),
+  Var2 = c(15, 25, 35, 45),
+  Var3 = c(20, 30, 40, 50)
+)
+
+print(df_scaled)
+
+# List of column names to pivot
+pivot_cols <- c("Var1", "Var2", "Var3")
+
+# Pivot using a list of column names
+df_long <- df_scaled %>%
+  pivot_longer(
+    cols = all_of(pivot_cols),  # Use the list of column names
+    names_to = "Variable",      # Name for the reshaped column
+    values_to = "Value"         # Name for the values in the reshaped column
+  )
+
+print(df_long)
+```
+
+
+## Test nested models
+
+```{r}
+df_long <- mlogit.data(df_scaled, 
+                       choice = "GlobSol", 
+                       shape = "wide", 
+                       id.var = "index", 
+                       varying = NULL, 
+                       sep = "")
+
+nesting_structure <- list(
+  Nest1 = c("1", "2"), 
+  Nest2 = c("3", "4")
+)
+
+head(df_long)
+
+model <- mlogit(GlobSol ~ count_HO_lag_1 + nat_rents_lag_1 + trade_lag_1, 
+                data = df_long, 
+                nests = nesting_structure)
+
+# Display summary
+summary(model)
+
+
+cor_matrix <- cor(df_scaled[, c("variable1", "variable2", "variable3")], use = "complete.obs")
+
+print(cor_matrix)
+```
+
+
+
+
+
+
+
+## Run multinomial model
+```{r}
+# Estimate the multinomial logistic regression model
+multinom_model1 <- multinom(GlobSol ~ count_HO_lag_1 + nat_rents_lag_1 + trade_lag_1 + pop_tot_lag_1, data = df_scaled)
+multinom_model2 <- multinom(GlobSol ~ count_HO_lag_1 + nat_rents_lag_1 + trade_lag_1 + pop_tot_lag_1, data = df_scaled)
+multinom_model3 <- multinom(GlobSol ~ count_HO_lag_1 + nat_rents_lag_1 + trade_lag_1 + pop_tot_lag_1 + urb_pop_pct + gdp_lag_1 + inflation_lag_1 + food_import, data = df_scaled)
+
+
+
+# Get coefficients and exponentiate them to get odds ratios
+#exp(coef(multinom_model))
+```
+# present results with stargazer
+```{r}
+stargazer(
+  multinom_model,
+  type = "text",  # Output format ("text", "latex", "html")
+  title = "Summary of Multinomial Model",
+  align = TRUE,  # Align columns
+  no.space = TRUE,  # Remove extra spaces
+  digits = 3,  # Number of decimal places
+  header = FALSE  # Exclude the header line (helpful for console output)
+)
+```
+
+
+```{r}
+# Create a comparison table with stargazer
+stargazer(
+  multinom_model1, multinom_model2, multinom_model3,
+  type = "text",  # or "latex" or "html" for different output formats
+  title = "Comparison of Multinomial Models",
+  align = TRUE,
+  no.space = TRUE,
+  digits = 3,  # Number of decimal places to display
+  column.labels = c("Model 1", "Model 2", "Model 3"),  # Label each model
+  omit.stat = c("aic", "bic")  # Optionally omit some statistics for cleaner output
+)
+```
+
+
+
+
+
+
+```{r}
+## Run multinomial model
+# Estimate the multinomial logistic regression model
+multinom_model1 <- multinom(GlobSol ~ count_HO_lag_1 + oil_rents_lag_1 + trade_part_lag_1 + pop_tot_lag_1 + urb_pop_pct + gdp_lag_1 + inflation_lag_1 + food_import, data = df_scaled)
+multinom_model2 <- multinom(GlobSol ~ count_HO_lag_1 + gas_rents_lag_1 + trade_part_lag_1 + pop_tot_lag_1 + urb_pop_pct + gdp_lag_1 + inflation_lag_1 + food_import, data = df_scaled)
+multinom_model3 <- multinom(GlobSol ~ count_HO_lag_1 + minerals_rents_lag_1 + trade_part_lag_1 + pop_tot_lag_1 + urb_pop_pct + gdp_lag_1 + inflation_lag_1 + food_import, data = df_scaled)
+
+
+# Display the model summary
+summary(multinom_model)
+
+# Create a comparison table with stargazer
+stargazer(
+  multinom_model1, multinom_model2, multinom_model3,
+  type = "text",  # or "latex" or "html" for different output formats
+  title = "Comparison of Multinomial Models",
+  align = TRUE,
+  no.space = TRUE,
+  digits = 3,  # Number of decimal places to display
+  column.labels = c("Model 1", "Model 2", "Model 3"),  # Label each model
+  omit.stat = c("aic", "bic")  # Optionally omit some statistics for cleaner output
+)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+## run multilevel multinomial model
+```{r}
+# Fit a multilevel multinomial model
+model <- brm(
+  GlobSol ~ count_HO_lag_1 + nat_rents_lag_1 + trade_part_lag_1 + pop_tot_lag_1 + gdp_lag_1 +
+           (1 | iso3c) + (1 | year),  # Random intercepts for 'iso3c' and 'year'
+  data = df_scaled,
+  family = categorical(),  # Indicates multinomial logistic regression
+  chains = 2,  # Number of MCMC chains
+  cores = 1,  # Number of cores for parallel processing
+  iter = 2000,  # Number of iterations per chain
+  warmup = 500  # Number of warm-up iterations
+)
+
+# Display the model summary
+summary(model)
+```
+
+```{r}
+# Extract coefficients from the model summary
+model_summary <- summary(model)
+
+# Only fixed effects coefficients
+fixed_effects <- model_summary$fixed
+
+# Use stargazer to create a formatted table
+stargazer(
+  fixed_effects,
+  type = "text",  # or "latex" or "html"
+  title = "Multilevel Multinomial Model Results",
+  summary = FALSE,  # Disable summary output for custom tables
+  digits = 3,  # Control decimal places
+  rownames = TRUE
+)
+```
+
+
+
+
+
+# plot marginal effects
+```{r}
+df<-df_scaled
+# Create a new data frame for prediction
+# You can use sequences, random data, or actual data points for input
+newdata <- data.frame(
+  count_HO_lag_1 = seq(min(df$count_HO_lag_1), max(df$count_HO_lag_1), length.out = length(df$count_HO_lag_1)),
+  nat_rents_lag_1 = mean(df$nat_rents_lag_1),
+  trade_part_lag_1 = mean(df$trade_part_lag_1),
+  pop_tot_lag_1 = mean(df$pop_tot_lag_1),
+  gdp_lag_1 = mean(df$gdp_lag_1)
+)
+
+# Generate predicted probabilities for each category
+predictions <- predict(multinom_model, newdata, "probs")
+
+
+# Create a data frame with predictions
+plot_data <- cbind(newdata, predictions)
+
+# Load ggplot2 for visualization
+library(ggplot2)
+
+# Plot the predicted probabilities
+ggplot(plot_data, aes(x = count_HO_lag_1)) +
+  geom_line(aes(y = `1`, color = "Category 1")) +
+  geom_line(aes(y = `2`, color = "Category 2")) +
+  geom_line(aes(y = `3`, color = "Category 3")) +
+  geom_line(aes(y = `4`, color = "Category 4")) +
+  labs(y = "Predicted Probability", x = "count_HO_lag_1", color = "Category") +
+  theme_minimal() +
+  ggtitle("Predicted Probabilities by count_HO_lag_1")
+```
+
+
+
+
+```{r}
+# Load necessary libraries
+library(boot)
+library(ggplot2)
+library(dplyr)
+
+# Define a function to predict with a given dataset
+bootstrap_predict <- function(df, model, newdata) {
+  # Fit the model on the bootstrapped sample
+  multinom_model <- multinom(GlobSol ~ ., data = df)
+  # Predict on the new data
+  predict(multinom_model, newdata, "probs")
+}
+
+# Number of bootstrap iterations
+n_iterations = 4000
+
+# Create a list to store predictions
+bootstrap_predictions <- list()
+
+# Run the bootstrap process
+for (i in 1:n_iterations) {
+  # Sample the data with replacement
+  boot_sample <- df[sample(nrow(df), replace = TRUE),]
+  # Get predictions
+  bootstrap_predictions[[i]] = bootstrap_predict(boot_sample, multinom_model, newdata)
+}
+
+# Combine the bootstrap predictions into a data frame
+bootstrap_results <- do.call(cbind, bootstrap_predictions)
+
+# Calculate confidence intervals
+confidence_intervals <- apply(bootstrap_results, 1, function(x) {
+  quantile(x, c(0.025, 0.975))
+})
+
+# Create a data frame for confidence intervals
+ci_data <- data.frame(
+  lower = confidence_intervals[1,],
+  upper = confidence_intervals[2,],
+  count_HO_lag_1 = newdata$count_HO_lag_1
+)
+
+# Plot the predicted probabilities with confidence intervals
+ggplot(plot_data, aes(x = count_HO_lag_1)) +
+  geom_line(aes(y = `1`, color = "Category 1")) +
+  # Add confidence intervals with geom_ribbon
+  geom_ribbon(aes(ymin = ci_data$lower, ymax = ci_data$upper), alpha = 0.2) +
+  labs(y = "Predicted Probability", x = "count_HO_lag_1", color = "Category") +
+  theme_minimal() +
+  ggtitle("Predicted Probabilities with Confidence Intervals by count_HO_lag_1")
+
+```
+
+
+```{r}
+## trade_part_lag_1
+# You can use sequences, random data, or actual data points for input
+newdata <- data.frame(
+  trade_part_lag_1 = seq(min(df$trade_part_lag_1), max(df$trade_part_lag_1), length.out = length(df$iso3c)),
+  count_HO_lag_1 = mean(df$count_HO_lag_1),
+  nat_rents_lag_1 = mean(df$nat_rents_lag_1),
+  pop_tot_lag_1 = mean(df$pop_tot_lag_1),
+  gdp_lag_1 = mean(df$gdp_lag_1)
+)
+
+# Generate predicted probabilities for each category
+predictions <- predict(multinom_model, newdata, "probs")
+
+
+# Create a data frame with predictions
+plot_data <- cbind(newdata, predictions)
+
+# Load ggplot2 for visualization
+library(ggplot2)
+
+# Plot the predicted probabilities
+ggplot(plot_data, aes(x = trade_part_lag_1)) +
+  geom_line(aes(y = `1`, color = "Category 1")) +
+  geom_line(aes(y = `2`, color = "Category 2")) +
+  geom_line(aes(y = `3`, color = "Category 3")) +
+  geom_line(aes(y = `4`, color = "Category 4")) +
+  labs(y = "Predicted Probability", x = "trade_part_lag_1", color = "Category") +
+  theme_minimal() +
+  ggtitle("Predicted Probabilities by trade_part_lag_1")
+
+```
+
+
+```{r}
+## nat rents
+# You can use sequences, random data, or actual data points for input
+newdata <- data.frame(
+  nat_rents_lag_1 = seq(min(df$nat_rents_lag_1), max(df$nat_rents_lag_1), length.out = length(df$iso3c)),
+  count_HO_lag_1 = mean(df$count_HO_lag_1),
+  trade_part_lag_1 = mean(df$trade_part_lag_1),
+  pop_tot_lag_1 = mean(df$pop_tot_lag_1),
+  gdp_lag_1 = mean(df$gdp_lag_1)
+)
+
+# Generate predicted probabilities for each category
+predictions <- predict(multinom_model, newdata, "probs")
+
+
+# Create a data frame with predictions
+plot_data <- cbind(newdata, predictions)
+
+# Load ggplot2 for visualization
+library(ggplot2)
+
+# Plot the predicted probabilities
+ggplot(plot_data, aes(x = nat_rents_lag_1)) +
+  geom_line(aes(y = `1`, color = "Category 1")) +
+  geom_line(aes(y = `2`, color = "Category 2")) +
+  geom_line(aes(y = `3`, color = "Category 3")) +
+  geom_line(aes(y = `4`, color = "Category 4")) +
+  labs(y = "Predicted Probability", x = "nat_rents_lag_1", color = "Category") +
+  theme_minimal() +
+  ggtitle("Predicted Probabilities by nat_rents_lag_1")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
