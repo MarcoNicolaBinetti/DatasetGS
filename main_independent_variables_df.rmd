@@ -303,7 +303,10 @@ df_Base_YM<-janitor::clean_names(df_Base_YM)
 
 ```
 
+
+
 ### Natural resource revenues - and some more control variables from WB dataset
+
 
 #### Set subfolder name
 ```{r}
@@ -329,52 +332,52 @@ if (!file.exists(folder_path)) {
 
 #### Importing WB dataset via API
 ```{r}
-library(WDI)
 
-WorldBank <- WDI(
-  country = "all",
-  indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
-                "oil_rents"="NY.GDP.PETR.RT.ZS",
-                "gas_rents"="NY.GDP.NGAS.RT.ZS",
-                "minerals_rents"="NY.GDP.MINR.RT.ZS",
-                "GDP"="NY.GDP.MKTP.CD",
-                "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
-                "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
-                "Inflation"="FP.CPI.TOTL.ZG",
-                "Service_VA"="NV.SRV.TOTL.ZS",
-                "Manuf_VA"="NV.IND.MANF.ZS",
-                "Industry_VA"="NV.IND.TOTL.ZS",
-                "Agricolture_VA"="NV.AGR.TOTL.ZS",
-                "Pop_0_14"="SP.POP.0014.TO.ZS",
-                "Pop_tot"="SP.POP.TOTL",
-                "Pop_15_64"="SP.POP.1564.TO.ZS",
-                "Age_dep_ratio"="SP.POP.DPND",
-                "Age_dep_ratio_old"="SP.POP.DPND.OL",
-                "Age_dep_ratio_young"="SP.POP.DPND.YG",
-                "Inf_mort_rate"="SP.DYN.IMRT.IN",
-                "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
-                "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
-                "Trade"="NE.TRD.GNFS.ZS",
-                "Export_wb"="NE.EXP.GNFS.ZS",
-                "Import_wb"="NE.IMP.GNFS.ZS",
-                "FDI"="BX.KLT.DINV.WD.GD.ZS",
-                "FDI_out"="BX.KLT.DINV.WD.GD.ZS",
-                "Food_export"="TX.VAL.FOOD.ZS.UN",
-                "Food_import"="TM.VAL.FOOD.ZS.UN",
-                "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
-                "Urb_pop_grw_pct"="SP.URB.GROW",
-                "Rural_pop_grw_pct"="SP.RUR.TOTL.ZG",
-                "Rural_pop_pct"="SP.RUR.TOTL.ZS",
-                "Remittances_pct_GDP"="BX.TRF.PWKR.DT.GD.ZS",
-                "Cereal_prod"="AG.PRD.CREL.MT"
-  ),
-  start = 1980,
-  end = 2020,
-  extra = TRUE,
-  cache = NULL,
-  latest = NULL,
-  language = "en"
-)
+# WorldBank <- WDI(
+#   country = "all",
+#   indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
+#                 "oil_rents"="NY.GDP.PETR.RT.ZS",
+#                 "gas_rents"="NY.GDP.NGAS.RT.ZS",
+#                 "minerals_rents"="NY.GDP.MINR.RT.ZS",
+#                 "GDP"="NY.GDP.MKTP.CD",
+#                 "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
+#                 "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
+#                 "Inflation"="FP.CPI.TOTL.ZG",
+#                 "Service_VA"="NV.SRV.TOTL.ZS",
+#                 "Manuf_VA"="NV.IND.MANF.ZS",
+#                 "Industry_VA"="NV.IND.TOTL.ZS",
+#                 "Agricolture_VA"="NV.AGR.TOTL.ZS",
+#                 "Pop_0_14"="SP.POP.0014.TO.ZS",
+#                 "Pop_tot"="SP.POP.TOTL",
+#                 "Pop_15_64"="SP.POP.1564.TO.ZS",
+#                 "Age_dep_ratio"="SP.POP.DPND",
+#                 "Age_dep_ratio_old"="SP.POP.DPND.OL",
+#                 "Age_dep_ratio_young"="SP.POP.DPND.YG",
+#                 "Inf_mort_rate"="SP.DYN.IMRT.IN",
+#                 "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
+#                 "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
+#                 "Trade"="NE.TRD.GNFS.ZS",
+#                 "Export_wb"="NE.EXP.GNFS.ZS",
+#                 "Import_wb"="NE.IMP.GNFS.ZS",
+#                 "FDI"="BX.KLT.DINV.WD.GD.ZS",
+#                 "FDI_out"="BX.KLT.DINV.WD.GD.ZS",
+#                 "Food_export"="TX.VAL.FOOD.ZS.UN",
+#                 "Food_import"="TM.VAL.FOOD.ZS.UN",
+#                 "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
+#                 "Urb_pop_grw_pct"="SP.URB.GROW",
+#                 "Rural_pop_grw_pct"="SP.RUR.TOTL.ZG",
+#                 "Rural_pop_pct"="SP.RUR.TOTL.ZS",
+#                 "Remittances_pct_GDP"="BX.TRF.PWKR.DT.GD.ZS",
+#                 "Cereal_prod"="AG.PRD.CREL.MT"
+#   ),
+#   start = 1980,
+#   end = 2020,
+#   extra = TRUE,
+#   cache = NULL,
+#   latest = NULL,
+#   language = "en"
+# )
+
 ```
 
 #### Setting path to save DF
@@ -386,7 +389,7 @@ folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, nam
 
 #### Saving DF
 ```{r}
-saveRDS(WorldBank, folder_path_wb)
+# saveRDS(WorldBank, folder_path_wb)
 ```
 
 #### Importing DF from folder
@@ -425,6 +428,133 @@ df_WorldBank<-Lag_12(df_WorldBank, iso3c, List)
 
 #correct names
 df_WorldBank<-janitor::clean_names(df_WorldBank)
+
+```
+
+### V-Dem dataset for additioal polity controls
+
+#### Set subfolder name
+```{r}
+sub_folder_name<-"Vdem"
+```
+
+#### Create folder
+```{r}
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", main_folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
+}
+```
+#### Add to the folder the videm dataset manually
+#### Import dataset
+```{r}
+namefile<-c("V-Dem-CY-Full+Others-v14.rds")
+folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+
+#import df_Vdem
+Vdem<- readRDS(folder_path)
+df_Vdem<-Vdem
+
+
+```
+
+#### SUbset variables of interest
+```{r}
+
+
+#subset years
+df_Vdem<-subset(df_Vdem, df_Vdem$year>=1980)
+
+#rename columns
+names(df_Vdem)[names(df_Vdem) == "country_text_id"] <- "iso3c"
+names(df_Vdem)[names(df_Vdem) == "country_name"] <- "country_Vdem"
+
+#subset variables of interests
+df_Vdem_s<-df_Vdem[c("iso3c",
+                   "year",
+                   "v2clstown",
+                   "v2xnp_regcorr",
+                   "v2x_regime_amb",
+                   "v2cacamps",
+                   "e_gdp",
+                   "e_gdppc",
+                   "e_polity2",
+                   "v2x_ex_military",
+                   "v2dlencmps",
+                   "v2svdomaut",
+                   "e_regionpol_6C",
+                   "v2xcs_ccsi",
+                   "v2xnp_client",
+                   "v2x_pubcorr",
+                   "v2excrptps",
+                   "v2exthftps",
+                   "v2svstterr",
+                   "v2stfisccap",
+                   "v2stcritapparm",
+                   "v2x_corr",
+                   "v2x_execorr",
+                   "e_total_fuel_income_pc",
+                   "v2x_polyarchy",
+                   "v2x_libdem",
+                   "v2x_partipdem",
+                   "v2x_delibdem",
+                   "v2x_egaldem")]
+
+
+#rename columns
+names(df_Vdem_s)[names(df_Vdem_s) == "e_total_fuel_income_pc"] <- "fuel_income"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_polyarchy"] <- "electoral_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_libdem"] <- "liberal_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_partipdem"] <- "part_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_delibdem"] <- "delib_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_egaldem"] <- "egal_demo"
+
+
+
+names(df_Vdem_s)[names(df_Vdem_s) == "v2clstown"] <- "state_ownership"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2xnp_regcorr"] <- "regime_corruption"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_corr"] <- "political_corr"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_execorr"] <- "executive_corr"
+
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_regime_amb"] <- "regime_type"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2cacamps"] <- "political_polarization"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_gdp"] <- "gdp_vdem"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_gdppc"] <- "gdp_pc_vdem"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_polity2"] <- "polity2"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_ex_military"] <- "military_centr"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2dlencmps"] <- "spending"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2svdomaut"] <- "autonomy"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_regionpol_6C"] <- "region_pg"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2xcs_ccsi"] <- "civil_soc"
+
+names(df_Vdem_s)[names(df_Vdem_s) == "v2xnp_client"] <- "clientelism_index"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_pubcorr"] <- "pub_sect_corr_index"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2excrptps"] <- "pub_sect_corr_exch"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2exthftps"] <- "pub_sect_theft"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2svstterr"] <- "state_auth_terr"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2stfisccap"] <- "revenues_source"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2stcritapparm"] <- "appointment_in_ssfs"
+
+
+#list variables aiddata sectoral
+List<- colnames(df_Vdem_s)[!colnames(df_Vdem_s) %in% c("iso3c",
+                                                       "year",
+                                                       "region")]
+
+                           ## lag variables of 1 to 2 years
+df_Vdem_s<-Lag_12(df_Vdem_s, iso3c, List)
+
+#correct names
+df_Vdem_s<-janitor::clean_names(df_Vdem_s)
 
 ```
 
@@ -635,6 +765,8 @@ df_UNcomtrade_main<-Lag_12(df_UNcomtrade_main, iso3c, List)
 df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add humanitarian dfs
 df_Ind_var <- left_join(df_Ind_var, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
+## add vdem indexes
+df_Ind_var <- left_join(df_Ind_var, df_Vdem_s, by = c("year" = "year", "iso3c" = "iso3c"))
 
 ```
 
