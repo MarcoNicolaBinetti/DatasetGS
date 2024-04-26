@@ -168,8 +168,53 @@ write.csv(df_scaled, folder_path_wb, row.names = FALSE)  # row.names = FALSE to 
 
 ```
 
+## Prepare for Nested logit
+```{r}
+## create choice variaböe
+data <- data.frame(
+  GlobSol_mode = c(1:4)
+)
+data$dummy<-1
 
-## Run multinomial model
+
+## add dummy to main df
+df_scaled$dummy<-1
+
+## create reshaped dataset for nested model
+df_scaled_nested <- left_join(df_scaled, data, by = c("dummy" = "dummy"))
+
+## creatign outcome varible
+df_scaled_nested$GlobSol_outcome_text<-"no"
+df_scaled_nested$GlobSol_outcome_text<-ifelse(df_scaled_nested$GlobSol==df_scaled_nested$GlobSol_mode,"yes","no")
+
+## creatign outcome varible
+df_scaled_nested$GlobSol_outcome<-0
+df_scaled_nested$GlobSol_outcome<-ifelse(df_scaled_nested$GlobSol==df_scaled_nested$GlobSol_mode,1,0)
+
+
+
+## drop old useless variables
+df_scaled_nested <- df_scaled_nested[ , names(df_scaled_nested) %!in% c("GlobSol", "dummy")] 
+
+
+df_scaled_nested$GlobSol_mode_txt<-NA
+df_scaled_nested$GlobSol_mode_txt<-ifelse(df_scaled_nested$GlobSol_mode==1, "cosmo",df_scaled_nested$GlobSol_mode_txt)
+df_scaled_nested$GlobSol_mode_txt<-ifelse(df_scaled_nested$GlobSol_mode==2, "liberal",df_scaled_nested$GlobSol_mode_txt)
+df_scaled_nested$GlobSol_mode_txt<-ifelse(df_scaled_nested$GlobSol_mode==3, "colonial",df_scaled_nested$GlobSol_mode_txt)
+df_scaled_nested$GlobSol_mode_txt<-ifelse(df_scaled_nested$GlobSol_mode==4, "commu",df_scaled_nested$GlobSol_mode_txt)
+
+```
+## Export file
+```{r}
+#saving it
+namefile<-"df_full_nested.csv"
+folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+write.csv(df_scaled_nested, folder_path_wb, row.names = FALSE)  # row.names = FALSE to exclude row indices
+
+```
+
+
+## Run multinomial models
 ```{r}
 # Define the dependent variable and set is as an unordered factors
 dependent_var <- "GlobSol"
@@ -232,9 +277,28 @@ stargazer(
 
 
 ### plotting effects on predictions
+```{r}
+# Define the plotting function
+plot_predicted_probabilities <- function(plot_data, x_var) {
+  # Ensure x_var is a string representing the x-axis variable
+  if (!is.character(x_var)) {
+    stop("x_var should be a character string representing the x-axis variable.")
+  }
+  
+  # Create the ggplot object with the specified x_var
+  ggplot(plot_data, aes_string(x = x_var)) +
+    geom_line(aes_string(y = "`1`", color = "\"Category 1\"")) +  # Escaping quotes for static labels
+    geom_line(aes_string(y = "`2`", color = "\"Category 2\"")) +
+    geom_line(aes_string(y = "`3`", color = "\"Category 3\"")) +
+    geom_line(aes_string(y = "`4`", color = "\"Category 4\"")) +
+    labs(y = "Predicted Probability", x = x_var, color = "Category") +
+    theme_minimal() +
+    ggtitle(paste("Predicted Probabilities by", x_var))
+}
+```
+
 # plot marginal effects count ho
 ```{r}
-
 df<-df_scaled
 # Create a new data frame for prediction
 # You can use sequences, random data, or actual data points for input
@@ -257,19 +321,11 @@ predictions <- predict(multinom_model4, newdata, "probs")
 
 # Create a data frame with predictions
 plot_data <- cbind(newdata, predictions)
+```
 
-# Load ggplot2 for visualization
-library(ggplot2)
-
-# Plot the predicted probabilities
-ggplot(plot_data, aes(x = count_HO_lag_1)) +
-  geom_line(aes(y = `1`, color = "Category 1")) +
-  geom_line(aes(y = `2`, color = "Category 2")) +
-  geom_line(aes(y = `3`, color = "Category 3")) +
-  geom_line(aes(y = `4`, color = "Category 4")) +
-  labs(y = "Predicted Probability", x = "count_HO_lag_1", color = "Category") +
-  theme_minimal() +
-  ggtitle("Predicted Probabilities by count_HO_lag_1")
+```{r}
+# Plot using the defined function
+plot_predicted_probabilities(plot_data, "count_HO_lag_1")
 ```
 
 # plot marginal effects count trade
@@ -298,20 +354,12 @@ predictions <- predict(multinom_model4, newdata, "probs")
 # Create a data frame with predictions
 plot_data <- cbind(newdata, predictions)
 
-# Load ggplot2 for visualization
-library(ggplot2)
-
-# Plot the predicted probabilities
-ggplot(plot_data, aes(x = trade_part_lag_1)) +
-  geom_line(aes(y = `1`, color = "Category 1")) +
-  geom_line(aes(y = `2`, color = "Category 2")) +
-  geom_line(aes(y = `3`, color = "Category 3")) +
-  geom_line(aes(y = `4`, color = "Category 4")) +
-  labs(y = "Predicted Probability", x = "trade_part_lag_1", color = "Category") +
-  theme_minimal() +
-  ggtitle("Predicted Probabilities by trade_part_lag_1")
 ```
 
+```{r}
+# Plot using the defined function
+plot_predicted_probabilities(plot_data, "trade_part_lag_1")
+```
 
 # plot marginal effects nat revs
 ```{r}
@@ -338,35 +386,53 @@ predictions <- predict(multinom_model4, newdata, "probs")
 
 # Create a data frame with predictions
 plot_data <- cbind(newdata, predictions)
-
-# Load ggplot2 for visualization
-library(ggplot2)
-
-# Plot the predicted probabilities
-ggplot(plot_data, aes(x = nat_rents_lag_1)) +
-  geom_line(aes(y = `1`, color = "Category 1")) +
-  geom_line(aes(y = `2`, color = "Category 2")) +
-  geom_line(aes(y = `3`, color = "Category 3")) +
-  geom_line(aes(y = `4`, color = "Category 4")) +
-  labs(y = "Predicted Probability", x = "nat_rents_lag_1", color = "Category") +
-  theme_minimal() +
-  ggtitle("Predicted Probabilities by nat_rents_lag_1")
 ```
 
+```{r}
+# Plot using the defined function
+plot_predicted_probabilities(plot_data, "nat_rents_lag_1")
+```
 
-
-
-
-
-
-
-
-
+## test what happen if we drop one category
 
 
 ## getting robust se
 ```{r}
+# Install mlogit and AER packages and load them. Latter is just for a dataset we'll be using.
+library("mlogit", "AER")
 
+# Load dataset TravelMode
+data("TravelMode", package = "AER")
+
+# Use the mlogit() function to run a nested logit estimation
+
+# Here, we will predict what mode of travel individuals
+# choose using cost and wait times
+
+nestedlogit = mlogit(
+  choice ~ gcost + wait,
+  data = TravelMode,
+  ##The variable from which our nests are determined
+  alt.var = 'mode',
+  #The variable that dictates the binary choice
+  choice = 'choice',
+  #List of nests as named vectors
+  nests = list(Fast = c('air','train'), Slow = c('car','bus'))
+  )
+
+
+# The results
+
+summary(nestedlogit)
+```
+
+
+```{r}
+nlm <- mlogit(
+  choice ~ gcost + wait,
+  data = TravelMode,
+  nests = list(Fast = c('air','train'), Slow = c('car','bus'), reflevel = "car"))
+summary(nlm)
 
 ```
 
@@ -386,38 +452,125 @@ stargazer(
 ```
 
 
-## Test nested models
 
+
+
+### probabilities with marginal intervals
 ```{r}
-df_long <- mlogit.data(df_scaled, 
-                       choice = "GlobSol", 
-                       shape = "wide", 
-                       id.var = "index", 
-                       varying = NULL, 
-                       sep = "")
+# Required packages
+library(magrittr) # for pipes
+library(nnet) # for the multinom()-function
+library(MASS) # for the multivariate normal distribution
 
-nesting_structure <- list(
-  Nest1 = c("1", "2"), 
-  Nest2 = c("3", "4")
-)
+# The package
+library(MNLpred)
 
-head(df_long)
-
-model <- mlogit(GlobSol ~ count_HO_lag_1 + nat_rents_lag_1 + trade_lag_1, 
-                data = df_long, 
-                nests = nesting_structure)
-
-# Display summary
-summary(model)
+# Plotting the predicted probabilities:
+library(ggplot2)
+library(scales)
 
 
-cor_matrix <- cor(df_scaled[, c("variable1", "variable2", "variable3")], use = "complete.obs")
+# The data:
+data("gles")
 
-print(cor_matrix)
+# Multinomial logit model:
+mod1 <- multinom(vote ~ egoposition_immigration + 
+                   political_interest + 
+                   income + gender + ostwest, 
+                 data = gles,
+                 Hess = TRUE)
+
+
+summary(mod1)
+
+
+
+summary(gles$egoposition_immigration)
+
+
+
+
+multinom_model4 <- multinom(complete_formula, data = df_scaled,
+                            Hess = TRUE)
+
+mod1<-multinom_model4
+gles<-df_scaled
+
+pred1 <- mnl_pred_ova(model = mod1,
+                      data = gles,
+                      x = "count_HO_lag_1",
+                      by = 0.1,
+                      seed = "random", # default
+                      nsim = 100, # faster
+                      probs = c(0.025, 0.975)) # default
+
+
+pred1$plotdata %>% head()
+
+
+
+ggplot(data = pred1$plotdata, aes(x = count_HO_lag_1, 
+                                  y = mean,
+                                  ymin = lower, ymax = upper)) +
+  geom_ribbon(alpha = 0.1) + # Confidence intervals
+  geom_line() + # Mean
+  facet_wrap(.~ GlobSol, scales = "free_y", ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,.5,0.6,0.8,0.9,1)) +
+  theme_bw() +
+  labs(y = "Predicted probabilities",
+       x = "Head") # Always label your axes ;)
+
+
+
+pred1 <- mnl_pred_ova(model = mod1,
+                      data = gles,
+                      x = "trade_part_lag_1",
+                      by = 0.1,
+                      seed = "random", # default
+                      nsim = 100, # faster
+                      probs = c(0.025, 0.975)) # default
+
+
+pred1$plotdata %>% head()
+
+ggplot(data = pred1$plotdata, aes(x = trade_part_lag_1, 
+                                  y = mean,
+                                  ymin = lower, ymax = upper)) +
+  geom_ribbon(alpha = 0.1) + # Confidence intervals
+  geom_line() + # Mean
+  facet_wrap(.~ GlobSol, scales = "free_y", ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,.5,0.6,0.8,0.9,1)) +
+  theme_bw() +
+  labs(y = "Predicted probabilities",
+       x = "Trade") # Always label your axes ;)
+
+
+
+pred1 <- mnl_pred_ova(model = mod1,
+                      data = gles,
+                      x = "nat_rents_lag_1",
+                      by = 0.1,
+                      seed = "random", # default
+                      nsim = 100, # faster
+                      probs = c(0.025, 0.975)) # default
+
+
+pred1$plotdata %>% head()
+
+ggplot(data = pred1$plotdata, aes(x = nat_rents_lag_1, 
+                                  y = mean,
+                                  ymin = lower, ymax = upper)) +
+  geom_ribbon(alpha = 0.1) + # Confidence intervals
+  geom_line() + # Mean
+  facet_wrap(.~ GlobSol, scales = "free_y", ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
+  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,.5,0.6,0.8,0.9,1)) +
+  theme_bw() +
+  labs(y = "Predicted probabilities",
+       x = "NR") # Always label your axes ;)
 ```
-
-
-
 
 
 
