@@ -33,7 +33,6 @@ library(dvmisc)
 library(ggpubr)
 library(gtools)
 library(foreign)
-#library(GADMTools)
 library(maps)
 
 
@@ -330,7 +329,7 @@ if (!file.exists(folder_path)) {
 }
 ```
 
-#### Importing WB dataset via API
+#### WB: importing dataset via API
 ```{r}
 
 # WorldBank <- WDI(
@@ -416,7 +415,8 @@ df_WorldBank <- df_WorldBank[ , ! names(df_WorldBank) %in% c("capital",
                                                              "latitude",
                                                              "income", 
                                                              "lending",
-                                                             "iso2c")]
+                                                             "iso2c",
+                                                             "country_wb")]
 
 #list variables aiddata sectoral
 List<- colnames(df_WorldBank)[!colnames(df_WorldBank) %in% c("iso3c",
@@ -467,7 +467,7 @@ df_Vdem<-Vdem
 
 ```
 
-#### SUbset variables of interest
+#### Subset variables of interest
 ```{r}
 
 
@@ -558,6 +558,54 @@ df_Vdem_s<-janitor::clean_names(df_Vdem_s)
 
 ```
 
+### Number of IGOs a country is member of
+### https://correlatesofwar.org/data-sets/IGOs/
+#### Set name folder
+```{r}
+sub_folder_name<-"IGOs"
+```
+#### Create folder and download
+```{r}
+download_create_folder_and_unzip(desktop_path,
+                           sub_folder_name,
+                           "https://correlatesofwar.org/wp-content/uploads/state_year_formatv3.zip")
+```
+
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "state_year_formatv3.csv")
+## import  dataset
+df_IGOs<- read.csv(file_path)
+```
+
+#### Organize data
+```{r}
+## subset years greater than 1989
+df_IGOs<-subset(df_IGOs, df_IGOs$year>1988)
+## assign iso3ccode
+df_IGOs$iso3c <- countrycode(df_IGOs$ccode, "cown", "iso3c")
+
+## count 1 and 2 across columns
+### create list of vars to count
+List<- colnames(df_IGOs)[colnames(df_IGOs) %!in% c("iso3c", "year", "ccode", "country","state")]
+### count memberships
+df_IGOs <- df_IGOs %>%
+  rowwise() %>%
+  mutate(
+    N_memberships = sum(c_across(all_of(List)) %in% c(1, 2))
+  ) %>%
+  ungroup()
+
+# keep vars of interest
+df_IGOs <- df_IGOs[c("iso3c",
+                     "year",
+                     "N_memberships")]
+
+# create lags
+List<-c("N_memberships")
+df_IGOs <- Lag_12(df_IGOs, iso3c, List)
+```
+
 
 ### Humanitarian organizations
 #### Import dataset form folder 
@@ -624,6 +672,101 @@ df_HOD_cy<-subset(df_HOD_cy, df_HOD_cy$year>1980)
 
 ```
 
+### Conflict activity (UCDP GED)
+#### Link df: https://ucdp.uu.se/downloads/index.html#ged_global
+#### Set subfldder name
+```{r}
+sub_folder_name<-"UCDP"
+```
+
+#### Create folder and download
+```{r}
+download_create_folder_and_unzip(desktop_path,
+                           sub_folder_name,
+                           "https://ucdp.uu.se/downloads/ged/ged231-csv.zip")
+```
+
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "GEDEvent_v23_1.csv")
+#file_path<-file.path("~/Documents/data/UCDP/GEDEvent_v23_1.csv")
+## import  dataset
+UCDP_GED<- read.csv(file_path)
+```
+
+
+#### Reshaping UCDP GED
+##### Adjusting names of countries, setting variables etc.
+```{r}
+df_UCDP_GED<-UCDP_GED
+
+#assign ISO3
+df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c",
+                                 custom_match = c("Yemen (North Yemen)" = "YEM"))
+
+#create year month date
+            df_UCDP_GED$month <- c((substr(( c(df_UCDP_GED$date_start)), 6, 7)))
+            df_UCDP_GED$day<- c((substr(( c(df_UCDP_GED$date_start)), 9, 10)))
+
+            df_UCDP_GED$day.month.year <- as.character(paste0(df_UCDP_GED$month,
+                                                          "/",
+                                                          df_UCDP_GED$day,
+                                                          "/",
+                                                          df_UCDP_GED$year))
+
+            df_UCDP_GED$month.year <- as.character(paste0(df_UCDP_GED$year,
+                                                      "-",
+                                                      df_UCDP_GED$month))
+
+            df_UCDP_GED$Date<-as.Date(df_UCDP_GED$day.month.year, format = "%m/%d/%Y")
+            df_UCDP_GED$date_month<-as.yearmon(df_UCDP_GED$month.year)
+```
+
+##### Getting it in a country-year panel format
+```{r}
+
+df_UCDP_GED_s<-df_UCDP_GED[c("iso3c",
+                   "year",
+                   "type_of_violence",
+                   "best")]
+
+
+## aggregate at country iso3c level
+df_UCDP_GED_Y <- df_UCDP_GED_s %>%
+  group_by(iso3c, year, type_of_violence) %>%
+  summarize(n_fatalities = sum(best, na.rm = TRUE))
+
+#reshape
+df_UCDP_GED_Y<-reshape2::dcast(df_UCDP_GED_Y, year+iso3c~`type_of_violence`)
+
+## merge with Base
+df_UCDP_GED_Y= left_join(df_Base_Y, df_UCDP_GED_Y, by = c("year" = "year", "iso3c" = "iso3c"))
+
+## keep only years after 1990
+df_UCDP_GED_Y<-subset(df_UCDP_GED_Y,df_UCDP_GED_Y$year>=1990)
+
+#list variables ged
+List<- colnames(df_UCDP_GED_Y)[colnames(df_UCDP_GED_Y) %!in% c("iso3c", "year")]
+
+# assign 0s
+df_UCDP_GED_Y<-Nas_to_0(df_UCDP_GED_Y,List)
+
+#rename variables
+names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "1"] <- "StateBased_conf_fat"
+names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "2"] <- "NonState_conf_fat"
+names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "3"] <- "OneSided_fat"
+
+
+## full fatalities
+df_UCDP_GED_Y$best_fat<-df_UCDP_GED_Y$StateBased_conf_fat+df_UCDP_GED_Y$NonState_conf_fat+df_UCDP_GED_Y$OneSided_fat
+
+#list variables ged
+List<- colnames(df_UCDP_GED_Y)[colnames(df_UCDP_GED_Y) %!in% c("iso3c", "year")]
+
+## create lags
+df_UCDP_GED_Y<-Lag_12(df_UCDP_GED_Y, iso3c, List)
+
+```
 
 ### Trade partners
 #### Set subfolder name
@@ -758,6 +901,66 @@ df_UNcomtrade_main<-Lag_12(df_UNcomtrade_main, iso3c, List)
 
 ```
 
+## count number of donors per each country
+### AidData
+#### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
+#### Create folder and download
+#### Set name folder
+```{r}
+sub_folder_name<-"Aidata"
+```
+#### Create folder and download
+```{r}
+download_create_folder_and_unzip(desktop_path,
+                           sub_folder_name,
+                           "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
+```
+
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
+## import  dataset
+Aiddata<- read.csv(file_path)
+
+```
+
+#### prepare dataset
+```{r}
+df_Aiddata<-Aiddata
+
+#change names
+df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"] <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"] <- "Russia"
+
+#assign ISO3
+df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_Aiddata<-df_Aiddata[!is.na(df_Aiddata$iso3c), ]
+```
+
+
+## count number of donors per country
+```{r}
+  df_donors<- df_Aiddata %>% 
+    group_by(iso3c, year) %>%
+    summarize(N_donors = n_distinct(donor))
+
+
+#list variables aiddata sectoral
+List<- c("N_donors")
+
+## lag variables of 1 to 2 years
+df_donors<-Lag_12(df_donors, iso3c, List)
+```
+## colonial heritage
+
+
+## data on disasters in the country
+
+
+
 
 # Merge datasets main independent and controls
 ```{r}
@@ -767,6 +970,12 @@ df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year"
 df_Ind_var <- left_join(df_Ind_var, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add vdem indexes
 df_Ind_var <- left_join(df_Ind_var, df_Vdem_s, by = c("year" = "year", "iso3c" = "iso3c"))
+## add conf events
+df_Ind_var <- left_join(df_Ind_var, df_UCDP_GED_Y, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
+## add membership
+df_Ind_var <- left_join(df_Ind_var, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c"))
+## add donors
+df_Ind_var <- left_join(df_Ind_var, df_donors, by = c("year" = "year", "iso3c" = "iso3c"))
 
 ```
 
