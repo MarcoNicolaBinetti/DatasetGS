@@ -146,6 +146,8 @@ df_full <- df_full[ , names(df_full) %!in% c("country.x",
 List<-c("count_HO_lag_1",
         "nat_rents_lag_1",
         "trade_part_lag_1",
+        "exp_part_lag_1",
+        "impo_part_lag_1",
         "N_donors_lag_1",
         "pop_tot_lag_1",
         "gdp_lag_1",
@@ -156,7 +158,27 @@ List<-c("count_HO_lag_1",
         "liberal_demo_lag_1",
         "regime_corruption_lag_1",
         "civil_soc_lag_1",
-        "best_fat_lag_1")
+        "best_fat_lag_1",
+        "food_export_lag_1",
+        "food_import_lag_1",
+        "biological_dummy_50k",
+        "biological_dummy_lag_1_50k",
+        "climatological_dummy_50k",
+        "climatological_dummy_lag_1_50k",
+        "geophysical_dummy_50k",
+        "geophysical_dummy_lag_1_50k",
+        "hydrological_dummy_50k",
+        "hydrological_dummy_lag_1_50k",
+        "meteorological_dummy_50k",
+        "meteorological_dummy_lag_1_50k",
+        "colony_fra",
+        "colony_gbr",
+        "colony_oeu",
+        "colony_prt",
+        "colony_esp",
+        "tropical",
+        "desert",
+        "N_memberships")
 
 
 df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","iso3c","year")] 
@@ -170,7 +192,11 @@ variables_to_scale <- List
 
 # Apply  scaling function to the specified variables
 df_scaled<-df_model_data
-df_scaled[variables_to_scale] <- lapply(df_scaled[variables_to_scale], scale_0_1)
+
+
+df_scaled$ln_GDP<-log(df_scaled$gdp_lag_1)
+df_scaled$ln_pop_tot_lag_1<-log(df_scaled$pop_tot_lag_1)
+df_scaled$ln_trade_lag_1<-log(df_scaled$trade_lag_1)
 
 ## set fixed effects
 df_scaled$iso3c <- as.factor(df_scaled$iso3c)
@@ -181,6 +207,19 @@ table(df_scaled$GlobSol)
 
 #add index column to data frame
 df_scaled$index <- 1:nrow(df_scaled)
+
+##
+df_scaled$colony<-ifelse(df_scaled$colony_fra==1|
+                           df_scaled$colony_gbr==1|
+                           df_scaled$colony_oeu==1 |
+                           df_scaled$colony_prt==1 |
+                           df_scaled$colony_esp==1,1,0)
+
+
+# List of variable names to scale
+#variables_to_scale <- c(List,"ln_GDP","ln_pop_tot_lag_1","ln_trade_lag_1")
+#df_scaled[variables_to_scale] <- lapply(df_scaled[variables_to_scale], scale_0_1)
+
 ```
 
 ## Export file
@@ -201,18 +240,38 @@ df_scaled$GlobSol <- factor(df_scaled$GlobSol)  # Ensure it's a factor
 df_scaled$GlobSol <- relevel(df_scaled$GlobSol, ref = "4")
 
 
-main_indip <- c("count_HO_lag_1", "trade_part_lag_1", "nat_rents_lag_1")
+main_indip <- c("N_memberships", "ln_trade_lag_1", "nat_rents_lag_1")
+main_indip_expo <- c("count_HO_lag_1", "exp_part_lag_1", "nat_rents_lag_1")
+main_indip_impo <- c("count_HO_lag_1", "impo_part_lag_1", "nat_rents_lag_1")
 
-econo <- c("pop_tot_lag_1", "gdp_lag_1","inflation_lag_1")
-socio_poli <- c("liberal_demo_lag_1","regime_corruption_lag_1","civil_soc_lag_1")
+
+econo <- c("ln_pop_tot_lag_1", "ln_GDP")
+socio_poli <- c("liberal_demo_lag_1","regime_corruption_lag_1")
 #conflict<- c("OneSided_fat_lag_1", "NonState_conf_fat_lag_1","StateBased_conf_fat_lag_1")
 #development<- c("agricolture_va_lag_1", "inf_mort_rate_lag_1","urb_pop_pct_lag_1")
-cof_deve<- c( "best_fat_lag_1", "inf_mort_rate_lag_1","urb_pop_pct_lag_1")
+cof_deve<- c( "best_fat_lag_1", "urb_pop_pct_lag_1")
+disaster<-c("biological_dummy_50k",
+            "biological_dummy_lag_1_50k",
+            "climatological_dummy_50k",
+            "climatological_dummy_lag_1_50k",
+            "geophysical_dummy_50k",
+            "geophysical_dummy_lag_1_50k",
+            "hydrological_dummy_50k",
+            "hydrological_dummy_lag_1_50k",
+            "meteorological_dummy_50k",
+            "meteorological_dummy_lag_1_50k"
+            )
 
-```
+geo_colonial<-c("colony",
+        "tropical",
+        "desert")
+
+#```
+
+
 
 ## Run multinomial models
-```{r}
+#```{r}
 # baseline model
 Vars<-main_indip
 # Create the complete formula
@@ -242,22 +301,51 @@ complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
 multinom_model4 <- multinom(complete_formula, data = df_scaled)
 
-
-# Full controls
-Vars<-c(main_indip,econo,socio_poli,cof_deve)
+# disaster controls
+Vars<-c(main_indip,disaster)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars) 
 # Estimate the multinomial logistic regression model
 multinom_model5 <- multinom(complete_formula, data = df_scaled)
 
 
-```
+# disaster controls
+Vars<-c(main_indip,geo_colonial)
+# Create the complete formula
+complete_formula <-gen_formula(dependent_var,Vars) 
+# Estimate the multinomial logistic regression model
+multinom_model6 <- multinom(complete_formula, data = df_scaled)
+
+
+# Full controls
+Vars<-c(main_indip,econo,socio_poli,cof_deve, disaster, geo_colonial)
+# Create the complete formula
+complete_formula <-gen_formula(dependent_var,Vars) 
+# Estimate the multinomial logistic regression model
+multinom_model7 <- multinom(complete_formula, data = df_scaled)
+
+# # Full controls
+# Vars<-c(main_indip_impo,econo,socio_poli,cof_deve, disaster, geo_colonial)
+# # Create the complete formula
+# complete_formula <-gen_formula(dependent_var,Vars) 
+# # Estimate the multinomial logistic regression model
+# multinom_model8 <- multinom(complete_formula, data = df_scaled)
+# 
+# # Full controls
+# Vars<-c(main_indip_expo,econo,socio_poli,cof_deve, disaster, geo_colonial)
+# # Create the complete formula
+# complete_formula <-gen_formula(dependent_var,Vars) 
+# # Estimate the multinomial logistic regression model
+# multinom_model9 <- multinom(complete_formula, data = df_scaled)
+
+
+#```
 
 ## plot results tables
-```{r}
+#```{r}
 # Create a comparison table with stargazer
 stargazer(
-  multinom_model1, multinom_model2, multinom_model3, multinom_model4, multinom_model5,
+  multinom_model1, multinom_model2, multinom_model3, multinom_model4, multinom_model5, multinom_model6, multinom_model7, #multinom_model8, multinom_model9,
   type = "text",  # or "latex" or "html" for different output formats
   title = "Comparison of Multinomial Models",
   align = TRUE,
@@ -268,24 +356,31 @@ stargazer(
 )
 ```
 
+```{r}
+summary(multinom_model7)
+
+```
 
 
 ### probabilities with marginal intervals
 ```{r}
+
+
 # Full controls
-Vars<-c(main_indip,econo,socio_poli,cof_deve)
+Vars<-c(main_indip,econo,socio_poli,cof_deve, disaster, geo_colonial)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars) 
-multinom_model4 <- multinom(complete_formula, data = df_scaled,
+# Estimate the multinomial logistic regression model
+multinom_model7 <- multinom(complete_formula, data = df_scaled,
                             Hess = TRUE)
 
-mod1<-multinom_model4
+mod1<-multinom_model7
 gles<-df_scaled
 
 pred1 <- mnl_pred_ova(model = mod1,
                       data = gles,
-                      x = "count_HO_lag_1",
-                      by = 0.1,
+                      x = "N_memberships",
+                      by = 1,
                       seed = "random", # default
                       nsim = 100, # faster
                       probs = c(0.025, 0.975)) # default
@@ -295,7 +390,7 @@ pred1$plotdata %>% head()
 
 
 
-ggplot(data = pred1$plotdata, aes(x = count_HO_lag_1, 
+ggplot(data = pred1$plotdata, aes(x = N_memberships, 
                                   y = mean,
                                   ymin = lower, ymax = upper)) +
   geom_ribbon(alpha = 0.1) + # Confidence intervals
@@ -311,7 +406,7 @@ ggplot(data = pred1$plotdata, aes(x = count_HO_lag_1,
 
 pred1 <- mnl_pred_ova(model = mod1,
                       data = gles,
-                      x = "trade_part_lag_1",
+                      x = "ln_trade_lag_1",
                       by = 0.1,
                       seed = "random", # default
                       nsim = 100, # faster
@@ -320,7 +415,7 @@ pred1 <- mnl_pred_ova(model = mod1,
 
 pred1$plotdata %>% head()
 
-ggplot(data = pred1$plotdata, aes(x = trade_part_lag_1, 
+ggplot(data = pred1$plotdata, aes(x = ln_trade_lag_1, 
                                   y = mean,
                                   ymin = lower, ymax = upper)) +
   geom_ribbon(alpha = 0.1) + # Confidence intervals
@@ -463,153 +558,6 @@ multinom_model1 <- multinom(complete_formula, data = df_scaled)
 
 
 
-
-
-## Run multinomial models wth alternative independent variables
-```{r}
-# baseline model
-Vars<-alt_indip
-# Create the complete formula
-complete_formula <-gen_formula(dependent_var,Vars)
-# Estimate the multinomial logistic regression model
-multinom_model1 <- multinom(complete_formula, data = df_scaled)
-
-# Economic controls
-Vars<-c(alt_indip,econo)
-# Create the complete formula
-complete_formula <-gen_formula(dependent_var,Vars) 
-# Estimate the multinomial logistic regression model
-multinom_model2 <- multinom(complete_formula, data = df_scaled)
-
-
-# Political controls
-Vars<-c(alt_indip,socio_poli)
-# Create the complete formula
-complete_formula <-gen_formula(dependent_var,Vars) 
-# Estimate the multinomial logistic regression model
-multinom_model3 <- multinom(complete_formula, data = df_scaled)
-
-
-# Conflict controls
-Vars<-c(alt_indip,conflict)
-# Create the complete formula
-complete_formula <-gen_formula(dependent_var,Vars) 
-# Estimate the multinomial logistic regression model
-multinom_model4 <- multinom(complete_formula, data = df_scaled)
-
-
-
-# Full controls
-Vars<-c(alt_indip,econo,socio_poli,conflict)
-# Create the complete formula
-complete_formula <-gen_formula(dependent_var,Vars) 
-# Estimate the multinomial logistic regression model
-multinom_model5 <- multinom(complete_formula, data = df_scaled)
-
-```
-
-## plot results tables
-```{r}
-# Create a comparison table with stargazer
-stargazer(
-  multinom_model1, multinom_model2, multinom_model3, multinom_model4, multinom_model5,
-  type = "text",  # or "latex" or "html" for different output formats
-  title = "Comparison of Multinomial Models",
-  align = TRUE,
-  no.space = TRUE,
-  digits = 3,  # Number of decimal places to display
-  column.labels = c("Model 1", "Model 2", "Model 3"),  # Label each model
-  omit.stat = c("aic", "bic")  # Optionally omit some statistics for cleaner output
-)
-```
-
-### probabilities with marginal intervals from alt independet variables
-```{r}
-# Full controls
-Vars<-c(alt_indip,econo,socio_poli)
-# Create the complete formula
-complete_formula <-gen_formula(dependent_var,Vars) 
-multinom_model4 <- multinom(complete_formula, data = df_scaled,
-                            Hess = TRUE)
-
-mod1<-multinom_model4
-gles<-df_scaled
-
-pred1 <- mnl_pred_ova(model = mod1,
-                      data = gles,
-                      x = "N_memberships_lag_1",
-                      by = 0.1,
-                      seed = "random", # default
-                      nsim = 100, # faster
-                      probs = c(0.025, 0.975)) # default
-
-
-pred1$plotdata %>% head()
-
-
-
-ggplot(data = pred1$plotdata, aes(x = N_memberships_lag_1, 
-                                  y = mean,
-                                  ymin = lower, ymax = upper)) +
-  geom_ribbon(alpha = 0.1) + # Confidence intervals
-  geom_line() + # Mean
-  facet_wrap(.~ GlobSol, scales = "free_y", ncol = 2) +
-  scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
-  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,.5,0.6,0.8,0.9,1)) +
-  theme_bw() +
-  labs(y = "Predicted probabilities",
-       x = "Head") # Always label your axes ;)
-
-
-
-pred1 <- mnl_pred_ova(model = mod1,
-                      data = gles,
-                      x = "N_memberships_lag_1",
-                      by = 0.1,
-                      seed = "random", # default
-                      nsim = 100, # faster
-                      probs = c(0.025, 0.975)) # default
-
-
-pred1$plotdata %>% head()
-
-ggplot(data = pred1$plotdata, aes(x = N_memberships_lag_1, 
-                                  y = mean,
-                                  ymin = lower, ymax = upper)) +
-  geom_ribbon(alpha = 0.1) + # Confidence intervals
-  geom_line() + # Mean
-  facet_wrap(.~ GlobSol, scales = "free_y", ncol = 2) +
-  scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
-  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,.5,0.6,0.8,0.9,1)) +
-  theme_bw() +
-  labs(y = "Predicted probabilities",
-       x = "Trade") # Always label your axes ;)
-
-
-
-pred1 <- mnl_pred_ova(model = mod1,
-                      data = gles,
-                      x = "nat_rents_lag_1",
-                      by = 0.1,
-                      seed = "random", # default
-                      nsim = 100, # faster
-                      probs = c(0.025, 0.975)) # default
-
-
-pred1$plotdata %>% head()
-
-ggplot(data = pred1$plotdata, aes(x = nat_rents_lag_1, 
-                                  y = mean,
-                                  ymin = lower, ymax = upper)) +
-  geom_ribbon(alpha = 0.1) + # Confidence intervals
-  geom_line() + # Mean
-  facet_wrap(.~ GlobSol, scales = "free_y", ncol = 2) +
-  scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
-  scale_x_continuous(breaks = c(0,0.1,0.2,0.3,0.4,.5,0.6,0.8,0.9,1)) +
-  theme_bw() +
-  labs(y = "Predicted probabilities",
-       x = "NR") # Always label your axes ;)
-```
 
 
 

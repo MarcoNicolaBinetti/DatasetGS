@@ -179,6 +179,18 @@ download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
   file.remove("temp.zip")
 }
 
+
+# Define a function to rename specified columns with a given suffix
+rename_columns <- function(df, suffix, vars_to_change) {
+  # Create new names for the specified variables by adding the suffix
+  new_names <- setNames(paste0(vars_to_change, suffix), vars_to_change)
+  
+  # Rename the columns in the data frame
+  names(df)[names(df) %in% names(new_names)] <- new_names[names(df)[names(df) %in% names(new_names)]]
+  
+  # Return the modified data frame
+  return(df)
+}
 ```
 
 
@@ -216,7 +228,7 @@ if (!file.exists(folder_path)) {
 
 # Importing and reshaping Dfs
 
-### Polity 2
+## Polity 2
 #### Set subfolder name
 ```{r}
 sub_folder_name<-"polity2"
@@ -304,15 +316,13 @@ df_Base_YM<-janitor::clean_names(df_Base_YM)
 
 
 
-### Natural resource revenues - and some more control variables from WB dataset
-
-
-#### Set subfolder name
+## WB dataset
+### Set subfolder name
 ```{r}
 sub_folder_name<-"WorldBank"
 ```
 
-#### Create folder
+### Create folder
 ```{r}
 
 # Combine the desktop path with the folder name
@@ -329,7 +339,7 @@ if (!file.exists(folder_path)) {
 }
 ```
 
-#### WB: importing dataset via API
+### WB: importing dataset via API
 ```{r}
 
 # WorldBank <- WDI(
@@ -379,19 +389,19 @@ if (!file.exists(folder_path)) {
 
 ```
 
-#### Setting path to save DF
+### Setting path to save DF
 ```{r}
 #saving it
 namefile<-"WorldBank.rds"
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 ```
 
-#### Saving DF
+### Saving DF
 ```{r}
 # saveRDS(WorldBank, folder_path_wb)
 ```
 
-#### Importing DF from folder
+### Importing DF from folder
 ```{r}
 #importing wb df
 df_WorldBank <- readRDS(folder_path_wb)
@@ -431,14 +441,13 @@ df_WorldBank<-janitor::clean_names(df_WorldBank)
 
 ```
 
-### V-Dem dataset for additioal polity controls
-
-#### Set subfolder name
+## V-Dem dataset for additioal polity controls
+### Set subfolder name
 ```{r}
 sub_folder_name<-"Vdem"
 ```
 
-#### Create folder
+### Create folder
 ```{r}
 
 # Combine the desktop path with the folder name
@@ -454,8 +463,8 @@ if (!file.exists(folder_path)) {
   cat("Folder", main_folder_name, "already exists on the desktop.\n")
 }
 ```
-#### Add to the folder the videm dataset manually
-#### Import dataset
+### Add to the folder the videm dataset manually
+### Import dataset
 ```{r}
 namefile<-c("V-Dem-CY-Full+Others-v14.rds")
 folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
@@ -467,7 +476,7 @@ df_Vdem<-Vdem
 
 ```
 
-#### Subset variables of interest
+### Subset variables of interest
 ```{r}
 
 
@@ -558,27 +567,27 @@ df_Vdem_s<-janitor::clean_names(df_Vdem_s)
 
 ```
 
-### Number of IGOs a country is member of
-### https://correlatesofwar.org/data-sets/IGOs/
-#### Set name folder
+## Number of IGOs a country is member of
+## https://correlatesofwar.org/data-sets/IGOs/
+### Set name folder
 ```{r}
 sub_folder_name<-"IGOs"
 ```
-#### Create folder and download
+### Create folder and download
 ```{r}
 download_create_folder_and_unzip(desktop_path,
                            sub_folder_name,
                            "https://correlatesofwar.org/wp-content/uploads/state_year_formatv3.zip")
 ```
 
-#### Import
+### Import
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "state_year_formatv3.csv")
 ## import  dataset
 df_IGOs<- read.csv(file_path)
 ```
 
-#### Organize data
+### Organize data
 ```{r}
 ## subset years greater than 1989
 df_IGOs<-subset(df_IGOs, df_IGOs$year>1988)
@@ -606,15 +615,18 @@ List<-c("N_memberships")
 df_IGOs <- Lag_12(df_IGOs, iso3c, List)
 ```
 
+## Relative Political 
 
-### Humanitarian organizations
-#### Import dataset form folder 
+
+## Humanitarian organizations
+## https://dataverse.harvard.edu/dataverse/isq
+### Import dataset form folder 
 ```{r}
 HOD_Dec_2021 <- read_dta("HOD_Dec_2021.dta")
 df_HOD_Dec_2021<-HOD_Dec_2021
 ```
 
-#### reshape dataset
+### reshape dataset
 ```{r}
 ## assign iso3c
 df_HOD_Dec_2021$iso3c <- countrycode(df_HOD_Dec_2021$COUNTHQ, "cown", "iso3c")
@@ -672,21 +684,21 @@ df_HOD_cy<-subset(df_HOD_cy, df_HOD_cy$year>1980)
 
 ```
 
-### Conflict activity (UCDP GED)
-#### Link df: https://ucdp.uu.se/downloads/index.html#ged_global
-#### Set subfldder name
+## Conflict activity (UCDP GED)
+### Link df: https://ucdp.uu.se/downloads/index.html#ged_global
+### Set subfldder name
 ```{r}
 sub_folder_name<-"UCDP"
 ```
 
-#### Create folder and download
+### Create folder and download
 ```{r}
 download_create_folder_and_unzip(desktop_path,
                            sub_folder_name,
                            "https://ucdp.uu.se/downloads/ged/ged231-csv.zip")
 ```
 
-#### Import
+### Import
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "GEDEvent_v23_1.csv")
 #file_path<-file.path("~/Documents/data/UCDP/GEDEvent_v23_1.csv")
@@ -695,8 +707,8 @@ UCDP_GED<- read.csv(file_path)
 ```
 
 
-#### Reshaping UCDP GED
-##### Adjusting names of countries, setting variables etc.
+### Reshaping UCDP GED
+### Adjusting names of countries, setting variables etc.
 ```{r}
 df_UCDP_GED<-UCDP_GED
 
@@ -722,7 +734,7 @@ df_UCDP_GED$iso3c <- countrycode(df_UCDP_GED$country, "country.name", "iso3c",
             df_UCDP_GED$date_month<-as.yearmon(df_UCDP_GED$month.year)
 ```
 
-##### Getting it in a country-year panel format
+### Getting it in a country-year panel format
 ```{r}
 
 df_UCDP_GED_s<-df_UCDP_GED[c("iso3c",
@@ -768,13 +780,13 @@ df_UCDP_GED_Y<-Lag_12(df_UCDP_GED_Y, iso3c, List)
 
 ```
 
-### Trade partners
-#### Set subfolder name
+## Trade partners
+### Set subfolder name
 ```{r}
 sub_folder_name<-"UN Comtrade"
 ```
 
-#### Create folder
+### Create folder
 ```{r}
 
 # Combine the desktop path with the folder name
@@ -790,10 +802,8 @@ if (!file.exists(folder_path)) {
   cat("Folder", main_folder_name, "already exists on the desktop.\n")
 }
 ```
-#### manually add to the folder the single csv files from the cloud
-
-
-#### import and compose dataset
+### manually add to the folder the single csv files from the cloud
+### import and compose dataset
 ```{r}
 
 ## set path
@@ -823,16 +833,14 @@ saveRDS(df_UNcomtrade, folder_path_UNcom)
 
 ```
 
-
-#### clean and reshape
-##### import from main folder
+### import from main folder
 ```{r}
 #importing wb df
 df_UNcomtrade <- readRDS(folder_path_UNcom)
 
 ```
 
-##### Count number of export partners for each country
+### Count number of export partners for each country
 ```{r}
 ## subset export partners
 df_UNcomtrade_export<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="X")
@@ -851,7 +859,7 @@ df_UNcomtrade_export<-subset(df_UNcomtrade_export, df_UNcomtrade_export$year>199
 
 ```
 
-##### Count number of import partners for each country
+### Count number of import partners for each country
 ```{r}
 ## subset export partners
 df_UNcomtrade_import<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="M")
@@ -869,7 +877,7 @@ df_UNcomtrade_import<-subset(df_UNcomtrade_import, df_UNcomtrade_import$year>199
 
 ```
 
-##### Count number of trade partners for each country
+### Count number of trade partners for each country
 ```{r}
 
 # collapse dataset
@@ -885,7 +893,7 @@ df_UNcomtrade_imp_exp<-subset(df_UNcomtrade_imp_exp, df_UNcomtrade_imp_exp$year>
 
 ```
 
-##### Combine export and import
+### Combine export and import
 ```{r}
 # left join dfs
 df_UNcomtrade_main <- left_join(df_UNcomtrade_export, df_UNcomtrade_import, by = c("year" = "year","country" = "country", "iso3c" = "iso3c"))
@@ -901,22 +909,20 @@ df_UNcomtrade_main<-Lag_12(df_UNcomtrade_main, iso3c, List)
 
 ```
 
-## count number of donors per each country
-### AidData
-#### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
-#### Create folder and download
-#### Set name folder
+## (AidData) count number of donors per each country
+### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
+### Set name folder
 ```{r}
 sub_folder_name<-"Aidata"
 ```
-#### Create folder and download
+### Create folder and download
 ```{r}
 download_create_folder_and_unzip(desktop_path,
                            sub_folder_name,
                            "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
 ```
 
-#### Import
+### Import
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
 ## import  dataset
@@ -924,7 +930,7 @@ Aiddata<- read.csv(file_path)
 
 ```
 
-#### prepare dataset
+### prepare dataset
 ```{r}
 df_Aiddata<-Aiddata
 
@@ -941,7 +947,7 @@ df_Aiddata<-df_Aiddata[!is.na(df_Aiddata$iso3c), ]
 ```
 
 
-## count number of donors per country
+### count number of donors per country
 ```{r}
   df_donors<- df_Aiddata %>% 
     group_by(iso3c, year) %>%
@@ -954,13 +960,260 @@ List<- c("N_donors")
 ## lag variables of 1 to 2 years
 df_donors<-Lag_12(df_donors, iso3c, List)
 ```
-## colonial heritage
+## Diego Puga colonial heritage
+## https://diegopuga.org/data/rugged/
+### Set name folder
+```{r}
+sub_folder_name<-"Roughness"
+```
+### download dataset
+```{r}
+
+download_create_folder_and_unzip(desktop_path,
+                           sub_folder_name,
+                           "https://diegopuga.org/data/rugged/rugged_data.zip")
+
+```
+
+### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "rugged_data.csv")
+## import  dataset
+df_rugged<- read.csv(file_path)
+```
+
+### process
+```{r}
+#change names
+df_rugged$country[df_rugged$country=="Yugoslavia"] <- "Serbia"
+df_rugged$country[df_rugged$country=="Serbia and Montenegro"] <- "Serbia"
+
+#assign ISO3
+df_rugged$iso3c <- countrycode(df_rugged$country, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_rugged<-df_rugged[!is.na(df_rugged$iso3c), ]
+```
 
 
-## data on disasters in the country
+## EMDAT data on disasters in the country
+#### Set subfolder name
+```{r}
+sub_folder_name<-"EMDAT"
+```
+
+#### Importing dataset
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta")
+## import  dataset
+EMDAT<- haven::read_dta(file_path)
+```
+
+
+```{r}
+
+# Function to process dataset
+process_EmDat_1 <- function(data, min_affected) {
+  # Subset years
+  data <- subset(data, StartYear >= 1980)
+  
+  # Subset only big disasters
+  data <- subset(data, NoAffected > min_affected)
+  
+  # Drop technological disasters
+  data <- subset(data, DisasterGroup == "Natural")
+  
+  # Select variables of interest
+  data <- data[c("DisNo", "StartYear", "EndYear", "StartMonth", "EndMonth",
+                 "DisasterGroup", "DisasterSubgroup", "DisasterType",
+                 "DisasterSubtype", "ISO", "Country")]
+  
+  # Rename variables
+  names(data)[names(data) == "Year"] <- "year"
+  names(data)[names(data) == "Country"] <- "country_Emdat"
+  
+  # Drop events without date
+  data <- data[complete.cases(data$StartMonth, data$EndMonth), ]
+  
+  # Create date variables
+  data$Date.start <- as.Date(paste0(data$StartYear, "-", data$StartMonth, "-01"))
+  data$Date.end <- as.Date(paste0(data$EndYear, "-", data$EndMonth, "-01"))
+  
+  # Rename countries
+  replacements <- c(
+    "Czechoslovakia" = "Czech Republic (the)",
+    "Germany Fed Rep" = "Germany",
+    "Korea (the Republic of)" = "Korea South",
+    "Korea (the Democratic People's Republic of)" = "Korea North",
+    "Serbia Montenegro" = "Serbia",
+    "Yugoslavia" = "Serbia"
+  )
+  data$country_Emdat <- ifelse(data$country_Emdat %in% names(replacements), replacements[data$country_Emdat], data$country_Emdat)
+  
+  # Create ISO codes
+  data$iso3c <- countrycode(data$country_Emdat, "country.name", "iso3c")
+  
+  # Drop NA ISO codes
+  data <- data[complete.cases(data$iso3c), ]
+  
+  # Subset variables
+  data <- data[c("DisNo", "iso3c", "DisasterSubgroup", "Date.start", "Date.end")]
+  
+  # Sort dataset
+  data <- data[order(data$iso3c, data$Date.start), ]
+  
+  return(data)
+}
+
+# Apply function for different thresholds
+EM_dat_1k <- process_EmDat_1(EMDAT, 1000)
+EM_dat_5k <- process_EmDat_1(EMDAT, 5000)
+EM_dat_50k <- process_EmDat_1(EMDAT, 50000)
+EM_dat_100k <- process_EmDat_1(EMDAT, 100000)
+  
+  
+  
+```
+
+##### Getting it in a country-year-month panel format
+```{r}
+
+process_EmDat_2 <- function(df, df_basey) {
+# Reshape dataset
+df <- df %>%
+  group_by(iso3c, DisNo, DisasterSubgroup) %>%
+  summarise(date = list(seq(floor_date(min(Date.start), unit = "month"),
+                            floor_date(max(Date.end), unit = "month"),
+                            by = "month"))) %>%
+  unnest(cols = c(date))
+
+# Sort dataframe
+df <- df[order(df$iso3c, df$date), ]
+
+# Create dummy for count
+df$count <- 1
+
+# Count events
+df <- df %>%
+  group_by(iso3c, DisasterSubgroup, date) %>%
+  summarise(count = sum(count))
+
+# Reshape
+df <- dcast(df, date + iso3c ~ DisasterSubgroup)
+
+# Merge with vector dates countries
+df$Date_month <- as.yearmon(df$date)
+df <- left_join(df_basey, df, by = c("date_month" = "Date_month", "iso3c" = "iso3c"))
+
+# List variables
+List <- setdiff(names(df), c("country", "year", "iso3c", "count", "date_month", "date"))
+
+# Assign 0s
+df <- df %>%
+  mutate(across(all_of(List), ~ replace_na(., 0)))
+
+# Drop date
+df <- select(df, -date)
+
+# Create variable year
+df$year <- as.double(substr(df$date_month, 5, 9))
+
+
+# Create dummy variables
+df[List] <- lapply(df[List], function(x) as.integer(x > 0))
+colnames(df)[colnames(df) %in% List] <- paste0(colnames(df)[colnames(df) %in% List], "_dummy")
+
+# List variables
+List <- grep("_dummy$", names(df), value = TRUE)
+
+# Create lags
+df <- Lag_12(df, iso3c, List)
+
+# Clean names
+df <- janitor::clean_names(df)
+
+  
+  return(df)
+}
+
+# Process each dataset
+EM_dat_1k_processed_2 <- process_EmDat_2(EM_dat_1k, df_Base_YM)
+EM_dat_5k_processed_2 <- process_EmDat_2(EM_dat_5k, df_Base_YM)
+EM_dat_50k_processed_2 <- process_EmDat_2(EM_dat_50k, df_Base_YM)
+EM_dat_100k_processed_2 <- process_EmDat_2(EM_dat_100k, df_Base_YM)
+
+```
+
+### Getting it in a country-year panel format
+```{r}
+process_EmDat_3 <- function(df, df_basey) {
+  df <- df %>%
+    group_by(iso3c, year) %>%
+    summarize(
+      across(ends_with("_dummy"), sum)
+    )
+  
+  # create dummy variables
+  List <- setdiff(names(df), c("iso3c", "year"))
+  for (variable in List) {
+    new_name <- sub("_n_m$", "_dummy", variable)
+    df[[new_name]] <- ifelse(df[[variable]] == 0, 0, 1)
+  }
+  
+  # Merge with Base
+  df <- left_join(df_basey, df, by = c("year", "iso3c"))
+  
+  # Assign 0s
+  df <- df %>%
+    mutate(across(List, ~ replace_na(., 0)))
+  
+  # Lag 12
+  df <- Lag_12(df, iso3c, List)
+  
+  # Clean names
+  df <-  janitor::clean_names(df)
+  
+  return(df)
+}
+
+# Process each dataset
+EM_dat_1k_processed_3 <- process_EmDat_3(EM_dat_1k_processed_2, df_Base_Y)
+EM_dat_5k_processed_3 <- process_EmDat_3(EM_dat_5k_processed_2, df_Base_Y)
+EM_dat_50k_processed_3 <- process_EmDat_3(EM_dat_50k_processed_2, df_Base_Y)
+EM_dat_100k_processed_3 <- process_EmDat_3(EM_dat_100k_processed_2, df_Base_Y)
+
+```
+
+## add suffix to vars of different datasets
+```{r}
 
 
 
+# List of variable names to change
+List<- sort(unique(ls(EM_dat_1k_processed_3[ , names(EM_dat_1k_processed_3) %!in% c("iso3c",
+                                                                                    "year",
+                                                                                    "country")])))  
+
+# Call the function to add "_1k" to the specified variables
+EM_dat_1k_processed_3 <- rename_columns(EM_dat_1k_processed_3, "_1k", List)
+# Call the function to add "_5k" to the specified variables
+EM_dat_5k_processed_3 <- rename_columns(EM_dat_5k_processed_3, "_5k", List)
+# Call the function to add "_50k" to the specified variables
+EM_dat_50k_processed_3 <- rename_columns(EM_dat_50k_processed_3, "_50k", List)
+# Call the function to add "_100k" to the specified variables
+EM_dat_100k_processed_3 <- rename_columns(EM_dat_100k_processed_3, "_100k", List)
+
+```
+
+## Merge different Mdat datasets
+```{r}
+df_EMDAT_full <- left_join(EM_dat_1k_processed_3, EM_dat_5k_processed_3, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
+df_EMDAT_full <- left_join(df_EMDAT_full, EM_dat_50k_processed_3, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
+df_EMDAT_full <- left_join(df_EMDAT_full, EM_dat_100k_processed_3, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
+
+# Drop country
+df_EMDAT_full <- select(df_EMDAT_full, -country)
+```
 
 # Merge datasets main independent and controls
 ```{r}
@@ -976,6 +1229,10 @@ df_Ind_var <- left_join(df_Ind_var, df_UCDP_GED_Y, by = c("year" = "year", "iso3
 df_Ind_var <- left_join(df_Ind_var, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add donors
 df_Ind_var <- left_join(df_Ind_var, df_donors, by = c("year" = "year", "iso3c" = "iso3c"))
+## add geo and colonial eritage
+df_Ind_var <- left_join(df_Ind_var, df_rugged, by = c("iso3c" = "iso3c"))
+## add Mdata
+df_Ind_var <- left_join(df_Ind_var, df_EMDAT_full, by = c("year" = "year", "iso3c" = "iso3c"))
 
 ```
 
