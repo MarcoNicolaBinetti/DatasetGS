@@ -236,10 +236,10 @@ sub_folder_name<-"polity2"
 
 #### Create folder and download
 ```{r}
-download_and_create_folder("p5v2018.xls",
-                           desktop_path,
-                           sub_folder_name,
-                           "http://www.systemicpeace.org/inscr/p5v2018.xls")
+# download_and_create_folder("p5v2018.xls",
+#                            desktop_path,
+#                            sub_folder_name,
+#                            "http://www.systemicpeace.org/inscr/p5v2018.xls")
 ```
 
 #### Import
@@ -428,6 +428,13 @@ df_WorldBank <- df_WorldBank[ , ! names(df_WorldBank) %in% c("capital",
                                                              "iso2c",
                                                              "country_wb")]
 
+
+
+
+# left join with base year
+df_WorldBank <- left_join(df_Base_Y, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
+
+
 #list variables aiddata sectoral
 List<- colnames(df_WorldBank)[!colnames(df_WorldBank) %in% c("iso3c",
                                                              "year",
@@ -554,6 +561,11 @@ names(df_Vdem_s)[names(df_Vdem_s) == "v2stfisccap"] <- "revenues_source"
 names(df_Vdem_s)[names(df_Vdem_s) == "v2stcritapparm"] <- "appointment_in_ssfs"
 
 
+# left join with base year
+df_Vdem_s <- left_join(df_Base_Y, df_Vdem_s, by = c("year" = "year", "iso3c" = "iso3c"))
+
+
+
 #list variables aiddata sectoral
 List<- colnames(df_Vdem_s)[!colnames(df_Vdem_s) %in% c("iso3c",
                                                        "year",
@@ -575,9 +587,9 @@ sub_folder_name<-"IGOs"
 ```
 ### Create folder and download
 ```{r}
-download_create_folder_and_unzip(desktop_path,
-                           sub_folder_name,
-                           "https://correlatesofwar.org/wp-content/uploads/state_year_formatv3.zip")
+# download_create_folder_and_unzip(desktop_path,
+#                            sub_folder_name,
+#                            "https://correlatesofwar.org/wp-content/uploads/state_year_formatv3.zip")
 ```
 
 ### Import
@@ -610,6 +622,11 @@ df_IGOs <- df_IGOs[c("iso3c",
                      "year",
                      "N_memberships")]
 
+# left join with base year
+df_IGOs <- left_join(df_Base_Y, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c"))
+
+
+
 # create lags
 List<-c("N_memberships")
 df_IGOs <- Lag_12(df_IGOs, iso3c, List)
@@ -623,11 +640,11 @@ df_IGOs <- Lag_12(df_IGOs, iso3c, List)
 ### Import dataset form folder 
 ```{r}
 HOD_Dec_2021 <- read_dta("HOD_Dec_2021.dta")
-df_HOD_Dec_2021<-HOD_Dec_2021
 ```
 
 ### reshape dataset
 ```{r}
+df_HOD_Dec_2021<-HOD_Dec_2021
 ## assign iso3c
 df_HOD_Dec_2021$iso3c <- countrycode(df_HOD_Dec_2021$COUNTHQ, "cown", "iso3c")
 ## drop if iso3c is NA
@@ -674,8 +691,14 @@ df_HOD_cy <- df_HOD_Dec_2021_long %>%
   group_by(iso3c, year) %>%
   summarise(count_HO = sum(count))
 
-# create lags
+# left join with base year
+df_HOD_cy <- left_join(df_Base_Y, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
+
+# assign 0s to NAs
 List<-c("count_HO")
+df_HOD_cy<-Nas_to_0(df_HOD_cy,List)
+
+# create lags
 df_HOD_cy <- Lag_12(df_HOD_cy, iso3c, List)
 
 
@@ -693,9 +716,9 @@ sub_folder_name<-"UCDP"
 
 ### Create folder and download
 ```{r}
-download_create_folder_and_unzip(desktop_path,
-                           sub_folder_name,
-                           "https://ucdp.uu.se/downloads/ged/ged231-csv.zip")
+# download_create_folder_and_unzip(desktop_path,
+#                            sub_folder_name,
+#                            "https://ucdp.uu.se/downloads/ged/ged231-csv.zip")
 ```
 
 ### Import
@@ -772,6 +795,7 @@ names(df_UCDP_GED_Y)[names(df_UCDP_GED_Y) == "3"] <- "OneSided_fat"
 ## full fatalities
 df_UCDP_GED_Y$best_fat<-df_UCDP_GED_Y$StateBased_conf_fat+df_UCDP_GED_Y$NonState_conf_fat+df_UCDP_GED_Y$OneSided_fat
 
+
 #list variables ged
 List<- colnames(df_UCDP_GED_Y)[colnames(df_UCDP_GED_Y) %!in% c("iso3c", "year")]
 
@@ -803,33 +827,45 @@ if (!file.exists(folder_path)) {
 }
 ```
 ### manually add to the folder the single csv files from the cloud
-### import and compose dataset
+### set path
 ```{r}
-
 ## set path
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "TradeData_")
+```
 
-#import datasets
-ldf <- list() # creates a list
+### import and compose dataset
+```{r}
+# #import datasets
+# ldf <- list() # creates a list
+# 
+# for (k in 1994:2021){
+# 
+#  year<-paste0("",k,"")
+#  File<-paste0(file_path,year,".csv")
+#  df<- read.csv(File, header = TRUE, quote = "")
+#  ldf[[k]]<-df
+# 
+# }
+# 
+# #bind datasets
+# df_UNcomtrade <- do.call(rbind, ldf)
+# # drop list
+# rm(ldf)
+# 
+# #saving it
 
-for (k in 1994:2021){
+```
 
- year<-paste0("",k,"")
- File<-paste0(file_path,year,".csv")
- df<- read.csv(File, header = TRUE, quote = "")
- ldf[[k]]<-df
-
-}
-
-#bind datasets
-df_UNcomtrade <- do.call(rbind, ldf)
-# drop list
-rm(ldf)
-
-#saving it
+### set folder path
+```{r}
 namefile<-"df_UNcomtrade.rds"
 folder_path_UNcom <- file.path(desktop_path,main_folder_name, sub_folder_name, namefile)
-saveRDS(df_UNcomtrade, folder_path_UNcom)
+
+```
+
+### saving DF
+```{r}
+#saveRDS(df_UNcomtrade, folder_path_UNcom)
 
 ```
 
@@ -917,9 +953,9 @@ sub_folder_name<-"Aidata"
 ```
 ### Create folder and download
 ```{r}
-download_create_folder_and_unzip(desktop_path,
-                           sub_folder_name,
-                           "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
+# download_create_folder_and_unzip(desktop_path,
+#                            sub_folder_name,
+#                            "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
 ```
 
 ### Import
@@ -944,18 +980,61 @@ df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
 
 #drop iso3c NAs
 df_Aiddata<-df_Aiddata[!is.na(df_Aiddata$iso3c), ]
+
+#assign ISO3 donor
+df_Aiddata$iso3c_donor <- countrycode(df_Aiddata$donor, "country.name", "iso3c")
+
 ```
 
 
 ### count number of donors per country
 ```{r}
-  df_donors<- df_Aiddata %>% 
+
+
+#drop iso3c NAs
+df_donors_state<-df_Aiddata[!is.na(df_Aiddata$iso3c_donor), ]
+df_donors_nonstate<-df_Aiddata[is.na(df_Aiddata$iso3c_donor), ]
+
+
+
+  df_donors_state<- df_donors_state %>% 
     group_by(iso3c, year) %>%
-    summarize(N_donors = n_distinct(donor))
+    summarize(N_donors_state = n_distinct(donor))
 
 
-#list variables aiddata sectoral
-List<- c("N_donors")
+
+  df_donors_nonstate<- df_donors_nonstate %>% 
+    group_by(iso3c, year) %>%
+    summarize(N_donors_nonstate = n_distinct(donor))
+
+  ## merge with base
+df_donors_state <- left_join(df_Base_Y, df_donors_state, by = c("year" = "year", "iso3c" = "iso3c"))
+df_donors_nonstate <- left_join(df_Base_Y, df_donors_nonstate, by = c("year" = "year", "iso3c" = "iso3c"))
+  
+
+
+#list variables
+List<- c("N_donors_state")
+# assign 0s
+df_donors_state<-Nas_to_0(df_donors_state,List)
+## assign NAs to post 2014
+df_donors_state<-df_donors_state %>% mutate(across(List, ~replace(., year > 2013, NA)))
+
+
+#list variables
+List<- c("N_donors_nonstate")
+# assign 0s
+df_donors_nonstate<-Nas_to_0(df_donors_nonstate,List)
+## assign NAs to post 2014
+df_donors_nonstate<-df_donors_nonstate %>% mutate(across(List, ~replace(., year > 2013, NA)))
+
+
+df_donors<- left_join(df_donors_state, df_donors_nonstate, by = c("year" = "year", "iso3c" = "iso3c", "country" = "country"))
+
+df_donors$NS_donors_ratio<-df_donors$N_donors_nonstate/(df_donors$N_donors_state+df_donors$N_donors_nonstate)
+
+#list variables aiddata 
+List<- c("N_donors_state","N_donors_nonstate","NS_donors_ratio")
 
 ## lag variables of 1 to 2 years
 df_donors<-Lag_12(df_donors, iso3c, List)
@@ -969,9 +1048,9 @@ sub_folder_name<-"Roughness"
 ### download dataset
 ```{r}
 
-download_create_folder_and_unzip(desktop_path,
-                           sub_folder_name,
-                           "https://diegopuga.org/data/rugged/rugged_data.zip")
+# download_create_folder_and_unzip(desktop_path,
+#                            sub_folder_name,
+#                            "https://diegopuga.org/data/rugged/rugged_data.zip")
 
 ```
 
@@ -1218,17 +1297,17 @@ df_EMDAT_full <- select(df_EMDAT_full, -country)
 # Merge datasets main independent and controls
 ```{r}
 ## add world bank variables
-df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
 ## add humanitarian dfs
-df_Ind_var <- left_join(df_Ind_var, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_Ind_var, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
 ## add vdem indexes
-df_Ind_var <- left_join(df_Ind_var, df_Vdem_s, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_Ind_var, df_Vdem_s, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
 ## add conf events
 df_Ind_var <- left_join(df_Ind_var, df_UCDP_GED_Y, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
 ## add membership
-df_Ind_var <- left_join(df_Ind_var, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_Ind_var, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
 ## add donors
-df_Ind_var <- left_join(df_Ind_var, df_donors, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_Ind_var, df_donors, by = c("year" = "year", "iso3c" = "iso3c","country" = "country"))
 ## add geo and colonial eritage
 df_Ind_var <- left_join(df_Ind_var, df_rugged, by = c("iso3c" = "iso3c"))
 ## add Mdata
