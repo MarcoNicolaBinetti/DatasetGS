@@ -67,9 +67,12 @@ gen_formula <- function(dependent_var, var_list) {
 ## Set folders
 ```{r}
 ## set url
-desktop_path <- file.path("C:", "Users", "marco", "Desktop")
-main_folder_name <- "DFGlobalLab"
+#desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
+#main_folder_name <- "DFGlobalLab"
+main_folder_name <- "Global Solidarity"
 sub_folder_name <- "Compiled"
+
 ```
 
 ## Import Globsol dataset
@@ -385,14 +388,15 @@ multinom_model7 <- multinom(complete_formula, data = df_scaled)
 # # Estimate the multinomial logistic regression model
 # multinom_model9 <- multinom(complete_formula, data = df_scaled)
 
-
+summary(multinom_model7)
 ```
 
 ## plot results tables
 ```{r}
 # Create a comparison table with stargazer
 stargazer(
-  multinom_model1, multinom_model2, multinom_model3, multinom_model4, multinom_model5, multinom_model6, multinom_model7, #multinom_model8, multinom_model9,
+  #multinom_model1, multinom_model2, multinom_model3, multinom_model4, multinom_model5, multinom_model6, 
+  multinom_model7, #multinom_model8, multinom_model9,
   type = "text",  # or "latex" or "html" for different output formats
   title = "Comparison of Multinomial Models",
   align = TRUE,
