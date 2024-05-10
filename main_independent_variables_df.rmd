@@ -198,7 +198,7 @@ rename_columns <- function(df, suffix, vars_to_change) {
 # Setting directory for datasets' folders
 ```{r}
 desktop_path <- file.path("C:", "Users", "marco", "Desktop")
-#desktop_path <- file.path("C:", "Users","krogers","Documents")
+desktop_path <- file.path("C:", "Users","krogers","Documents")
 ```
 
 
@@ -206,7 +206,7 @@ desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 ```{r}
 # Define the name of the folder to check/create
 main_folder_name <- "DFGlobalLab"
-#main_folder_name <- "data"
+main_folder_name <- "data"
 ```
 
 # Creating folder for datasets
@@ -349,6 +349,7 @@ WorldBank <- WDI(
                 "gas_rents"="NY.GDP.NGAS.RT.ZS",
                 "minerals_rents"="NY.GDP.MINR.RT.ZS",
                 "GDP"="NY.GDP.MKTP.CD",
+                "GDP_pc"="NY.GDP.PCAP.CD",
                 "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
                 "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
                 "Inflation"="FP.CPI.TOTL.ZG",
@@ -427,8 +428,6 @@ df_WorldBank <- df_WorldBank[ , ! names(df_WorldBank) %in% c("capital",
                                                              "lending",
                                                              "iso2c",
                                                              "country_wb")]
-
-
 
 
 # left join with base year
@@ -1271,8 +1270,6 @@ EM_dat_100k_processed_3 <- process_EmDat_3(EM_dat_100k_processed_2, df_Base_Y)
 ## add suffix to vars of different datasets
 ```{r}
 
-
-
 # List of variable names to change
 List<- sort(unique(ls(EM_dat_1k_processed_3[ , names(EM_dat_1k_processed_3) %!in% c("iso3c",
                                                                                     "year",
@@ -1347,15 +1344,24 @@ if (!file.exists(folder_path)) {
 ```{r}
 #saving it
 namefile<-"df_Ind_var.rds"
-folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
-#folder_path_wb <-"C:/Users/krogers/Nextcloud/Global Solidarity/df_Ind_var.rds"
+#folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+folder_path_wb <-"C:/Users/krogers/Nextcloud/Global Solidarity/Compiled/df_Ind_var.rds"
 saveRDS(df_Ind_var, folder_path_wb)
 
 ```
-
-
-# Exit
+# Add Capacity
 ```{r}
+userpath<-("C:/Users/krogers/")
+
+df_Ind_var<-readRDS(paste0(userpath,"Nextcloud/Global Solidarity/Compiled/df_ind_var.rds"))
+
+df_rpc<-read_excel(paste0(userpath,"Nextcloud/Global Solidarity/arpc_2020.xlsx"))
+
+List=c("rpe_agri","rpe_gdp","rpe_gdp_nonres")
+
+df_rpc <- Lag_12(df_rpc, ISO3, List)
+
+df_Ind_var <- left_join(df_Ind_var, df_rpc, by = c("year" = "year", "iso3c" = "ISO3"))
 
 ```
 

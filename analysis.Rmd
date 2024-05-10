@@ -127,8 +127,6 @@ df_IndVars <- readRDS(Df_path)
 data<-df_Globsol50k
 ```
 
-
-
 # Merge dfs
 ```{r}
 df_full <- left_join(data, df_IndVars, by = c("year" = "year", "iso3c" = "iso3c"))
@@ -154,6 +152,7 @@ List<-c("count_HO_lag_1",
         "N_donors_lag_1",
         "pop_tot_lag_1",
         "gdp_lag_1",
+        "gdp_per_cap_ppp_lag_1",
         "inflation_lag_1",
         "urb_pop_pct_lag_1",
         "trade_lag_1",
@@ -183,7 +182,10 @@ List<-c("count_HO_lag_1",
         "desert",
         "N_memberships",
         "NS_donors_ratio_lag_1",
-        "fuel_income_lag_1")
+        "fuel_income_lag_1",
+        "rpe_agri_lag_1",
+        "rpe_gdp_lag_1",
+        "rpe_gdp_nonres_lag_1")
 
 
 df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","iso3c","year")] 
@@ -199,9 +201,23 @@ df_scaled<-df_model_data
 
 # log variables
 df_scaled$ln_GDP_lag_1<-log(df_scaled$gdp_lag_1)
+df_scaled$ln_gdp_per_cap_ppp_lag_1<-log(df_scaled$gdp_per_cap_ppp_lag_1)
 df_scaled$ln_pop_tot_lag_1<-log(df_scaled$pop_tot_lag_1)
 df_scaled$ln_trade_lag_1<-log(df_scaled$trade_lag_1)
 df_scaled$ln_fuel_income_lag_1<-log((1+df_scaled$fuel_income_lag_1))
+df_scaled$ln_GDP_lag_1<-log(df_scaled$gdp_lag_1)
+
+#retain unscaled for model precision checks
+df_scaled$ln_GDP_lag_1_unscaled<-df_scaled$ln_GDP_lag_1
+df_scaled$ln_pop_tot_lag_1_unscaled<-df_scaled$ln_pop_tot_lag_1
+df_scaled$ln_trade_lag_1_unscaled<-df_scaled$ln_trade_lag_1
+df_scaled$ln_fuel_income_lag_1_unscaled<-df_scaled$ln_fuel_income_lag_1
+df_scaled$gdp_lag_1_unscaled<-df_scaled$gdp_lag_1
+df_scaled$pop_tot_lag_1_unscaled<-df_scaled$pop_tot_lag_1
+df_scaled$trade_lag_1_unscaled<-df_scaled$trade_lag_1
+df_scaled$fuel_income_lag_1_unscaled<-df_scaled$fuel_income_lag_1
+df_scaled$ln_gdp_per_cap_ppp_lag_1_unscaled<-df_scaled$ln_gdp_per_cap_ppp_lag_1
+df_scaled$gdp_per_cap_ppp_lag_1_unscaled<-df_scaled$gdp_per_cap_ppp_lag_1
 
 ## scale varaibles
 df_scaled$nat_rents_lag_1<-(df_scaled$nat_rents_lag_1)/100
@@ -209,10 +225,10 @@ df_scaled$urb_pop_pct_lag_1<-(df_scaled$urb_pop_pct_lag_1)/100
 df_scaled$tropical<-(df_scaled$tropical)/100
 df_scaled$desert<-(df_scaled$desert)/100
 
-variables_to_scale <- c("ln_GDP_lag_1","ln_pop_tot_lag_1","ln_trade_lag_1","ln_fuel_income_lag_1")
+variables_to_scale <- c("ln_GDP_lag_1","ln_pop_tot_lag_1","ln_trade_lag_1","ln_fuel_income_lag_1",
+                       "gdp_lag_1", "pop_tot_lag_1","trade_lag_1","fuel_income_lag_1",
+                       "ln_gdp_per_cap_ppp_lag_1","gdp_per_cap_ppp_lag_1")
 df_scaled[variables_to_scale] <- lapply(df_scaled[variables_to_scale], scale_0_1)
-
-
 
 ## set fixed effects
 df_scaled$iso3c <- as.factor(df_scaled$iso3c)
@@ -257,15 +273,11 @@ df_scaled$GlobSol <- relevel(df_scaled$GlobSol, ref = "4")
 
 
 ## exp 1
-main_indip <- c("trade_part_lag_1","NS_donors_ratio_lag_1",  "nat_rents_lag_1")
+main_indip <- c("trade_part_lag_1","ln_gdp_per_cap_ppp_lag_1",  "nat_rents_lag_1")
 ## exp 2
 #main_indip_interaction <- c("trade_part_lag_1","NS_donors_ratio_lag_1",  "nat_rents_lag_1" ,"trade_part_lag_1:NS_donors_ratio_lag_1")
 
-
-
-
-
-econo <- c("ln_pop_tot_lag_1", "ln_GDP_lag_1","ln_trade_lag_1")
+econo <- c("ln_trade_lag_1","ln_pop_tot_lag_1")
 socio_poli <- c("liberal_demo_lag_1","regime_corruption_lag_1")
 cof_deve<- c( "best_fat_lag_1", "urb_pop_pct_lag_1")
 disaster<-c("dis_count")
@@ -287,10 +299,6 @@ disaser_extended_lag<-c("biological_dummy_lag_1_50k",
 geo_colonial<-c("colony",
         "tropical",
         "desert")
-
-
-
-disaster<-disaster
 
 ```
 
@@ -318,7 +326,8 @@ Vars<-c(main_indip,econo)
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
 multinom_model2 <- multinom(complete_formula, data = df_scaled)
-# 
+
+#
 # 
 # Political controls
 Vars<-c(main_indip,socio_poli)
@@ -388,38 +397,56 @@ multinom_model7 <- multinom(complete_formula, data = df_scaled)
 # # Estimate the multinomial logistic regression model
 # multinom_model9 <- multinom(complete_formula, data = df_scaled)
 
-summary(multinom_model7)
 ```
 
 ## plot results tables
 ```{r}
 # Create a comparison table with stargazer
 stargazer(
-  #multinom_model1, multinom_model2, multinom_model3, multinom_model4, multinom_model5, multinom_model6, 
-  multinom_model7, #multinom_model8, multinom_model9,
+  multinom_model1, multinom_model2, 
+  multinom_model6, multinom_model7,
   type = "text",  # or "latex" or "html" for different output formats
   title = "Comparison of Multinomial Models",
   align = TRUE,
   no.space = TRUE,
-  digits = 3,  # Number of decimal places to display
-  column.labels = c("Model 1", "Model 2", "Model 3")  # Label each model
+  digits = 3  # Number of decimal places to display
+  #column.labels = c("Model 1", "Model 2", "Model 3")  # Label each model
 )
 ```
 
+## Model precision check
+```{r}
+library(texreg)
+
+# Score to beat
+# Model 2 BIC: 1051.77 / Model 7 BIC: 1088.50 
+
+Vars<-c(main_indip,econo,cof_deve,geo_colonial)
+complete_formula <-gen_formula(dependent_var,Vars)
+multinom_modela <- multinom(complete_formula, data = df_scaled)
+
+Vars<-c(main_indip,econo,cof_deve,geo_colonial,"dis_count") 
+complete_formula <-gen_formula(dependent_var,Vars)
+multinom_modelb <- multinom(complete_formula, data = df_scaled)
+
+# Model B Best GDP per capita model, with model 7 as a maximum model 
+# (no alternate controls considered yet)
+
+screenreg(list(multinom_model2,multinom_modela,multinom_modelb,multinom_model7))
+
+```
 
 ### probabilities with marginal intervals
 ```{r}
-
-
 # Full controls
-Vars<-c(main_indip,econo,socio_poli,cof_deve, disaster, geo_colonial)
+Vars<-c(main_indip,econo,cof_deve,geo_colonial,"dis_count")
+
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars) 
 # Estimate the multinomial logistic regression model
-multinom_model7 <- multinom(complete_formula, data = df_scaled,
+mod1 <- multinom(complete_formula, data = df_scaled,
                             Hess = TRUE)
 
-mod1<-multinom_model7
 gles<-df_scaled
 
 
@@ -457,8 +484,8 @@ ggplot(data = pred1$plotdata, aes(x = trade_part_lag_1,
 
 pred1 <- mnl_pred_ova(model = mod1,
                       data = gles,
-                      x = "NS_donors_ratio_lag_1",
-                      by = 1,
+                      x = "ln_gdp_per_cap_ppp_lag_1",
+                      by = 0.1,
                       seed = "random", # default
                       nsim = 100, # faster
                       probs = c(0.025, 0.975)) # default
@@ -468,7 +495,7 @@ pred1$plotdata %>% head()
 
 
 
-ggplot(data = pred1$plotdata, aes(x = NS_donors_ratio_lag_1, 
+ggplot(data = pred1$plotdata, aes(x = ln_gdp_per_cap_ppp_lag_1, 
                                   y = mean,
                                   ymin = lower, ymax = upper)) +
   geom_ribbon(alpha = 0.1) + # Confidence intervals
@@ -482,7 +509,7 @@ ggplot(data = pred1$plotdata, aes(x = NS_donors_ratio_lag_1,
     axis.text.y = element_text(angle = 45, vjust = 1)   # Tilt y-axis labels (if needed)
   ) +
   labs(y = "Predicted probabilities",
-       x = "NS donors ratio") # Always label your axes ;)
+       x = "GDP per capita") # Always label your axes ;)
 
 
 pred1 <- mnl_pred_ova(model = mod1,
@@ -511,21 +538,5 @@ ggplot(data = pred1$plotdata, aes(x = nat_rents_lag_1,
   ) +  labs(y = "Predicted probabilities",
        x = "Natural Rents") # Always label your axes ;)
 ```
-
-
-
-```{r}
-
-```
-
-## Robchecks
-
-
-
-
-
-
-
-
 
 
