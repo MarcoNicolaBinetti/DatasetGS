@@ -1351,6 +1351,8 @@ saveRDS(df_Ind_var, folder_path_wb)
 ```
 # Add Capacity
 ```{r}
+library(readxl)
+
 userpath<-("C:/Users/krogers/")
 
 df_Ind_var<-readRDS(paste0(userpath,"Nextcloud/Global Solidarity/Compiled/df_ind_var.rds"))
