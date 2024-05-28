@@ -73,6 +73,8 @@ desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
 main_folder_name <- "Global Solidarity"
 sub_folder_name <- "Compiled"
 
+userpath<-("C:/Users/krogers/") #for Nextcloud
+
 ```
 
 ## Import Globsol dataset
@@ -183,9 +185,9 @@ List<-c("count_HO_lag_1",
         "N_memberships",
         "NS_donors_ratio_lag_1",
         "fuel_income_lag_1",
-        "rpe_agri_lag_1.x",
-        "rpe_gdp_lag_1.x",
-        "rpe_gdp_nonres_lag_1.x")
+        "rpe_agri_lag_1",
+        "rpe_gdp_lag_1",
+        "rpe_gdp_nonres_lag_1")
 
 table(df_full$rpe)
 
@@ -278,7 +280,7 @@ main_indip <- c("trade_part_lag_1","gdp_per_cap_ppp_lag_1", "nat_rents_lag_1")
 
 econo <- c("trade_lag_1","ln_pop_tot_lag_1","inflation_lag_1")
 cof_deve <- c("best_fat_lag_1","urb_pop_pct_lag_1","inf_mort_rate_lag_1")
-pol <- c("liberal_demo_lag_1","rpe_agri_lag_1.x")
+pol <- c("liberal_demo_lag_1","rpe_agri_lag_1")
 disaster <- c("dis_count")
 disaster_lagged <- c("dis_count_lag_1")
 
@@ -304,62 +306,62 @@ geo_colonial <-c("tropical","desert","colony")
 # Full controls
 Vars<-c(main_indip,econo,pol,cof_deve,geo_colonial,disaster)
 full_model_df<- df_scaled[complete.cases(df_scaled[, c(dependent_var,Vars)]), ]
-full_model_df <- full_model_df[, c(dependent_var,Vars)]
+full_model_df <- full_model_df[, c("iso3c","year",dependent_var,Vars)]
 
 # baseline model
 Vars<-main_indip
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model1 <- multinom(complete_formula, data = df_scaled)
+multinom_model1 <- multinom(complete_formula, data = full_model_df)
 
 # Economic controls
 Vars<-c(main_indip,econo)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model2 <- multinom(complete_formula, data = df_scaled)
+multinom_model2 <- multinom(complete_formula, data = full_model_df)
 
 # Political controls
 Vars<-c(main_indip,pol)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model3 <- multinom(complete_formula, data = df_scaled)
+multinom_model3 <- multinom(complete_formula, data = full_model_df)
 
 # Conflict & Development
 Vars<-c(main_indip,cof_deve)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model4 <- multinom(complete_formula, data = df_scaled)
+multinom_model4 <- multinom(complete_formula, data = full_model_df)
 
 Vars<-c(main_indip,econo,pol,cof_deve)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model4b <- multinom(complete_formula, data = df_scaled)
+multinom_model4b <- multinom(complete_formula, data = full_model_df)
 
 # Geographic and colonial controls
 Vars<-c(main_indip,geo_colonial)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model5 <- multinom(complete_formula, data = df_scaled)
+multinom_model5 <- multinom(complete_formula, data = full_model_df)
 
 # disaster controls
 Vars<-c(main_indip,disaster)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars)
 # Estimate the multinomial logistic regression model
-multinom_model6 <- multinom(complete_formula, data = df_scaled)
+multinom_model6 <- multinom(complete_formula, data = full_model_df)
 
 # Full controls
 Vars<-c(main_indip,econo,pol,cof_deve,geo_colonial,disaster)
 # Create the complete formula
 complete_formula <-gen_formula(dependent_var,Vars) 
 # Estimate the multinomial logistic regression model
-multinom_model7 <- multinom(complete_formula, data = df_scaled)
+multinom_model7 <- multinom(complete_formula, data = full_model_df)
 
 ```
 
@@ -378,6 +380,7 @@ stargazer(
 )
 ```
 
+
 ## Model precision check
 ```{r}
 #library(texreg)
@@ -389,6 +392,16 @@ stargazer(
 # Add RPE (agri), infant mortality, inflation
 
 #screenreg(list(multinom_model7,multinom_model8,multinom_model9,multinom_model10))
+
+```
+
+
+## Export full model df
+```{r}
+#saving it
+namefile<-"full_model_df.csv"
+folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+write.csv(full_model_df, folder_path_wb, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
 
 ```
 
@@ -405,6 +418,14 @@ mod1 <- multinom(complete_formula, data = full_model_df,
 
 gles<-full_model_df
 
+
+globsol_labels <- c("1" = "Cosmopolitan",
+                    "2" = "Collective Action",
+                    "3" = "Post-colonial",
+                    "4" = "Communitarian")
+
+globsol_colours <- c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3")
+
 pred1 <- mnl_pred_ova(model = mod1,
                       data = gles,
                       x = "trade_part_lag_1",
@@ -418,18 +439,11 @@ max(full_model_df$trade_part_lag_1)
 
 pred1$plotdata$GlobSolOrdered <- factor(pred1$plotdata$GlobSol, levels = c("3", "1", "4", "2"))
 
-globsol_labels <- c("1" = "Cosmopolitan",
-                    "2" = "Collective Action",
-                    "3" = "Post-colonial",
-                    "4" = "Communitarian")
-
 ggplot(data = pred1$plotdata, aes(x = trade_part_lag_1, 
                                   y = mean,
                                   ymin = lower, ymax = upper)) +
-  scale_fill_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"), name="GlobSol",
-                    labels=globsol_labels) +
-  scale_colour_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"), name="GlobSol",
-                      labels=globsol_labels) +
+  scale_fill_manual(values=globsol_colours,labels=globsol_labels, guide="none") +
+  scale_colour_manual(values=globsol_colours,labels=globsol_labels, guide="none") +
   geom_ribbon(aes(fill = GlobSol), alpha = 0.2, colour = NA) +  # Confidence intervals with no border color
   geom_line(aes(colour = GlobSol)) +  # Mean line with color
    facet_wrap(~ GlobSolOrdered, scales = "fixed", ncol = 2, labeller = labeller(GlobSolOrdered = as_labeller(globsol_labels))) +
@@ -443,6 +457,8 @@ ggplot(data = pred1$plotdata, aes(x = trade_part_lag_1,
   labs(y = "Predicted probabilities",
        x = "Number of trade partners")  +
   theme(strip.text = element_text(face = "bold"))
+
+#ggsave(paste0(userpath,"Nextcloud/Global Solidarity/Figures/trade_partners.png"))
 
 min(full_model_df$gdp_per_cap_ppp_lag_1)
 max(full_model_df$gdp_per_cap_ppp_lag_1)
@@ -458,28 +474,23 @@ pred1 <- mnl_pred_ova(model = mod1,
 
 pred1$plotdata$GlobSolOrdered <- factor(pred1$plotdata$GlobSol, levels = c("3", "1", "4", "2"))
 
-globsol_labels <- c("1" = "Cosmopolitan",
-                    "2" = "Collective Action",
-                    "3" = "Post-colonial",
-                    "4" = "Communitarian")
 
 ggplot(data = pred1$plotdata, aes(x = gdp_per_cap_ppp_lag_1, 
                                   y = mean,
                                   ymin = lower, ymax = upper)) +
-  scale_fill_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"), name="GlobSol",
-                    labels=globsol_labels) +
-  scale_colour_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"), name="GlobSol",
-                      labels=globsol_labels) +
+  scale_fill_manual(values=globsol_colours,labels=globsol_labels, guide="none") +
+  scale_colour_manual(values=globsol_colours,labels=globsol_labels, guide="none") +
   geom_ribbon(aes(fill = GlobSol), alpha = 0.2, colour = NA) +  # Confidence intervals with no border color
   geom_line(aes(colour = GlobSol)) +  # Mean line with color
   facet_wrap(~ GlobSolOrdered, scales = "fixed", ncol = 2, labeller = labeller(GlobSolOrdered = as_labeller(globsol_labels))) +
   scale_y_continuous(labels = percent_format(accuracy = 1)) + # % labels
-  scale_x_continuous(breaks = seq(0, 600, 50), 
-                     labels=seq(0,60,5)) +
+  scale_x_continuous(breaks = seq(0, 600, 50)) +
   theme_bw() +
   labs(y = "Predicted probabilities",
-       x = "GDP per capita ($US PPP, thousands)") +
+       x = "GDP per capita ($US hundreds)") +
   theme(strip.text = element_text(face = "bold"))
+
+#ggsave(paste0(userpath,"Nextcloud/Global Solidarity/Figures/GDPpc.png"))
 
 
 pred1 <- mnl_pred_ova(model = mod1,
@@ -493,18 +504,11 @@ pred1 <- mnl_pred_ova(model = mod1,
 
 pred1$plotdata$GlobSolOrdered <- factor(pred1$plotdata$GlobSol, levels = c("3", "1", "4", "2"))
 
-globsol_labels <- c("1" = "Cosmopolitan",
-                    "2" = "Collective Action",
-                    "3" = "Post-colonial",
-                    "4" = "Communitarian")
-
 ggplot(data = pred1$plotdata, aes(x = nat_rents_lag_1, 
                                   y = mean,
                                   ymin = lower, ymax = upper)) +
-  scale_fill_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"), name="GlobSol",
-                    labels=globsol_labels) +
-  scale_colour_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"), name="GlobSol",
-                      labels=globsol_labels) +
+  scale_fill_manual(values=globsol_colours,labels=globsol_labels, guide="none") +
+  scale_colour_manual(values=globsol_colours,labels=globsol_labels, guide="none") +
   geom_ribbon(aes(fill = GlobSol), alpha = 0.2, colour = NA) +  # Confidence intervals with no border color
   geom_line(aes(colour = GlobSol)) +  # Mean line with color
   facet_wrap(~ GlobSolOrdered, scales = "fixed", ncol = 2, labeller = labeller(GlobSolOrdered = as_labeller(globsol_labels))) +
@@ -514,6 +518,8 @@ ggplot(data = pred1$plotdata, aes(x = nat_rents_lag_1,
   labs(y = "Predicted probabilities",
        x = "Natural Resource Rents (% GDP)") +
   theme(strip.text = element_text(face = "bold"))
+
+#ggsave(paste0(userpath,"Nextcloud/Global Solidarity/Figures/natural_resources.png"))
 
 
 
@@ -526,9 +532,9 @@ library(ggstance)
 
 ame <- avg_slopes(mod1,variables = main_indip)
 
-ame$term<-ifelse(ame$term=="gdp_per_cap_ppp_lag_1","Per capita GDP",
-          ifelse(ame$term=="nat_rents_lag_1", "Natural resource rents",
-                 "Trade partners"))
+ame$term<-ifelse(ame$term=="gdp_per_cap_ppp_lag_1","Per capita GDP ($US hundreds)",
+          ifelse(ame$term=="nat_rents_lag_1", "Natural resource rents (% GDP)",
+                 "Number of trade partners"))
 
 
 ggplot(ame, aes(x=estimate,y=term,colour=group))+ 
@@ -536,13 +542,30 @@ ggplot(ame, aes(x=estimate,y=term,colour=group))+
   geom_pointrangeh(aes(xmin=conf.low,
                      xmax=conf.high),
     position=position_dodgev(height=0.75))+
-  ylab("Independent variables")+xlab("Average marginal effect (95% CI)")+
-   scale_colour_manual(values=c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3"),,name="GlobSol",
-                     labels=c("1"="Cosmopolitan",
-                              "2"="Collective Action",
-                              "3"="Post-colonial",
-                              "4"="Communitarian"))+
-theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor= element_blank())
+  ylab("Independent variables")+xlab("Average marginal effect")+
+   scale_colour_manual(values=globsol_colours,name="Global Solidarity outcome",
+                     labels=globsol_labels)+
+theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor= element_blank(),
+                        legend.title = element_text(size=10),
+                        axis.ticks.x = element_line(colour="black"))
+
+#ggsave(paste0(userpath,"Nextcloud/Global Solidarity/Figures/AME.png"))
 
 ```
+#Check model representativeness
+```{r}
+df<- readRDS(file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df50k.rds"))
 
+full_model_df<- read_csv(file.path(desktop_path, main_folder_name,sub_folder_name,"full_model_df.csv"))
+
+# check distribution of missing values
+check<-full_model_df %>% group_by(GlobSol) %>%
+  summarise(count=n())%>%
+  mutate(pc=count/sum(count))
+
+tmp<-df %>% group_by(GlobSol) %>%
+  summarise(count_miss=n())%>%
+  mutate(pc_miss=count_miss/sum(count_miss))
+
+check<-left_join(check,tmp)
+```
