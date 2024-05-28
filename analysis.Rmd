@@ -429,7 +429,7 @@ globsol_colours <- c("1"="#E41A1C", "2"="#377EB8", "3"="#4DAF4A", "4"="#984EA3")
 pred1 <- mnl_pred_ova(model = mod1,
                       data = gles,
                       x = "trade_part_lag_1",
-                      by = 5,
+                      by = 10,
                       seed = "random", # default
                       nsim = 100, # faster
                       probs = c(0.025, 0.975)) # default
