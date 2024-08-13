@@ -850,10 +850,6 @@ df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis100k_y
 
 ```
 
-##### Calculating number of verbal support a country receives during conflict per month
-```{r}
-
-```
 
 ### AidData
 #### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
