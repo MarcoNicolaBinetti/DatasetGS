@@ -3,7 +3,7 @@
 
 ** import data
 import delimited "C:\Users\marco\Desktop\DFGlobalLab\Compiled\df_full.csv", clear
-
+tab globsol if year<2014
 
 * gen helpful vars
 encode iso3c, generate(ID)
@@ -13,6 +13,8 @@ replace 	dummy_war_terror=1 if year>2001
 label var	dummy_war_terror "War terror"
 
 * label vars
+label var globsol 			"GlobSol"
+
 ** main IVs
 g KOF_pol = kofpogi_lag_1
 label var 	KOF_pol		 	"KOF pol. glob."
@@ -30,21 +32,30 @@ g Oil = 	oil_rents_lag_1
 label var 	Oil			 	"Oil rents"
 
 ** controls
+g ln_fdi_lag_1= ln(fdi_lag_1)
+g ln_inf_mort_rate_lag_1= ln(1+inf_mort_rate_lag_1)
+g ln_inflation_lag_1=ln(1+inflation_lag_1)
+g ln_dis_death=ln(1+dis_death)
+g ln_best_fat_lag_1=ln(1+inflation_lag_1)
+
+
+
+
 
 label var ln_trade_lag_1		 	"Trade"
-label var inflation_lag_1		 	"Inflation"
-label var inf_mort_rate_lag_1	 	"Inf mort."
-label var best_fat_lag_1 			"Conf. intensity"
-label var liberal_demo_lag_1 		"Democracy"
+label var ln_inflation_lag_1		"Inflation"
+label var ln_inf_mort_rate_lag_1	"Inf. mort."
+label var ln_best_fat_lag_1 		"Conf. fat."
+label var liberal_demo_lag_1 		"Dem. index"
 label var colony 					"Colony"
 label var rpe_agri_lag_1 			"RPE"
-label var regime_corruption_lag_1 	"Corruption"
+label var regime_corruption_lag_1 	"Corr."
 label var military_centr_lag_1 		"Mil. cen."
-label var ln_pop_tot_lag_1 			"Pop."
-label var fdi_lag_1 				"FDI"
+label var ln_pop_tot_lag_1 			"Pop. (ln)"
+label var ln_fdi_lag_1 				"FDI (ln)"
 label var ln_gdp_lag_1 				"GDP (ln)"
 label var count_ho_lag_1 			"H.O."
-label var dis_death 				"Disaster fat."
+label var ln_dis_death 				"Dis. fat."
 label var rugged 					"Rugged"
 label var desert 					"Desert"
 label var tropical 					"Tropical"
@@ -54,11 +65,11 @@ label var tropical 					"Tropical"
 
 *** set variables
 ** set controls
-global Need				inf_mort_rate_lag_1  best_fat_lag_1 dis_death
-global Eco_size			ln_trade_lag_1 ln_gdp_lag_1 ln_pop_tot_lag_1  fdi_lag_1
-global Merit			inflation_lag_1 rpe_agri_lag_1 regime_corruption_lag_1
+global Need				ln_inf_mort_rate_lag_1  best_fat_lag_1 dis_death
+global Eco_size			ln_trade_lag_1 ln_gdp_lag_1 ln_pop_tot_lag_1  ln_fdi_lag_1
+global Merit			ln_inflation_lag_1 rpe_agri_lag_1 regime_corruption_lag_1
 global Regime_type		liberal_demo_lag_1 military_centr_lag_1 colony
-global Geography		rugged desert tropical
+global Geography		rugged  tropical
 global Additional		i.dummy_war_terror count_ho_lag_1 
 
 global Reduced			dis_death ln_gdp_lag_1 regime_corruption_lag_1 liberal_demo_lag_1
@@ -82,12 +93,20 @@ global Main_IV_all 		KOF_cu 	ln_milexp	NR
 global Spec baseoutcome(4) vce(cluster ID)
 
 
+** set addstat
+global Add_stat  Wald chi2(57), 				e(chi2), ///
+Prob > chi2, 									e(p), ///
+Pseudo R2, 										e(r2_p), ///
+Log pseudolikelihood, 							e(ll)
+
+
 *******************************************
 ************  Main Models  ****************
 *******************************************
 
-qui mlogit globsol $Main_IV $main_cntrls	if year<2014, $Spec
+mlogit globsol $Main_IV $main_cntrls if year<2014, $Spec
 estimates store  Model_main
+
 
 
 *******************************************
@@ -155,7 +174,7 @@ vioplot ln_milper if e(sample), over(globsol)  scheme(plotplain) title("Distribu
 graph export "C:\Users\marco\Desktop\DFGlobalLab\Compiled\vio_plots2.png", as(png) replace	
 
 sum Oil if e(sample),d
-vioplot Oil if e(sample), over(globsol)  scheme(plotplain) title("Distribution of Oil across GlobSol") name(Vio3, replace) yline(1.2) yline(8) ytitle("Oil rents.") xtitle("GlobSol values")
+vioplot Oil if e(sample), over(globsol)  scheme(plotplain) title("Distribution of Oil rents across GlobSol") name(Vio3, replace) yline(0.01) yline(2) ytitle("Oil rents.") xtitle("GlobSol values")
 graph export "C:\Users\marco\Desktop\DFGlobalLab\Compiled\vio_plots3.png", as(png) replace	
 
 
@@ -163,39 +182,53 @@ graph export "C:\Users\marco\Desktop\DFGlobalLab\Compiled\vio_plots3.png", as(pn
 ************** Main model *****************
 *******************************************
 estimates restore  Model_main
+
+outreg2 using Tab1.doc, ctitle(Model 1, GlobSol, Multinomial logit) ///
+sortvar 	(   $Main_IV $main_cntrls  ) ///
+keep 		(   $Main_IV $main_cntrls ) ///
+addstat 	(  $Add_stat ) ///
+tex dec(3) pdec(3) ///
+addtext(Dyad FE,				YES, ///
+Year FE, 						YES, ///
+Cluster SE, 					YES) ///
+replace  label   
+
+
+
+estimates restore  Model_main
 sum KOF_pol  ln_milper  Oil  if e(sample)
 
 
 margins , at(KOF_pol = (28(2) 100)) atmeans predict(outcome(1))
-marginsplot, name(p1, replace) $layout
+marginsplot, name(p1, replace) $layout ytitle(pr. Full Solidarity)
 margins , at(KOF_pol = (28(2) 100)) atmeans predict(outcome(2))
-marginsplot, name(p2, replace)$layout
+marginsplot, name(p2, replace)$layout ytitle(pr. Symbolic Solidarity)
 margins , at(KOF_pol = (28(2) 100)) atmeans predict(outcome(3))
-marginsplot, name(p3, replace) $layout
+marginsplot, name(p3, replace) $layout ytitle(pr. Coercive Solidarity)
 margins , at(KOF_pol = (28(2) 100)) atmeans predict(outcome(4))
-marginsplot, name(p4, replace) $layout
+marginsplot, name(p4, replace) $layout ytitle(pr. Minimal Solidarity)
 graph combine p1 p2 p3 p4, ycommon name(g1, replace) scheme(plotplain)
 graph export "C:\Users\marco\Desktop\DFGlobalLab\Compiled\G1.png", as(png) name("g1") replace	
 
 margins , at(ln_milper = (4(.05) 15)) atmeans predict(outcome(1))
-marginsplot, name(p1, replace) $layout
+marginsplot, name(p1, replace) $layout ytitle(pr. Full Solidarity)
 margins , at(ln_milper = (4(.05) 15)) atmeans predict(outcome(2))
-marginsplot, name(p2, replace) $layout
+marginsplot, name(p2, replace) $layout ytitle(pr. Symbolic Solidarity)
 margins , at(ln_milper = (4(.05) 15)) atmeans predict(outcome(3))
-marginsplot, name(p3, replace) $layout
+marginsplot, name(p3, replace) $layout ytitle(pr. Coercive Solidarity)
 margins , at(ln_milper = (4(.05) 15)) atmeans predict(outcome(4))
-marginsplot, name(p4, replace) $layout
+marginsplot, name(p4, replace) $layout ytitle(pr. Minimal Solidarity)
 graph combine p1 p2 p3 p4, ycommon name(g2, replace) scheme(plotplain)
 graph export "C:\Users\marco\Desktop\DFGlobalLab\Compiled\G2.png", as(png) name("g2") replace	
 
 margins , at(Oil = (0(1.5) 50)) atmeans predict(outcome(1))
-marginsplot, name(p1, replace) $layout
+marginsplot, name(p1, replace) $layout ytitle(pr. Full Solidarity)
 margins , at(Oil = (0(1.5) 50)) atmeans predict(outcome(2))
-marginsplot, name(p2, replace) $layout
+marginsplot, name(p2, replace) $layout ytitle(pr. Symbolic Solidarity)
 margins , at(Oil = (0(1.5) 50)) atmeans predict(outcome(3))
-marginsplot, name(p3, replace) $layout
+marginsplot, name(p3, replace) $layout ytitle(pr. Coercive Solidarity)
 margins , at(Oil = (0(1.5) 50)) atmeans predict(outcome(4))
-marginsplot, name(p4, replace) $layout
+marginsplot, name(p4, replace) $layout ytitle(pr. Minimal Solidarity)
 graph combine p1 p2 p3 p4, ycommon name(g3, replace) scheme(plotplain)
 graph export "C:\Users\marco\Desktop\DFGlobalLab\Compiled\G3.png", as(png) name("g3") replace	
 
