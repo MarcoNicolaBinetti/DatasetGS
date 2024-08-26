@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Libraries
-```{r}
+```{r, include=FALSE}
 library(Hmisc)
 library(data.table)
 
@@ -227,10 +227,10 @@ sub_folder_name<-"polity2"
 
 #### Create folder and download
 ```{r}
-download_and_create_folder("p5v2018.xls",
-                           desktop_path,
-                           sub_folder_name,
-                           "http://www.systemicpeace.org/inscr/p5v2018.xls")
+# download_and_create_folder("p5v2018.xls",
+#                            desktop_path,
+#                            sub_folder_name,
+#                            "http://www.systemicpeace.org/inscr/p5v2018.xls")
 ```
 
 #### Import
@@ -321,7 +321,7 @@ EMDAT<- haven::read_dta(file_path)
 
 #### Reshaping EMDAT
 ##### Adjusting names of countries, setting variables etc.
-```{r}
+```{r, include=FALSE}
 # Function to process dataset
 process_EmDat_1 <- function(data, min_affected) {
   # Subset years
@@ -384,7 +384,7 @@ EM_dat_100k <- process_EmDat_1(EMDAT, 100000)
 ```
 
 ##### Getting it in a country-year-month panel format
-```{r}
+```{r, include=FALSE}
 
 process_EmDat_2 <- function(df, df_basey) {
 # Reshape dataset
@@ -453,7 +453,7 @@ EM_dat_100k_processed_2 <- process_EmDat_2(EM_dat_100k, df_Base_YM)
 ```
 
 ##### Getting it in a country-year panel format
-```{r}
+```{r, include=FALSE}
 process_EmDat_3 <- function(df, df_basey) {
   df <- df %>%
     group_by(iso3c, year) %>%
@@ -517,52 +517,52 @@ if (!file.exists(folder_path)) {
 
 #### Importing ICEWS from row data
 ```{r}
-#import datasets
-ldf <- list() # creates a list
-
-for (k in 1995:2022){
-
- year<-paste0("",k,"")
- #File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
- File<-paste0("C:/Users/krogers/Documents/data/ICEWS/events.",year,".tab")
- df<- read.delim(File, header = TRUE, quote = "")
- df<-df[c(1:11)]
- names(df)[1] <- "event_id"
- names(df)[2] <- "event_date"
- names(df)[3] <- "source_name"
- names(df)[4] <- "source_sector"
- names(df)[5] <- "source_country"
- names(df)[6] <- "event_text"
- names(df)[7] <- "cameo_code"
- names(df)[8] <- "intensity"
- names(df)[9] <- "target_name"
- names(df)[10] <- "target_sectors"
- names(df)[11] <- "target_country"
-
- ldf[[k]]<-df
-
-}
-
-#bind datasets
-df_ICWES <- do.call(rbind, ldf)
-# drop list
-rm(ldf)
-
-#correct entries (f*ck 2015,2016 datastes)
-## Define the columns to apply the transformation to
-List <- c("source_name", "source_sector", "source_country", "target_name", "target_country")
-
-## Apply gsub function to selected columns using mutate_at
-df_ICWES <- df_ICWES %>% 
-  mutate_at(vars(List), ~gsub("[^\\p{L}0-9\\s]", "", ., perl = TRUE))
+# #import datasets
+# ldf <- list() # creates a list
+# 
+# for (k in 1995:2022){
+# 
+#  year<-paste0("",k,"")
+#  #File<-paste0("G:/My Drive/Research/CSTM/ICEWS/years/events.",year,".tab")
+#  File<-paste0("C:/Users/krogers/Documents/data/ICEWS/events.",year,".tab")
+#  df<- read.delim(File, header = TRUE, quote = "")
+#  df<-df[c(1:11)]
+#  names(df)[1] <- "event_id"
+#  names(df)[2] <- "event_date"
+#  names(df)[3] <- "source_name"
+#  names(df)[4] <- "source_sector"
+#  names(df)[5] <- "source_country"
+#  names(df)[6] <- "event_text"
+#  names(df)[7] <- "cameo_code"
+#  names(df)[8] <- "intensity"
+#  names(df)[9] <- "target_name"
+#  names(df)[10] <- "target_sectors"
+#  names(df)[11] <- "target_country"
+# 
+#  ldf[[k]]<-df
+# 
+# }
+# 
+# #bind datasets
+# df_ICWES <- do.call(rbind, ldf)
+# # drop list
+# rm(ldf)
+# 
+# #correct entries (f*ck 2015,2016 datastes)
+# ## Define the columns to apply the transformation to
+# List <- c("source_name", "source_sector", "source_country", "target_name", "target_country")
+# 
+# ## Apply gsub function to selected columns using mutate_at
+# df_ICWES <- df_ICWES %>% 
+#   mutate_at(vars(List), ~gsub("[^\\p{L}0-9\\s]", "", ., perl = TRUE))
 
 ```
 
 #### Saving ICEWS events as a full rds file to save time when loading it
 ```{r}
-URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
-# saving icews df
-saveRDS(df_ICWES, URL_df)
+# URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
+# # saving icews df
+# saveRDS(df_ICWES, URL_df)
 
 ```
 
@@ -781,7 +781,7 @@ df_ICEWS_EMDAT<-df_ICEWS_EMDAT[df_ICEWS_EMDAT$year > 1994,]
 df_ICEWS_EMDAT_1ky<-process_ICEWS_4(EM_dat_1k_processed_3,df_ICWES_dis1k_y)  
 df_ICEWS_EMDAT_5ky<-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
 df_ICEWS_EMDAT_50ky<-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
-df_ICEWS_EMDAT_100ky<-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis100k_y)
+df_ICEWS_EMDAT_100ky<-process_ICEWS_4(EM_dat_100k_processed_3,df_ICWES_dis100k_y)
 
 
 ```
@@ -845,7 +845,7 @@ df_output <- df_input[ , names(df_input) %in% c("iso3c",
 df_ICWES_dis1k_y <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICWES_dis1k_y)
 df_ICWES_dis5k_y <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICWES_dis5k_y)
 df_ICWES_dis50k_y <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis50k_y)
-df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis100k_y)
+df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small,df_ICWES_dis100k_y)
 
 
 ```
@@ -1209,7 +1209,7 @@ df_output$dummy_Hplus_ERaid<-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$yea
 df_AID_dis1k_y <- process_AID_3(df_AID_dis1k_y_small,df_AID_EMDAT_1ky)
 df_AID_dis5k_y <- process_AID_3(df_AID_dis5k_y_small,df_AID_EMDAT_5ky)
 df_AID_dis50k_y <- process_AID_3(df_AID_dis50k_y_small,df_AID_EMDAT_50ky)
-df_AID_dis100k_y <- process_AID_3(df_AID_dis50k_y_small,df_AID_EMDAT_100ky)
+df_AID_dis100k_y <- process_AID_3(df_AID_dis100k_y_small,df_AID_EMDAT_100ky)
 
 
 ```
@@ -1344,8 +1344,34 @@ if (!file.exists(folder_path)) {
 }
 ```
 
-## Export dataset
+## Export dataset to Nextcoloud
 ```{r}
+# Set path for Marco nextcloud
+path<-"C:\Users\marco\Nextcloud\Global Solidarity\Compiled"
+
+
+## create path
+folder_path <- file.path(path,"globsol_20240313_df50k.rds")
+## save file
+saveRDS(df50k,folder_path)
+
+## create path
+folder_path <- file.path(path,"globsol_20240313_df5k.rds")
+## save file
+saveRDS(df5k,folder_path)
+
+## create path
+folder_path <- file.path(path,"globsol_20240313_df100k.rds")
+## save file
+saveRDS(df100k,folder_path)
+
+```
+
+
+
+## Export dataset to local 
+```{r}
+
 
 ## create path
 folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df50k.rds")
