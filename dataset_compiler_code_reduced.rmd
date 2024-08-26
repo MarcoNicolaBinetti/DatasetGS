@@ -1347,7 +1347,7 @@ if (!file.exists(folder_path)) {
 ## Export dataset to Nextcoloud
 ```{r}
 # Set path for Marco nextcloud
-path<-"C:\Users\marco\Nextcloud\Global Solidarity\Compiled"
+path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path

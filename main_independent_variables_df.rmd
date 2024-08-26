@@ -367,7 +367,8 @@ WorldBank <- WDI(
                 "Import_wb"="NE.IMP.GNFS.ZS",
                 "FDI"="BX.KLT.DINV.WD.GD.ZS",
                 "Mil_per"="MS.MIL.TOTL.P1",
-                "Urb_pop_pct"="SP.URB.TOTL.IN.ZS"
+                "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
+                "Mil_exp_USD"="MS.MIL.XPND.CD"
   ),
   start = 1980,
   end = 2020,
@@ -439,6 +440,11 @@ df_WorldBank<-Lag_12(df_WorldBank, iso3c, List)
 df_WorldBank<-janitor::clean_names(df_WorldBank)
 
 ```
+# NMC (add dataset)
+```{r}
+
+```
+
 
 ## V-Dem dataset for additioal polity controls
 ### Set subfolder name
@@ -1238,7 +1244,7 @@ EM_dat_100k <- process_EmDat_1(EMDAT, 100000)
   
 ```
 
-##### Getting it in a country-year-month panel format
+#### Getting it in a country-year-month panel format
 ```{r}
 
 process_EmDat_2 <- function(df, df_basey) {
@@ -1307,7 +1313,7 @@ EM_dat_100k_processed_2 <- process_EmDat_2(EM_dat_100k, df_Base_YM)
 
 ```
 
-### Getting it in a country-year panel format
+#### Getting it in a country-year panel format
 ```{r}
 process_EmDat_3 <- function(df, df_basey) {
   df <- df %>%
@@ -1347,7 +1353,7 @@ EM_dat_100k_processed_3 <- process_EmDat_3(EM_dat_100k_processed_2, df_Base_Y)
 
 ```
 
-## add suffix to vars of different datasets
+#### Add suffix to vars of different datasets
 ```{r}
 
 # List of variable names to change
@@ -1365,6 +1371,88 @@ EM_dat_50k_processed_3 <- rename_columns(EM_dat_50k_processed_3, "_50k", List)
 EM_dat_100k_processed_3 <- rename_columns(EM_dat_100k_processed_3, "_100k", List)
 
 ```
+
+
+#### Calculate number of fat per year 
+```{r}
+
+# Function to process dataset
+process_EmDat_fat <- function(data) {
+
+    # Subset years
+  data <- subset(data, StartYear >= 1980)
+  
+  # Drop technological disasters
+  data <- subset(data, DisasterGroup == "Natural")
+  
+  # Select variables of interest
+  data <- data[c("DisNo", "StartYear", "EndYear", "Country", "DisasterSubgroup", "TotalDeaths")]
+  
+
+  # Rename countries
+  replacements <- c(
+    "Czechoslovakia" = "Czech Republic (the)",
+    "Germany Fed Rep" = "Germany",
+    "Korea (the Republic of)" = "Korea South",
+    "Korea (the Democratic People's Republic of)" = "Korea North",
+    "Serbia Montenegro" = "Serbia",
+    "Yugoslavia" = "Serbia"
+  )
+
+  data$Country <- ifelse(data$Country %in% names(replacements), replacements[data$Country], data$Country)
+  
+  # Create ISO codes
+  data$iso3c <- countrycode(data$Country, "country.name", "iso3c")
+  
+  # Drop NA ISO codes
+  data <- data[complete.cases(data$iso3c), ]
+  
+  # Subset variables
+  data <- data[c("iso3c", "DisasterSubgroup", "EndYear","TotalDeaths")]
+  
+
+     # List variables
+  List <-  c("TotalDeaths")
+  # Assign 0s
+  data <- data %>%
+    mutate(across(all_of(List), ~ replace_na(., 0)))
+
+  # Count events
+  data <- data %>%
+  group_by(iso3c, EndYear) %>%
+  summarise(TotalDeaths = sum(TotalDeaths))
+
+    names(data)[names(data) == "EndYear"] <- "year"
+    names(data)[names(data) == "TotalDeaths"] <- "dis_death"
+
+
+    
+     # merge with base  
+  data <- left_join(df_Base_Y, data, by = c("year" = "year", "iso3c" = "iso3c"))
+  
+     # List variables
+  List <-  c("dis_death")
+  # Assign 0s
+  data <- data %>%
+    mutate(across(all_of(List), ~ replace_na(., 0)))
+
+      
+ #list variables aiddata 
+List<- c("dis_death")
+
+## lag variables of 1 to 2 years
+data<-Lag_12(data, iso3c, List) 
+  
+  
+  return(data)
+}
+
+# Apply function for different thresholds
+EM_dat_fat <- process_EmDat_fat(EMDAT)
+
+
+```
+
 
 ## Merge different Mdat datasets
 ```{r}
@@ -1395,6 +1483,8 @@ df_Ind_var <- left_join(df_Ind_var, df_donors, by = c("year" = "year", "iso3c" =
 df_Ind_var <- left_join(df_Ind_var, df_rugged, by = c("iso3c" = "iso3c"))
 ## add Mdata
 df_Ind_var <- left_join(df_Ind_var, df_EMDAT_full, by = c("year" = "year", "iso3c" = "iso3c"))
+## add fat Mdata
+df_Ind_var <- left_join(df_Ind_var, EM_dat_fat, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add KOF index
 df_Ind_var <- left_join(df_Ind_var, df_KOFIndex, by = c("year" = "year", "iso3c" = "iso3c"))
 ## Add RPE
@@ -1412,6 +1502,20 @@ df_Ind_var <- left_join(df_Ind_var, df_rpc, by = c("year" = "year", "iso3c" = "I
 # 
 # ## lag variables of 1 to 2 years
 # df_Ind_var<-df_Ind_var %>% group_by(iso3c) %>% fill(List, .direction="down")
+```
+
+
+## Export dataset to Nextcoloud
+```{r}
+# Set path for Marco nextcloud
+path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
+
+
+## create path
+folder_path <- file.path(path,"df_Ind_var.rds")
+## save file
+saveRDS(df_Ind_var, folder_path)
+
 ```
 
 # Export

@@ -66,14 +66,14 @@ gen_formula <- function(dependent_var, var_list) {
 # Import DFs
 ## Set folders
 ```{r}
-## set url
-desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+## set url Marco Nextclod
+desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
 #desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
-main_folder_name <- "DFGlobalLab"
-#main_folder_name <- "Global Solidarity"
+
+main_folder_name <- "Global Solidarity"
 sub_folder_name <- "Compiled"
 
-#userpath<-("C:/Users/krogers/") #for Nextcloud
+
 
 ```
 
@@ -126,7 +126,10 @@ df_IndVars <- readRDS(Df_path)
 
 # Set dataset for analysis
 ```{r}
-data<-df_Globsol50k
+#data<-df_Globsol5k
+#data<-df_Globsol50k
+data<-df_Globsol100k
+
 ```
 
 # Merge dfs
@@ -190,10 +193,6 @@ List<-c("count_HO_lag_1",
         "rpe_gdp_nonres_lag_1",
         "military_exp_pct_gdp_lag_1",
         "military_exp_pct_gov_exp_lag_1",
-        "KOFTrGIdf_lag_1",
-        "KOFIpGIdf_lag_1",
-        "KOFCuGIdf_lag_1",
-        "KOFPoGIdf_lag_1",
         "KOFTrGI_lag_1",
         "KOFIpGI_lag_1",
         "KOFCuGI_lag_1",
@@ -209,7 +208,12 @@ List<-c("count_HO_lag_1",
         "gdp_grwt_lag_1",
         "fdi_lag_1",
         "military_centr_lag_1",
-        "mil_per_lag_1")
+        "mil_per_lag_1",
+        "dis_death",
+        "mil_exp_usd_lag_1",
+        "autonomy_lag_1",
+        "executive_corr_lag_1",
+        "civil_soc_lag_1")
 
 table(df_full$rpe)
 
@@ -225,11 +229,11 @@ df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","iso3c","year")
 df_scaled<-df_model_data
 
 # log variables
-df_scaled$ln_GDP_lag_1<-log(df_scaled$gdp_lag_1)
-df_scaled$ln_gdp_per_cap_ppp_lag_1<-log(df_scaled$gdp_per_cap_ppp_lag_1)
-df_scaled$ln_pop_tot_lag_1<-log(df_scaled$pop_tot_lag_1)
-df_scaled$ln_trade_lag_1<-log(df_scaled$trade_lag_1)
-df_scaled$ln_fuel_income_lag_1<-log((1+df_scaled$fuel_income_lag_1))
+#df_scaled$ln_GDP_lag_1<-log(df_scaled$gdp_lag_1)
+#df_scaled$ln_gdp_per_cap_ppp_lag_1<-log(df_scaled$gdp_per_cap_ppp_lag_1)
+#df_scaled$ln_pop_tot_lag_1<-log(df_scaled$pop_tot_lag_1)
+#df_scaled$ln_trade_lag_1<-log(df_scaled$trade_lag_1)
+#df_scaled$ln_fuel_income_lag_1<-log((1+df_scaled$fuel_income_lag_1))
 
 # #retain unscaled for model precision checks
 # df_scaled$ln_GDP_lag_1_unscaled<-df_scaled$ln_GDP_lag_1
@@ -248,7 +252,7 @@ df_scaled$ln_fuel_income_lag_1<-log((1+df_scaled$fuel_income_lag_1))
 #df_scaled$urb_pop_pct_lag_1<-(df_scaled$urb_pop_pct_lag_1)/100
 #df_scaled$tropical<-(df_scaled$tropical)/100
 #df_scaled$desert<-(df_scaled$desert)/100
-df_scaled$gdp_per_cap_ppp_lag_1<-df_scaled$gdp_per_cap_ppp_lag_1/100
+#df_scaled$gdp_per_cap_ppp_lag_1<-df_scaled$gdp_per_cap_ppp_lag_1/100
 
 #variables_to_scale <- c("ln_GDP_lag_1","ln_pop_tot_lag_1","ln_trade_lag_1","ln_fuel_income_lag_1",
 #                       "gdp_lag_1", "pop_tot_lag_1","trade_lag_1","fuel_income_lag_1",
@@ -281,7 +285,10 @@ df_scaled$dis_count_lag_1<-df_scaled$biological_dummy_lag_1_50k+df_scaled$climat
 ## Export file
 ```{r}
 #saving it
-namefile<-"df_full.csv"
+#namefile<-"df_full_5.csv"
+#namefile<-"df_full.csv"
+namefile<-"df_full_100.csv"
+
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 write.csv(df_scaled, folder_path_wb, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
 
