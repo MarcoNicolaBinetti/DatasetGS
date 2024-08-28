@@ -341,56 +341,58 @@ if (!file.exists(folder_path)) {
 
 ### WB: importing dataset via API
 ```{r}
-
-WorldBank <- WDI(
-  country = "all",
-  indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
-                "oil_rents"="NY.GDP.PETR.RT.ZS",
-                "gas_rents"="NY.GDP.NGAS.RT.ZS",
-                "minerals_rents"="NY.GDP.MINR.RT.ZS",
-                "GDP"="NY.GDP.MKTP.CD",
-                "GDP_pc"="NY.GDP.PCAP.CD",
-                "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
-                "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
-                "Inflation"="FP.CPI.TOTL.ZG",
-                "Service_VA"="NV.SRV.TOTL.ZS",
-                "Manuf_VA"="NV.IND.MANF.ZS",
-                "Industry_VA"="NV.IND.TOTL.ZS",
-                "Agricolture_VA"="NV.AGR.TOTL.ZS",
-                "Pop_tot"="SP.POP.TOTL",
-                "Age_dep_ratio"="SP.POP.DPND",
-                "Inf_mort_rate"="SP.DYN.IMRT.IN",
-                "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
-                "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
-                "Trade"="NE.TRD.GNFS.ZS",
-                "Export_wb"="NE.EXP.GNFS.ZS",
-                "Import_wb"="NE.IMP.GNFS.ZS",
-                "FDI"="BX.KLT.DINV.WD.GD.ZS",
-                "Mil_per"="MS.MIL.TOTL.P1",
-                "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
-                "Mil_exp_USD"="MS.MIL.XPND.CD"
-  ),
-  start = 1980,
-  end = 2020,
-  extra = TRUE,
-  cache = NULL,
-  latest = NULL,
-  language = "en"
-)
+# 
+# WorldBank <- WDI(
+#   country = "all",
+#   indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
+#                 "oil_rents"="NY.GDP.PETR.RT.ZS",
+#                 "gas_rents"="NY.GDP.NGAS.RT.ZS",
+#                 "minerals_rents"="NY.GDP.MINR.RT.ZS",
+#                 "GDP"="NY.GDP.MKTP.CD",
+#                 "GDP_pc"="NY.GDP.PCAP.CD",
+#                 "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
+#                 "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
+#                 "Inflation"="FP.CPI.TOTL.ZG",
+#                 "Service_VA"="NV.SRV.TOTL.ZS",
+#                 "Manuf_VA"="NV.IND.MANF.ZS",
+#                 "Industry_VA"="NV.IND.TOTL.ZS",
+#                 "Agricolture_VA"="NV.AGR.TOTL.ZS",
+#                 "Pop_tot"="SP.POP.TOTL",
+#                 "Age_dep_ratio"="SP.POP.DPND",
+#                 "Inf_mort_rate"="SP.DYN.IMRT.IN",
+#                 "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
+#                 "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
+#                 "Trade"="NE.TRD.GNFS.ZS",
+#                 "Export_wb"="NE.EXP.GNFS.ZS",
+#                 "Import_wb"="NE.IMP.GNFS.ZS",
+#                 "FDI"="BX.KLT.DINV.WD.GD.ZS",
+#                 "Mil_per"="MS.MIL.TOTL.P1",
+#                 "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
+#                 "Mil_exp_USD"="MS.MIL.XPND.CD",
+#                 "lit_rate"="SE.ADT.1524.LT.ZS"
+#   ),
+#   start = 1980,
+#   end = 2020,
+#   extra = TRUE,
+#   cache = NULL,
+#   latest = NULL,
+#   language = "en"
+# )
 
 ```
 
 ### Setting path to save DF
 ```{r}
-#saving it
+# setting path to save and import df
 namefile<-"WorldBank.rds"
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 ```
 
 ### Saving DF
 ```{r}
+#saving it
 
-saveRDS(WorldBank, folder_path_wb)
+#saveRDS(WorldBank, folder_path_wb)
 
 ```
 
@@ -521,7 +523,9 @@ df_Vdem_s<-df_Vdem[c("iso3c",
                    "v2x_libdem",
                    "v2x_partipdem",
                    "v2x_delibdem",
-                   "v2x_egaldem")]
+                   "v2x_egaldem",
+                   "v3ststeecap",
+                   "v2regdur")]
 
 
 #rename columns
@@ -831,7 +835,7 @@ if (!file.exists(folder_path)) {
 ### set path
 ```{r}
 ## set path
-file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "TradeData_")
+#file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "TradeData_")
 
 #file_path <-"C:/Users/krogers/Nextcloud/Global Solidarity/UNcomtrade/UN Comtrade/TradeData_"
 
@@ -839,22 +843,22 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "TradeData_
 
 ### import and compose dataset
 ```{r}
-#import datasets
-ldf <- list() # creates a list
-
-for (k in 1994:2021){
-
- year<-paste0("",k,"")
- File<-paste0(file_path,year,".csv")
- df<- read.csv(File, header = TRUE, quote = "")
- ldf[[k]]<-df
-
-}
-
-#bind datasets
-df_UNcomtrade <- do.call(rbind, ldf)
-# drop list
-rm(ldf)
+# #import datasets
+# ldf <- list() # creates a list
+# 
+# for (k in 1994:2021){
+# 
+#  year<-paste0("",k,"")
+#  File<-paste0(file_path,year,".csv")
+#  df<- read.csv(File, header = TRUE, quote = "")
+#  ldf[[k]]<-df
+# 
+# }
+# 
+# #bind datasets
+# df_UNcomtrade <- do.call(rbind, ldf)
+# # drop list
+# rm(ldf)
 
 ```
 
@@ -869,85 +873,85 @@ folder_path_UNcom <- file.path(desktop_path,main_folder_name, sub_folder_name, n
 
 ### saving DF
 ```{r}
-saveRDS(df_UNcomtrade, folder_path_UNcom)
+#saveRDS(df_UNcomtrade, folder_path_UNcom)
 
 ```
 
 ### import from main folder
 ```{r}
 #importing wb df
-df_UNcomtrade <- readRDS(folder_path_UNcom)
+#df_UNcomtrade <- readRDS(folder_path_UNcom)
 
 ```
 
 ### Count number of export partners for each country
 ```{r}
-## subset export partners
-df_UNcomtrade_export<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="X")
-
-# collapse dataset
-df_UNcomtrade_export <- df_UNcomtrade_export %>%
-    group_by(ReporterISO, RefYear) %>%
-    summarise(exp_part = n_distinct(PartnerCode))
-
-# left join with base year
-df_UNcomtrade_export <- left_join(df_Base_Y, df_UNcomtrade_export, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
-df_UNcomtrade_export <- dplyr::select(df_UNcomtrade_export, -country)
-
-## subset years for which we have data
-df_UNcomtrade_export<-subset(df_UNcomtrade_export, df_UNcomtrade_export$year>1993)
+# ## subset export partners
+# df_UNcomtrade_export<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="X")
+# 
+# # collapse dataset
+# df_UNcomtrade_export <- df_UNcomtrade_export %>%
+#     group_by(ReporterISO, RefYear) %>%
+#     summarise(exp_part = n_distinct(PartnerCode))
+# 
+# # left join with base year
+# df_UNcomtrade_export <- left_join(df_Base_Y, df_UNcomtrade_export, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
+# df_UNcomtrade_export <- dplyr::select(df_UNcomtrade_export, -country)
+# 
+# ## subset years for which we have data
+# df_UNcomtrade_export<-subset(df_UNcomtrade_export, df_UNcomtrade_export$year>1993)
 
 
 ```
 
 ### Count number of import partners for each country
 ```{r}
-## subset export partners
-df_UNcomtrade_import<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="M")
-
-# collapse dataset
-df_UNcomtrade_import <- df_UNcomtrade_import %>%
-    group_by(ReporterISO, RefYear) %>%
-    summarise(impo_part = n_distinct(PartnerCode))
-
-# left join with base year
-df_UNcomtrade_import <- left_join(df_Base_Y, df_UNcomtrade_import, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
-df_UNcomtrade_import <- dplyr::select(df_UNcomtrade_import, -country)
-
-## subset years for which we have data
-df_UNcomtrade_import<-subset(df_UNcomtrade_import, df_UNcomtrade_import$year>1993)
+# ## subset export partners
+# df_UNcomtrade_import<-subset(df_UNcomtrade, df_UNcomtrade$FlowCode=="M")
+# 
+# # collapse dataset
+# df_UNcomtrade_import <- df_UNcomtrade_import %>%
+#     group_by(ReporterISO, RefYear) %>%
+#     summarise(impo_part = n_distinct(PartnerCode))
+# 
+# # left join with base year
+# df_UNcomtrade_import <- left_join(df_Base_Y, df_UNcomtrade_import, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
+# df_UNcomtrade_import <- dplyr::select(df_UNcomtrade_import, -country)
+# 
+# ## subset years for which we have data
+# df_UNcomtrade_import<-subset(df_UNcomtrade_import, df_UNcomtrade_import$year>1993)
 
 ```
 
 ### Count number of trade partners for each country
 ```{r}
 
-# collapse dataset
-df_UNcomtrade_imp_exp <- df_UNcomtrade %>%
-    group_by(ReporterISO, RefYear) %>%
-    summarise(trade_part = n_distinct(PartnerCode))
-
-# left join with base year
-df_UNcomtrade_imp_exp <- left_join(df_Base_Y, df_UNcomtrade_imp_exp, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
-df_UNcomtrade_imp_exp <- dplyr::select(df_UNcomtrade_imp_exp, -country)
-
-## subset years for which we have data
-df_UNcomtrade_imp_exp<-subset(df_UNcomtrade_imp_exp, df_UNcomtrade_imp_exp$year>1993)
+# # collapse dataset
+# df_UNcomtrade_imp_exp <- df_UNcomtrade %>%
+#     group_by(ReporterISO, RefYear) %>%
+#     summarise(trade_part = n_distinct(PartnerCode))
+# 
+# # left join with base year
+# df_UNcomtrade_imp_exp <- left_join(df_Base_Y, df_UNcomtrade_imp_exp, by = c("year" = "RefYear", "iso3c" = "ReporterISO"))
+# df_UNcomtrade_imp_exp <- dplyr::select(df_UNcomtrade_imp_exp, -country)
+# 
+# ## subset years for which we have data
+# df_UNcomtrade_imp_exp<-subset(df_UNcomtrade_imp_exp, df_UNcomtrade_imp_exp$year>1993)
 
 ```
 
 ### Combine export and import
 ```{r}
-# left join dfs
-df_UNcomtrade_main <- left_join(df_UNcomtrade_export, df_UNcomtrade_import, by = c("year" = "year", "iso3c" = "iso3c"))
-df_UNcomtrade_main <- left_join(df_UNcomtrade_main, df_UNcomtrade_imp_exp, by = c("year" = "year", "iso3c" = "iso3c"))
-
-#list variables aiddata sectoral
-List<- colnames(df_UNcomtrade_main)[!colnames(df_UNcomtrade_main) %in% c("iso3c",
-                                                             "year")]
-
-## lag variables of 1 to 2 years
-df_UNcomtrade_main<-Lag_12(df_UNcomtrade_main, iso3c, List)
+# # left join dfs
+# df_UNcomtrade_main <- left_join(df_UNcomtrade_export, df_UNcomtrade_import, by = c("year" = "year", "iso3c" = "iso3c"))
+# df_UNcomtrade_main <- left_join(df_UNcomtrade_main, df_UNcomtrade_imp_exp, by = c("year" = "year", "iso3c" = "iso3c"))
+# 
+# #list variables aiddata sectoral
+# List<- colnames(df_UNcomtrade_main)[!colnames(df_UNcomtrade_main) %in% c("iso3c",
+#                                                              "year")]
+# 
+# ## lag variables of 1 to 2 years
+# df_UNcomtrade_main<-Lag_12(df_UNcomtrade_main, iso3c, List)
 
 ```
 
@@ -1117,32 +1121,16 @@ df_KOFIndex<-df_KOFIndex[!is.na(df_KOFIndex$iso3c), ]
 df_KOFIndex <- df_KOFIndex %>% dplyr::select(-country)
 
 List=c("KOFCuGI",
-       "KOFCuGIdf",
-       "KOFCuGIdj",
        "KOFEcGI",
-       "KOFEcGIdf",
-       "KOFEcGIdj",
        "KOFFiGI",
-       "KOFFiGIdf",
-       "KOFFiGIdj",
        "KOFGI",
        "KOFGIdf",
        "KOFGIdj",
        "KOFInGI",
-       "KOFInGIdf",
-       "KOFInGIdj",
        "KOFIpGI",
-       "KOFIpGIdf",
-       "KOFIpGIdj",
        "KOFPoGI",
-       "KOFPoGIdf",
-       "KOFPoGIdj",
        "KOFSoGI",
-       "KOFSoGIdf",
-       "KOFSoGIdj",
-       "KOFTrGI",
-       "KOFTrGIdf",
-       "KOFTrGIdj")
+       "KOFTrGI")
 
 df_KOFIndex <- Lag_12(df_KOFIndex, iso3c, List)
 
@@ -1468,11 +1456,11 @@ df_EMDAT_full <- dplyr::select(df_EMDAT_full, -country)
 # Merge datasets main independent and controls
 ```{r}
 ## add world bank variables
-df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
+#df_Ind_var <- left_join(df_UNcomtrade_main, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add humanitarian dfs
-df_Ind_var <- left_join(df_Ind_var, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_Vdem_s, df_HOD_cy, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add vdem indexes
-df_Ind_var <- left_join(df_Ind_var, df_Vdem_s, by = c("year" = "year", "iso3c" = "iso3c"))
+df_Ind_var <- left_join(df_Ind_var, df_WorldBank, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add conf events
 df_Ind_var <- left_join(df_Ind_var, df_UCDP_GED_Y, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add membership

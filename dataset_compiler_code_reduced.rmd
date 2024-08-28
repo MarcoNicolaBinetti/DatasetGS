@@ -29,7 +29,6 @@ library(gridExtra)
 
 
 library(classInt)
-library(ggplot2)
 library(devtools)
 library(DT)
 library(dvmisc)
@@ -76,6 +75,7 @@ mode <- function(v) {
 # exclude
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
+# drop columns
 drop_columns <- function(data, columns_to_drop) {
   data <- data[, names(data) %!in% columns_to_drop, drop = FALSE]
   return(data)
@@ -317,6 +317,9 @@ sub_folder_name<-"EMDAT"
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta")
 ## import  dataset
 EMDAT<- haven::read_dta(file_path)
+
+#EMDAT<-subset(EMDAT, EMDAT$TotalDeaths>499)
+
 ```
 
 #### Reshaping EMDAT
@@ -383,6 +386,7 @@ EM_dat_100k <- process_EmDat_1(EMDAT, 100000)
 
 ```
 
+
 ##### Getting it in a country-year-month panel format
 ```{r, include=FALSE}
 
@@ -421,7 +425,7 @@ df <- df %>%
   mutate(across(all_of(List), ~ replace_na(., 0)))
 
 # Drop date
-df <- select(df, -date)
+df <- dplyr::select(df, -date)
 
 # Create variable year
 df$year <- as.double(substr(df$date_month, 5, 9))
@@ -454,7 +458,9 @@ EM_dat_100k_processed_2 <- process_EmDat_2(EM_dat_100k, df_Base_YM)
 
 ##### Getting it in a country-year panel format
 ```{r, include=FALSE}
+
 process_EmDat_3 <- function(df, df_basey) {
+  
   df <- df %>%
     group_by(iso3c, year) %>%
     summarize(
@@ -960,7 +966,7 @@ df_Aiddata<-Nas_to_0(df_Aiddata,List)
 
 # list variables aidata
 List<- colnames(df_Aiddata)[colnames(df_Aiddata) %in% c("AidData_tot_commit",
-                                                         "AidData_tot_commit_per_cap")]
+                                                        "AidData_tot_commit_per_cap")]
 
 # Replace values with NA for years after 2013
 df_Aiddata[df_Aiddata$year > 2013, List] <- NA
@@ -1082,8 +1088,8 @@ df_Aiddata_sectoral<-Nas_to_0(df_Aiddata_sectoral,List)
 
 # list variables aidata
 List<- colnames(df_Aiddata_sectoral)[colnames(df_Aiddata_sectoral) %!in% c("country",
-                                                         "iso3c",
-                                                        "year")]
+                                                                           "iso3c",
+                                                                           "year")]
 
 # Replace values with NA for years after 2013
 df_Aiddata_sectoral[df_Aiddata_sectoral$year > 2013, List] <- NA
@@ -1351,17 +1357,17 @@ path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
-folder_path <- file.path(path,"globsol_20240313_df50k.rds")
+folder_path <- file.path(path,"globsol_df50k.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_20240313_df5k.rds")
+folder_path <- file.path(path,"globsol_df5k.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_20240313_df100k.rds")
+folder_path <- file.path(path,"globsol_df100k.rds")
 ## save file
 saveRDS(df100k,folder_path)
 
