@@ -1,0 +1,56 @@
+{\rtf1\fs24
+\trowd\trgaph75\trleft-75\intbl\trqc\clbrdrt\brdrs\cellx6192\clbrdrt\brdrs\cellx7632\clbrdrt\brdrs\cellx9072
+\ql \cell\qc (1)\cell\qc (2)\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx6192\cellx7632\cellx9072
+\ql \cell\qc Model 0\cell\qc Model 1\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx6192\cellx7632\cellx9072
+\ql \cell\qc GTPSV\cell\qc GTPSV\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx6192\cellx7632\cellx9072
+\trowd\trgaph75\trleft-75\trqc\clbrdrb\brdrs\cellx6192\clbrdrb\brdrs\cellx7632\clbrdrb\brdrs\cellx9072
+\ql VARIABLES\cell\qc 2SLS\cell\qc 2SLS\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx6192\cellx7632\cellx9072
+\ql \cell\qc \cell\qc \cell\row
+\ql Distance\cell\qc 0.001*\cell\qc 0.004**\cell\row
+\ql \cell\qc (0.001)\cell\qc (0.002)\cell\row
+\ql HA\cell\qc 0.180**\cell\qc 0.282***\cell\row
+\ql \cell\qc (0.073)\cell\qc (0.069)\cell\row
+\ql Dist.*HA\cell\qc \cell\qc -0.005**\cell\row
+\ql \cell\qc \cell\qc (0.002)\cell\row
+\ql Elevation\cell\qc 0.000**\cell\qc 0.000***\cell\row
+\ql \cell\qc (0.000)\cell\qc (0.000)\cell\row
+\ql Intensity\cell\qc 0.000\cell\qc 0.000\cell\row
+\ql \cell\qc (0.000)\cell\qc (0.000)\cell\row
+\ql Dem.\cell\qc -0.440***\cell\qc -0.421***\cell\row
+\ql \cell\qc (0.120)\cell\qc (0.104)\cell\row
+\ql GDP\cell\qc -0.025\cell\qc 0.012\cell\row
+\ql \cell\qc (0.246)\cell\qc (0.247)\cell\row
+\ql Pop\cell\qc -0.177\cell\qc -0.075\cell\row
+\ql \cell\qc (0.388)\cell\qc (0.389)\cell\row
+\ql Mil. exp. p.s.\cell\qc 0.000\cell\qc 0.000\cell\row
+\ql \cell\qc (0.000)\cell\qc (0.000)\cell\row
+\ql Gov. support\cell\qc 0.078***\cell\qc 0.068***\cell\row
+\ql \cell\qc (0.026)\cell\qc (0.025)\cell\row
+\ql VNSA support\cell\qc -0.075\cell\qc -0.067\cell\row
+\ql \cell\qc (0.052)\cell\qc (0.052)\cell\row
+\ql \cell\qc \cell\qc \cell\row
+\ql Observations\cell\qc 7,124\cell\qc 7,124\cell\row
+\ql Adjusted R-squared\cell\qc 0.003\cell\qc 0.008\cell\row
+\ql Dyad FE\cell\qc YES\cell\qc YES\cell\row
+\ql Year FE\cell\qc YES\cell\qc YES\cell\row
+\ql Cluster SE\cell\qc YES\cell\qc YES\cell\row
+\ql Battle-level controls\cell\qc YES\cell\qc YES\cell\row
+\ql Situational military controls\cell\qc YES\cell\qc YES\cell\row
+\ql Socio-pol. and econ. controls\cell\qc YES\cell\qc YES\cell\row
+\ql Structural military controls\cell\qc YES\cell\qc YES\cell\row
+\ql F statistic\cell\qc 11.88\cell\qc 11.75\cell\row
+\ql p-value of F-statistic\cell\qc 0\cell\qc 0\cell\row
+\ql F-stat for weak identification\cell\qc 23.18\cell\qc 11.68\cell\row
+\ql F-stat for underidentification\cell\qc 6.865\cell\qc 6.893\cell\row
+\ql p-value of underidentification\cell\qc 0.00879\cell\qc 0.00865\cell\row
+\ql GMM distance test statistic of endogeneity\cell\qc 1.932\cell\qc 2.161\cell\row
+\trowd\trgaph75\trleft-75\trqc\trbrdrb\brdrs\clbrdrb\brdrs\cellx6192\clbrdrb\brdrs\cellx7632\clbrdrb\brdrs\cellx9072
+\ql p-value of GMM distance test statistic\cell\qc 0.165\cell\qc 0.142\cell\row
+\pard\qc
+Robust standard errors in parentheses\par
+*** p<0.01, ** p<0.05, * p<0.1\par
+}

@@ -1,0 +1,52 @@
+\documentclass[]{article}
+\setlength{\pdfpagewidth}{8.5in} \setlength{\pdfpageheight}{11in}
+\begin{document}
+\begin{tabular}{lcc} \hline
+ & (1) & (2) \\
+ & Model 0 & Model 1 \\
+ & GTPSV & GTPSV \\
+VARIABLES & 2SLS & 2SLS \\ \hline
+ &  &  \\
+Distance & 0.001* & 0.004** \\
+ & (0.001) & (0.002) \\
+HA & 0.180** & 0.282*** \\
+ & (0.073) & (0.069) \\
+Dist.*HA &  & -0.005** \\
+ &  & (0.002) \\
+Elevation & 0.000** & 0.000*** \\
+ & (0.000) & (0.000) \\
+Intensity & 0.000 & 0.000 \\
+ & (0.000) & (0.000) \\
+Dem. & -0.440*** & -0.421*** \\
+ & (0.120) & (0.104) \\
+GDP & -0.025 & 0.012 \\
+ & (0.246) & (0.247) \\
+Pop & -0.177 & -0.075 \\
+ & (0.388) & (0.389) \\
+Mil. exp. p.s. & 0.000 & 0.000 \\
+ & (0.000) & (0.000) \\
+Gov. support & 0.078*** & 0.068*** \\
+ & (0.026) & (0.025) \\
+VNSA support & -0.075 & -0.067 \\
+ & (0.052) & (0.052) \\
+ &  &  \\
+Observations & 7,124 & 7,124 \\
+Adjusted R-squared & 0.003 & 0.008 \\
+Dyad FE & YES & YES \\
+Year FE & YES & YES \\
+Cluster SE & YES & YES \\
+Battle-level controls & YES & YES \\
+Situational military controls & YES & YES \\
+Socio-pol. and econ. controls & YES & YES \\
+Structural military controls & YES & YES \\
+F statistic & 11.88 & 11.75 \\
+p-value of F-statistic & 0 & 0 \\
+F-stat for weak identification & 23.18 & 11.68 \\
+F-stat for underidentification & 6.865 & 6.893 \\
+p-value of underidentification & 0.00879 & 0.00865 \\
+GMM distance test statistic of endogeneity & 1.932 & 2.161 \\
+ p-value of GMM distance test statistic & 0.165 & 0.142 \\ \hline
+\multicolumn{3}{c}{ Robust standard errors in parentheses} \\
+\multicolumn{3}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+\end{document}

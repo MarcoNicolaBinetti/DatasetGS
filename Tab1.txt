@@ -1,0 +1,30 @@
+		(1)	(2)
+		Model 0	Model 1
+		GTPSV	GTPSV
+VARIABLES	LABELS	2SLS	2SLS
+			
+dc	Distance	0.001*	0.004**
+		(0.001)	(0.002)
+dummy_ha	HA	0.180**	0.282***
+		(0.073)	(0.069)
+DistXdummy_ha	Dist.*HA		-0.005**
+			(0.002)
+			
+Observations		7,124	7,124
+Adjusted R-squared		0.003	0.008
+Dyad FE		YES	YES
+Year FE		YES	YES
+Cluster SE		YES	YES
+Battle-level controls		YES	YES
+Situational military controls		YES	YES
+Socio-pol. and econ. controls		YES	YES
+Structural military controls		YES	YES
+F statistic		11.88	11.75
+p-value of F-statistic		0	0
+F-stat for weak identification		23.18	11.68
+F-stat for underidentification		6.865	6.893
+p-value of underidentification		0.00879	0.00865
+GMM distance test statistic of endogeneity		1.932	2.161
+p-value of GMM distance test statistic		0.165	0.142
+Robust standard errors in parentheses			
+*** p<0.01, ** p<0.05, * p<0.1			
