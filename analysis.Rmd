@@ -6,7 +6,7 @@ output: html_document
 ---
 
 # load libraries
-```{r}
+```{r, include=FALSE}
 library(plyr)
 library(dplyr)
 library(tidyverse)
