@@ -187,14 +187,14 @@ download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
 
 
 # Setting directory for datasets' folders
-```{r}
+```{r, include=FALSE}
 desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 #desktop_path <- file.path("C:", "Users","krogers","Documents")
 ```
 
 
 # Set main folder name
-```{r}
+```{r, include=FALSE}
 # Define the name of the folder to check/create
 main_folder_name <- "DFGlobalLab"
 #main_folder_name <- "data"

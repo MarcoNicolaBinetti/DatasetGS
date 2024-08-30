@@ -37,7 +37,7 @@ rm(list=ls())
 ```
 
 # Functions
-```{r}
+```{r, include=FALSE}
 # exclude
 '%!in%' <- function(x,y)!('%in%'(x,y))
 

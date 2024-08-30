@@ -61,7 +61,7 @@ rm(list=ls())
 ```
 
 # Funtions 
-```{r}
+```{r, include=FALSE}
 # calculate mode
 mode <- function(v) {
   uniqv <- unique(v)
