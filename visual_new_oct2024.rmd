@@ -1,0 +1,141 @@
+---
+title: "visual_new.rmd"
+author: "MNB"
+date: "10/28/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+
+## Remove lists
+
+## New visuals
+```{r}
+# Rescale variables mean centred for each year
+
+df_g <- df_full%>%
+mutate(aid_scaled = Hum_plus_ER_aid_tot-year_mean_Hum_plus_ERaid,
+        Norm_scaled = NormAgr-year_mean_NormAgr)
+  
+```
+
+```{r}
+library(RColorBrewer)
+#xlim<-mean(df_g$Norm_scaled)
+#ylim<-mean(df_g$aid_scaled)
+
+# Plot the dataset
+p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
+ geom_point(aes(colour = factor(GlobSol))) +
+ #geom_text(aes(label=paste(iso3c,year)))+
+ labs(x = "Identification", y = "Joint Action") +
+ geom_vline(xintercept = 0, linetype = "dashed", alpha=0.5) +
+ geom_hline(yintercept = 0, linetype = "dashed", alpha=0.5) +
+ scale_x_continuous(breaks=c(min(df_g$Norm_scaled)-14,0,max(df_g$Norm_scaled)),
+                     labels=c("Low", "Mean","High"),
+                     limits=c(min(df_g$Norm_scaled)-5,max(df_g$Norm_scaled)+5)) +
+ scale_y_continuous(breaks=c(0,1500000000),
+                    limits=c(-181435843,1500000000),
+                     labels=c("Mean","High")) + 
+ scale_colour_brewer(palette="Set1",name="Global Solidarity",
+                     labels=c("Full",
+                              "Symbolic",
+                              "Coercive",
+                              "Minimal")) +
+ theme(panel.background = element_blank(),
+        axis.ticks=element_blank(),
+        legend.position=c(0.8,0.8))
+
+print(p) + 
+  ggtitle("Distribution of Normative Agreement and Sharing Behaviour, 1995-2019 \n(mean-centred by year)")
+
+#ggsave("./plots/scatter_20240313.png", width=8,height=5)
+
+```
+
+## With labels
+```{r}
+library(ggrepel)
+
+lab<-df_g %>% 
+  mutate(label=
+           ifelse(year=="2005" & iso3c=="USA","\nHurricane Katrina,  USA 2005", 
+           ifelse(year=="2009" & iso3c=="TWN","\nTyphoon Morakot, Taiwan 2009",
+           ifelse(year=="2005" & iso3c=="PAK"," \nKashmir Earthquake,\n Pakistan 2005",NA)))) %>%
+    mutate(label2=
+           ifelse(year=="2006" & iso3c=="SDN","Sudan\nFloods\n2006 ",NA)) %>%
+  filter(!is.na(label)|!is.na(label2))
+
+
+p+geom_text(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,hjust=0.3, vjust=0.8))+
+  geom_text(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label2),hjust=1.2)+
+  geom_point(data=lab,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
+  ggtitle("")
+
+#ggsave("./plots/labelled_scatter_20240910.png", width=8,height=5)
+```
+
+
+```{r}
+p+geom_text_repel(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,force=6))+
+  geom_point(data=lab,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
+  ggtitle("Labelled distribution of Normative Agreement and Sharing Behaviour, 1995-2019")
+
+#ggsave("./plots/labelled_scatter_20240314.png", width=8,height=5)
+```
+
+
+```{r}
+lab<-df_g %>% 
+  mutate(label=
+ ifelse(year=="2004" & iso3c=="IDN","Indonesia",
+           ifelse(year=="2004" & iso3c=="THA","Thailand",
+           ifelse(year=="2004" & iso3c=="SOM","Somalia",
+           ifelse(year=="2004" & iso3c=="IND","\nIndia",
+           ifelse(year=="2004" & iso3c=="LKA", "\nSri Lanka",NA)))))) %>%
+  filter(!is.na(label))
+
+add<-data.frame(year=2004,
+                Norm_scaled=6.4+20.44+1.44-2.56,
+                aid_scaled=108619633-7145305-20972991-3750192,
+                label="Asian Tsunami")
+lab2<-rbind(lab %>% select(c(year,Norm_scaled,aid_scaled,label)),add)                
+                  
+                  
+p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),
+                  force=45)+
+  geom_point(data=subset(lab2,label=="Asian Tsunami"))+
+  geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
+  ggtitle("Asian Tsunami 2004")
+
+#ggsave("./plots/2004_scatter_20240315.png", width=8,height=5)
+
+lab<-df_g %>% 
+  mutate(label=
+ ifelse(year=="2005" & iso3c=="IDN","Indonesia",
+           ifelse(year=="2005" & iso3c=="THA","Thailand",
+           ifelse(year=="2005" & iso3c=="SOM","Somalia",
+           ifelse(year=="2005" & iso3c=="IND","India",
+           ifelse(year=="2005" & iso3c=="LKA", "Sri Lanka",NA)))))) %>%
+  filter(!is.na(label))
+
+add<-data.frame(year=2005,
+                Norm_scaled=18.903226+42.903226-9.096774-1.903226,
+                aid_scaled=501130465+252954615+339708899+33043507,
+              label="Asian Tsunami")
+lab2<-rbind(lab %>% select(c(year,Norm_scaled,aid_scaled,label)),add)                
+                  
+                  
+p+geom_text_repel(data=lab2,aes(x = Norm_scaled, y = aid_scaled, label=label),force=20,max.overlaps = 20)+
+  geom_point(data=subset(lab2,label=="Asian Tsunami"))+
+  geom_point(data=lab2,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
+  ggtitle("Asian Tsunami (2005 impact)")
+
+#ggsave("./plots/2005_scatter_20240315.png", width=8,height=5)
+
+```
+

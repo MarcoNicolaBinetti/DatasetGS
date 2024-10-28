@@ -1105,13 +1105,19 @@ df_aid_sec<-df_Aiddata_sectoral
 df_aid_sec$Hum_plus_ER_aid_tot<-df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
 df_aid_sec$ln_Hum_plus_ER_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
 
+df_aid_sec$extended_aid_tot<-df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot+df_aid_sec$Food_Security_tot+df_aid_sec$Water_Supply_Sanitation_tot
+df_aid_sec$ln_extended_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot+df_aid_sec$Food_Security_tot+df_aid_sec$Water_Supply_Sanitation_tot)
+
+
 # keep vars of interest
 df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
                                                       "year",
                                                       "Hum_plus_ER_aid_tot",
                                                       "Humanitarian_Aid_tot",
                                                       "Emergency_Response_tot",
-                                                      "ln_Hum_plus_ER_aid_tot")]
+                                                      "ln_Hum_plus_ER_aid_tot",
+                                                        "extended_aid_tot",
+                                                       "ln_extended_aid_tot")]
 
 ```
 

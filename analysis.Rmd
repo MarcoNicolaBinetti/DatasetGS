@@ -141,8 +141,8 @@ df_IndVars <- readRDS(Df_path)
 
 # Set dataset for analysis
 ```{r}
-data<-df_Globsol5k
-#data<-df_Globsol50k
+#data<-df_Globsol5k
+data<-df_Globsol50k
 #data<-df_Globsol100k
 #data<-df_Globsol5k500d
 
@@ -232,11 +232,11 @@ List<-c("count_HO_lag_1",
         "civil_soc_lag_1",
         "v2regdur",
         "age_dep_ratio_lag_1",
-        "lit_rate_lag_1")
+        "lit_rate_lag_1",
+                   "regio_pol",
+                   "regio_geo")
 
-table(df_full$rpe)
-
-df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","iso3c","year")] 
+df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","Hum_plus_ER_aid_tot","NormAgr","iso3c","year")] 
 
 ## drop NAs
 #df_model_data <- na.omit(df_model_data)
@@ -304,11 +304,13 @@ df_scaled$dis_count_lag_1<-df_scaled$biological_dummy_lag_1_50k+df_scaled$climat
 ## Export file
 ```{r}
 #saving it
-namefile<-"df_full_5.csv"
-#namefile<-"df_full.csv"
+#namefile<-"df_full_5.csv"
+namefile<-"df_full.csv"
 #namefile<-"df_full_100.csv"
 #namefile<-"df_full_5k_500d.csv"
 
+## correct names
+df_scaled<-janitor::clean_names(df_scaled)
 
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 write.csv(df_scaled, folder_path_wb, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
