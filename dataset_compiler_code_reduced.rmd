@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 30 08 2024
+## 20 11 2024
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -37,7 +37,7 @@ library(ggpubr)
 library(gtools)
 library(foreign)
 #library(GADMTools)
-library(maps)
+#library(maps)
 
 
 library(spdep)
@@ -51,7 +51,7 @@ library(haven)
 
 library(reshape)
 
-library(geojsonio)
+#library(geojsonio)
 
 library(countrycode)
 
@@ -66,11 +66,11 @@ rm(list=ls())
 
 # Funtions 
 ```{r}
-# calculate mode
-mode <- function(v) {
-  uniqv <- unique(v)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
+# # calculate mode
+# mode <- function(v) {
+#   uniqv <- unique(v)
+#   uniqv[which.max(tabulate(match(v, uniqv)))]
+# }
 
 
 # exclude
@@ -251,11 +251,12 @@ df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2020)
 
 # Rename countries
   replacements <- c(
-    "Czechoslovakia" = "Czech Republic (the)",
+    "Czechoslovakia"    = "Czech Republic (the)",
     "Serbia Montenegro" = "Serbia",
-    "Yugoslavia" = "Serbia"
+    "Yugoslavia"        = "Serbia"
   )
-  df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
+
+df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
 
 ## assign ISO3C
 df_Polity2$iso3c <- countrycode(df_Polity2$country, "country.name", "iso3c")
@@ -265,11 +266,11 @@ df_Base_Y<-df_Polity2[c("country",
                         "iso3c",
                         "year")]
 
-# Complete panel
-df_Base_Y<-df_Base_Y %>%
-  complete(iso3c,year=c(1981:2021)) %>%
-  group_by(iso3c) %>% fill(country) %>%
-  ungroup()
+# # Complete panel
+# df_Base_Y<-df_Base_Y %>%
+#   complete(iso3c,year=c(1981:2021)) %>%
+#   group_by(iso3c) %>% fill(country) %>%
+#   ungroup()
 
 ## drop iso3c NA
 df_Base_Y<-Drop_NA(df_Base_Y, iso3c)
@@ -338,9 +339,16 @@ process_EmDat_1 <- function(data, min_affected) {
   data <- subset(data, DisasterGroup == "Natural")
   
   # Select variables of interest
-  data <- data[c("DisNo", "StartYear", "EndYear", "StartMonth", "EndMonth",
-                 "DisasterGroup", "DisasterSubgroup", "DisasterType",
-                 "DisasterSubtype", "ISO", "Country")]
+  data <- data[c("DisNo",
+                 "StartYear",
+                 "EndYear",
+                 "StartMonth",
+                 "EndMonth",
+                 "DisasterGroup",
+                 "DisasterSubgroup",
+                 "DisasterType",
+                 "DisasterSubtype",
+                 "Country")]
   
   # Rename variables
   names(data)[names(data) == "Year"] <- "year"
@@ -355,13 +363,14 @@ process_EmDat_1 <- function(data, min_affected) {
   
   # Rename countries
   replacements <- c(
-    "Czechoslovakia" = "Czech Republic (the)",
-    "Germany Fed Rep" = "Germany",
-    "Korea (the Republic of)" = "Korea South",
+    "Czechoslovakia"                              = "Czech Republic (the)",
+    "Germany Fed Rep"                             = "Germany",
+    "Korea (the Republic of)"                     = "Korea South",
     "Korea (the Democratic People's Republic of)" = "Korea North",
-    "Serbia Montenegro" = "Serbia",
-    "Yugoslavia" = "Serbia"
+    "Serbia Montenegro"                           = "Serbia",
+    "Yugoslavia"                                  = "Serbia"
   )
+  
   data$country_Emdat <- ifelse(data$country_Emdat %in% names(replacements), replacements[data$country_Emdat], data$country_Emdat)
   
   # Create ISO codes
@@ -380,9 +389,9 @@ process_EmDat_1 <- function(data, min_affected) {
 }
 
 # Apply function for different thresholds
-EM_dat_1k <- process_EmDat_1(EMDAT, 1000)
-EM_dat_5k <- process_EmDat_1(EMDAT, 5000)
-EM_dat_50k <- process_EmDat_1(EMDAT, 50000)
+EM_dat_1k   <- process_EmDat_1(EMDAT, 1000)
+EM_dat_5k   <- process_EmDat_1(EMDAT, 5000)
+EM_dat_50k  <- process_EmDat_1(EMDAT, 50000)
 EM_dat_100k <- process_EmDat_1(EMDAT, 100000)
 
 ```
@@ -450,9 +459,9 @@ df <- janitor::clean_names(df)
 }
 
 # Process each dataset
-EM_dat_1k_processed_2 <- process_EmDat_2(EM_dat_1k, df_Base_YM)
-EM_dat_5k_processed_2 <- process_EmDat_2(EM_dat_5k, df_Base_YM)
-EM_dat_50k_processed_2 <- process_EmDat_2(EM_dat_50k, df_Base_YM)
+EM_dat_1k_processed_2   <- process_EmDat_2(EM_dat_1k, df_Base_YM)
+EM_dat_5k_processed_2   <- process_EmDat_2(EM_dat_5k, df_Base_YM)
+EM_dat_50k_processed_2  <- process_EmDat_2(EM_dat_50k, df_Base_YM)
 EM_dat_100k_processed_2 <- process_EmDat_2(EM_dat_100k, df_Base_YM)
 
 ```
@@ -492,9 +501,9 @@ process_EmDat_3 <- function(df, df_basey) {
 }
 
 # Process each dataset
-EM_dat_1k_processed_3 <- process_EmDat_3(EM_dat_1k_processed_2, df_Base_Y)
-EM_dat_5k_processed_3 <- process_EmDat_3(EM_dat_5k_processed_2, df_Base_Y)
-EM_dat_50k_processed_3 <- process_EmDat_3(EM_dat_50k_processed_2, df_Base_Y)
+EM_dat_1k_processed_3   <- process_EmDat_3(EM_dat_1k_processed_2, df_Base_Y)
+EM_dat_5k_processed_3   <- process_EmDat_3(EM_dat_5k_processed_2, df_Base_Y)
+EM_dat_50k_processed_3  <- process_EmDat_3(EM_dat_50k_processed_2, df_Base_Y)
 EM_dat_100k_processed_3 <- process_EmDat_3(EM_dat_100k_processed_2, df_Base_Y)
 
 ```
@@ -605,10 +614,12 @@ df_ICWES<-Drop_NA(df_ICWES, iso3c_source)
 ## create dummy if sender is government and receiver is government
 df_ICWES$gov_sender<-ifelse(grepl("Govern", df_ICWES$source_sector),1,0)
 df_ICWES$gov_target<-ifelse(grepl("Govern", df_ICWES$target_sectors),1,0)
+
 ```
 
 ##### Subsetting events of interest
 ```{r}
+
 # subset dataset 
 ## subset governative interactions
 df_ICWES_g2g<-subset(df_ICWES, df_ICWES$gov_sender==1 &
@@ -678,14 +689,15 @@ df_ICWES_g2g<-drop_columns(df_ICWES_g2g,List)
 
 ## correct names
 df_ICWES_g2g<-janitor::clean_names(df_ICWES_g2g)
+
 ```
 
 ##### Merge with emdat country month level dataset in order to identify declarations 
 ```{r}
-df_ICWES_g2g_dis1k= left_join(df_ICWES_g2g, EM_dat_1k_processed_2, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
-df_ICWES_g2g_dis5k= left_join(df_ICWES_g2g, EM_dat_5k_processed_2, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
-df_ICWES_g2g_dis50k= left_join(df_ICWES_g2g, EM_dat_50k_processed_2, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
-df_ICWES_g2g_dis100k= left_join(df_ICWES_g2g, EM_dat_100k_processed_2, by = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+df_ICWES_g2g_dis1k=   left_join(df_ICWES_g2g, EM_dat_1k_processed_2, by     = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+df_ICWES_g2g_dis5k=   left_join(df_ICWES_g2g, EM_dat_5k_processed_2, by     = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+df_ICWES_g2g_dis50k=  left_join(df_ICWES_g2g, EM_dat_50k_processed_2, by    = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+df_ICWES_g2g_dis100k= left_join(df_ICWES_g2g, EM_dat_100k_processed_2, by   = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
 
 
 process_ICEWS_1 <- function(df) {
@@ -702,9 +714,9 @@ process_ICEWS_1 <- function(df) {
 }
 
 # Process each dataset
-df_ICWES_g2g_dis1k <- process_ICEWS_1(df_ICWES_g2g_dis1k)
-df_ICWES_g2g_dis5k <- process_ICEWS_1(df_ICWES_g2g_dis5k)
-df_ICWES_g2g_dis50k <- process_ICEWS_1(df_ICWES_g2g_dis50k)
+df_ICWES_g2g_dis1k   <- process_ICEWS_1(df_ICWES_g2g_dis1k)
+df_ICWES_g2g_dis5k   <- process_ICEWS_1(df_ICWES_g2g_dis5k)
+df_ICWES_g2g_dis50k  <- process_ICEWS_1(df_ICWES_g2g_dis50k)
 df_ICWES_g2g_dis100k <- process_ICEWS_1(df_ICWES_g2g_dis100k)
 
 ```
@@ -735,10 +747,10 @@ process_ICEWS_2 <- function(df) {
 
   }
 
-df_ICWES_dis1k_y<-process_ICEWS_2(df_ICWES_g2g_dis1k)
-df_ICWES_dis5k_y<-process_ICEWS_2(df_ICWES_g2g_dis5k)
-df_ICWES_dis50k_y<-process_ICEWS_2(df_ICWES_g2g_dis50k)
-df_ICWES_dis100k_y<-process_ICEWS_2(df_ICWES_g2g_dis100k)
+df_ICWES_dis1k_y   <-process_ICEWS_2(df_ICWES_g2g_dis1k)
+df_ICWES_dis5k_y   <-process_ICEWS_2(df_ICWES_g2g_dis5k)
+df_ICWES_dis50k_y  <-process_ICEWS_2(df_ICWES_g2g_dis50k)
+df_ICWES_dis100k_y <-process_ICEWS_2(df_ICWES_g2g_dis100k)
 
 ```
 
@@ -785,10 +797,10 @@ df_ICEWS_EMDAT<-df_ICEWS_EMDAT[df_ICEWS_EMDAT$year > 1994,]
   return(df_ICEWS_EMDAT)
 }
 
-df_ICEWS_EMDAT_1ky<-process_ICEWS_4(EM_dat_1k_processed_3,df_ICWES_dis1k_y)  
-df_ICEWS_EMDAT_5ky<-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
-df_ICEWS_EMDAT_50ky<-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
-df_ICEWS_EMDAT_100ky<-process_ICEWS_4(EM_dat_100k_processed_3,df_ICWES_dis100k_y)
+df_ICEWS_EMDAT_1ky   <-process_ICEWS_4(EM_dat_1k_processed_3,df_ICWES_dis1k_y)  
+df_ICEWS_EMDAT_5ky   <-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
+df_ICEWS_EMDAT_50ky  <-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
+df_ICEWS_EMDAT_100ky <-process_ICEWS_4(EM_dat_100k_processed_3,df_ICWES_dis100k_y)
 
 
 ```
@@ -816,9 +828,9 @@ process_ICEWS_3 <- function(df_input) {
 }
 
 # Summarize each dataset
-df_ICWES_dis1k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_1ky)
-df_ICWES_dis5k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_5ky)
-df_ICWES_dis50k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_50ky)
+df_ICWES_dis1k_y_small   <- process_ICEWS_3(df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y_small   <- process_ICEWS_3(df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y_small  <- process_ICEWS_3(df_ICEWS_EMDAT_50ky)
 df_ICWES_dis100k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_100ky)
 
 
@@ -849,9 +861,9 @@ df_output <- df_input[ , names(df_input) %in% c("iso3c",
 
 
 # Summarize each dataset
-df_ICWES_dis1k_y <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICWES_dis1k_y)
-df_ICWES_dis5k_y <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICWES_dis5k_y)
-df_ICWES_dis50k_y <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis50k_y)
+df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICWES_dis1k_y)
+df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICWES_dis5k_y)
+df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis50k_y)
 df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small,df_ICWES_dis100k_y)
 
 
@@ -867,9 +879,9 @@ sub_folder_name<-"Aidata"
 ```
 #### Create folder and download
 ```{r}
-download_create_folder_and_unzip(desktop_path,
-                           sub_folder_name,
-                           "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
+# download_create_folder_and_unzip(desktop_path,
+#                            sub_folder_name,
+#                            "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
 ```
 
 #### Import
@@ -883,6 +895,8 @@ Aiddata<- read.csv(file_path)
 #### Reshaping AidData 
 ##### Calculating total amount of aid
 ```{r}
+
+
 df_Aiddata<-Aiddata
 
 ## aggregate at country recipient level
@@ -891,9 +905,9 @@ df_Aiddata<- df_Aiddata %>%
   summarize(AidData_tot_commit = sum(commitment_amount_usd_constant_sum))
 
 #change names
-df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"] <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"]            <- "Serbia"
 df_Aiddata$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
-df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"] <- "Russia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"]          <- "Russia"
 
 #assign ISO3
 df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
@@ -976,6 +990,7 @@ df_Aiddata[df_Aiddata$year > 2013, List] <- NA
 
 ##### Calculating total amount of aid by sector per recipient country per each year
 ```{r}
+
 #load dataset
 df_Aiddata_sectoral<-Aiddata
 
@@ -1023,9 +1038,9 @@ replacements <- c(
 df_Aiddata_sectoral$Short_code <- replacements[as.character(df_Aiddata_sectoral$Short_code)]
 
 #change names countries
-df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"] <- "Serbia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"]            <- "Serbia"
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Serbia and Montenegro"] <- "Serbia"
-df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Soviet Union"] <- "Russia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Soviet Union"]          <- "Russia"
 
 #assign ISO3
 df_Aiddata_sectoral$iso3c <- countrycode(df_Aiddata_sectoral$recipient, "country.name", "iso3c")
@@ -1060,13 +1075,15 @@ dcast2 <- reshape2::dcast(df_Aiddata_sectoral, iso3c + year ~ Short_code, value.
 
 #rename vars
 cols_to_rename <- names(dcast1)[!(names(dcast1) %in% c("year", "iso3c"))]
+
 dcast1 <- dcast1 %>%
   rename_with(~ paste0(., "_pc"), cols_to_rename)
+
 dcast2 <- dcast2 %>%
   rename_with(~ paste0(., "_tot"), cols_to_rename)
 
 # merge with dcast1 and dcast2 with aid data country year vector
-df_Aiddata_sectoral<-left_join(df_Aiddata_CY, dcast1, by = c("iso3c" = "iso3c","year"="year"))
+df_Aiddata_sectoral<-left_join(df_Aiddata_CY, dcast1,       by = c("iso3c" = "iso3c","year"="year"))
 df_Aiddata_sectoral<-left_join(df_Aiddata_sectoral, dcast2, by = c("iso3c" = "iso3c","year"="year"))
 
 
@@ -1081,7 +1098,7 @@ df_Aiddata_sectoral<-df_Aiddata_sectoral %>%
 ## merge with Base
 df_Aiddata_sectoral= left_join(df_Base_Y, df_Aiddata_sectoral, by = c("year" = "year", "iso3c" = "iso3c"))
 
-#list variables MDat
+#list variables aidata
 List<- colnames(df_Aiddata_sectoral)[!colnames(df_Aiddata_sectoral) %in% c("iso3c", "year")]
 
 # assign 0s
@@ -1102,22 +1119,23 @@ df_Aiddata_sectoral[df_Aiddata_sectoral$year > 2013, List] <- NA
 # calculate average
 df_aid_sec<-df_Aiddata_sectoral
 
-df_aid_sec$Hum_plus_ER_aid_tot<-df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
-df_aid_sec$ln_Hum_plus_ER_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
-
-df_aid_sec$extended_aid_tot<-df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot+df_aid_sec$Food_Security_tot+df_aid_sec$Water_Supply_Sanitation_tot
-df_aid_sec$ln_extended_aid_tot<-log(df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot+df_aid_sec$Food_Security_tot+df_aid_sec$Water_Supply_Sanitation_tot)
-
-
 # keep vars of interest
 df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
                                                       "year",
-                                                      "Hum_plus_ER_aid_tot",
                                                       "Humanitarian_Aid_tot",
                                                       "Emergency_Response_tot",
-                                                      "ln_Hum_plus_ER_aid_tot",
-                                                        "extended_aid_tot",
-                                                       "ln_extended_aid_tot")]
+                                                      "Reconstruction_Relief_tot")]
+
+
+# claculate sum of aid 
+df_aid_sec$Hum_plus_ER_aid_tot    <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
+df_aid_sec$ln_Hum_plus_ER_aid_tot <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
+
+df_aid_sec$extended_aid_tot       <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot
+df_aid_sec$ln_extended_aid_tot    <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot)
+
+
+
 
 ```
 
@@ -1150,15 +1168,17 @@ df<-drop_columns(df,List)
 ## merge dataframes
 df_AID_EMDAT= left_join(df, df_aid_input, by = c("iso3c" = "iso3c", "year"="year"))
   
-  #list variables 
-  List<- c("Hum_plus_ER_aid_tot",
-           "Humanitarian_Aid_tot",
-           "Emergency_Response_tot",
-           "ln_Hum_plus_ER_aid_tot")
-  
-# Assign 0s
-  df_AID_EMDAT <- df_AID_EMDAT %>%
-    mutate(across(List, ~ replace_na(., 0)))
+
+## quite sure this bit of code is wrong as it extends 0s to years beyond 2013 where we do not have AidData data
+#   #list variables 
+#   List<- c("Hum_plus_ER_aid_tot",
+#            "Humanitarian_Aid_tot",
+#            "Emergency_Response_tot",
+#            "ln_Hum_plus_ER_aid_tot")
+#   
+# # Assign 0s
+#   df_AID_EMDAT <- df_AID_EMDAT %>%
+#     mutate(across(List, ~ replace_na(., 0)))
 
 # Delete years before 1995
 df_AID_EMDAT<-df_AID_EMDAT[df_AID_EMDAT$year > 1994,]
@@ -1166,38 +1186,72 @@ df_AID_EMDAT<-df_AID_EMDAT[df_AID_EMDAT$year > 1994,]
   return(df_AID_EMDAT)
 }
 
-df_AID_EMDAT_1ky<-process_AID(EM_dat_1k_processed_3,df_aid_sec)  
-df_AID_EMDAT_5ky<-process_AID(EM_dat_5k_processed_3,df_aid_sec)
-df_AID_EMDAT_50ky<-process_AID(EM_dat_50k_processed_3,df_aid_sec)
-df_AID_EMDAT_100ky<-process_AID(EM_dat_100k_processed_3,df_aid_sec)
+df_AID_EMDAT_1ky   <-process_AID(EM_dat_1k_processed_3,df_aid_sec)  
+df_AID_EMDAT_5ky   <-process_AID(EM_dat_5k_processed_3,df_aid_sec)
+df_AID_EMDAT_50ky  <-process_AID(EM_dat_50k_processed_3,df_aid_sec)
+df_AID_EMDAT_100ky <-process_AID(EM_dat_100k_processed_3,df_aid_sec)
 
 ```
 
 ##### Calculating average aid sent during natural disaster year
 ```{r}
 
-#Function to calculate the mean of current and previous years
+ #Function to calculate the mean of current and previous years
+
+
+# process_AID_2 <- function(df_input) {
+# 
+#     means <- c()
+#   
+#  for (year in unique(df_input$year)) {
+#     # Calculate mean for the current year and all preceding years
+#     value <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year])
+#     
+#     means <- c(means, value)
+#  }
+#   
+#  # Create a year-level data frame
+#  means_df <- data.frame(year = unique(df_input$year), year_mean_Hum_plus_ERaid = means)
+#   
+#  return(means_df)
+# }
+# 
+
+
 process_AID_2 <- function(df_input) {
 
-    means <- c()
-  
- for (year in unique(df_input$year)) {
-    # Calculate mean for the current year and all preceding years
-    value <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year])
-    
-    means <- c(means, value)
- }
-  
- # Create a year-level data frame
- means_df <- data.frame(year = unique(df_input$year), year_mean_Hum_plus_ERaid = means)
-  
- return(means_df)
+  # Initialize lists to store rolling averages
+  means_Hum_plus_ERaid   <- c()
+  means_extended_aid_tot <- c()
+
+  # Loop through each unique year in the dataset
+  for (year in unique(df_input$year)) {
+    # Calculate the rolling average for Hum_plus_ER_aid_tot
+    hum_plus_mean           <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year], na.rm = TRUE)
+    means_Hum_plus_ERaid    <- c(means_Hum_plus_ERaid, hum_plus_mean)
+
+    # Calculate the rolling average for extended_aid_tot
+    extended_mean           <- mean(df_input$extended_aid_tot[df_input$year <= year], na.rm = TRUE)
+    means_extended_aid_tot  <- c(means_extended_aid_tot, extended_mean)
+  }
+
+  # Create a combined data frame with the results
+  means_df <- data.frame(
+    year = unique(df_input$year),
+    year_mean_Hum_plus_ERaid   = means_Hum_plus_ERaid,
+    year_mean_extended_aid_tot = means_extended_aid_tot
+  )
+
+  # Replace values with NA for years after 2013
+  means_df[means_df$year > 2013, c("year_mean_Hum_plus_ERaid", "year_mean_extended_aid_tot")] <- NA
+
+  return(means_df)
 }
 
 # Summarize each dataset
-df_AID_dis1k_y_small <- process_AID_2(df_AID_EMDAT_1ky)
-df_AID_dis5k_y_small <- process_AID_2(df_AID_EMDAT_5ky)
-df_AID_dis50k_y_small <- process_AID_2(df_AID_EMDAT_50ky)
+df_AID_dis1k_y_small   <- process_AID_2(df_AID_EMDAT_1ky)
+df_AID_dis5k_y_small   <- process_AID_2(df_AID_EMDAT_5ky)
+df_AID_dis50k_y_small  <- process_AID_2(df_AID_EMDAT_50ky)
 df_AID_dis100k_y_small <- process_AID_2(df_AID_EMDAT_100ky)
 
 ```
@@ -1212,17 +1266,18 @@ process_AID_3 <- function(df_input,df_input_2) {
 ## merge mean with country year aid sec dataset 
 df_output= left_join(df_input_2, df_input, by = c("year"="year"))
 
-df_output$dummy_Hplus_ERaid<-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$year_mean_Hum_plus_ERaid,1,0)
+df_output$dummy_Hplus_ERaid  <-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$year_mean_Hum_plus_ERaid,1,0)
+df_output$dummy_extended_aid <-ifelse(df_output$extended_aid_tot>    df_output$year_mean_extended_aid_tot,1,0)
 
   return(df_output)
 }
 
 
 # Summarize each dataset
-df_AID_dis1k_y <- process_AID_3(df_AID_dis1k_y_small,df_AID_EMDAT_1ky)
-df_AID_dis5k_y <- process_AID_3(df_AID_dis5k_y_small,df_AID_EMDAT_5ky)
-df_AID_dis50k_y <- process_AID_3(df_AID_dis50k_y_small,df_AID_EMDAT_50ky)
-df_AID_dis100k_y <- process_AID_3(df_AID_dis100k_y_small,df_AID_EMDAT_100ky)
+df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_EMDAT_1ky)
+df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_EMDAT_5ky)
+df_AID_dis50k_y   <- process_AID_3(df_AID_dis50k_y_small,df_AID_EMDAT_50ky)
+df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_EMDAT_100ky)
 
 
 ```
@@ -1288,7 +1343,21 @@ df5k <- df5k %>%
     dummy_agreement == 0 & dummy_Hplus_ERaid == 0 ~ 4
   ))
 
-table(df5k$GlobSol)
+
+df5k <- df5k %>%
+  mutate(GlobSol2 = case_when(
+    dummy_agreement == 1 & dummy_extended_aid == 1 ~ 1,
+    dummy_agreement == 1 & dummy_extended_aid == 0 ~ 2,
+    dummy_agreement == 0 & dummy_extended_aid == 1 ~ 3,
+    dummy_agreement == 0 & dummy_extended_aid == 0 ~ 4
+  ))
+
+
+test_df<-subset(df5k,df5k$year<2014)
+
+table(test_df$GlobSol)
+table(test_df$GlobSol2)
+
 ```
 
 
@@ -1311,7 +1380,30 @@ df50k <- df50k %>%
   ))
 
 table(df50k$GlobSol)
+
+
+
+df50k <- df50k %>%
+  mutate(GlobSol2 = case_when(
+    dummy_agreement == 1 & dummy_extended_aid == 1 ~ 1,
+    dummy_agreement == 1 & dummy_extended_aid == 0 ~ 2,
+    dummy_agreement == 0 & dummy_extended_aid == 1 ~ 3,
+    dummy_agreement == 0 & dummy_extended_aid == 0 ~ 4
+  ))
+
+
+test_df<-subset(df50k,df50k$year<2014)
+
+table(test_df$GlobSol)
+table(test_df$GlobSol2)
+
+
+
+
+
 ```
+
+
 
 # Code GlobSol 100k
 ```{r}
