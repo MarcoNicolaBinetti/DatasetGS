@@ -5,7 +5,7 @@ date: "4/18/2024"
 output: html_document
 ---
 
-## 28 10 2024
+## 26 11 2024
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -33,8 +33,6 @@ library(dvmisc)
 library(ggpubr)
 library(gtools)
 library(foreign)
-library(maps)
-
 
 library(spdep)
 library(lubridate)
@@ -62,12 +60,6 @@ rm(list=ls())
 
 # Funtions 
 ```{r, include=FALSE}
-# calculate mode
-mode <- function(v) {
-  uniqv <- unique(v)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-
 
 # exclude
 '%!in%' <- function(x,y)!('%in%'(x,y))
@@ -259,9 +251,9 @@ df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2020)
 
 # Rename countries
   replacements <- c(
-    "Czechoslovakia" = "Czech Republic (the)",
+    "Czechoslovakia"    = "Czech Republic (the)",
     "Serbia Montenegro" = "Serbia",
-    "Yugoslavia" = "Serbia"
+    "Yugoslavia"        = "Serbia"
   )
   df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
 
@@ -532,40 +524,38 @@ df_Vdem_s<-df_Vdem[c("iso3c",
 
 #rename columns
 names(df_Vdem_s)[names(df_Vdem_s) == "e_total_fuel_income_pc"] <- "fuel_income"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_polyarchy"] <- "electoral_demo"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_libdem"] <- "liberal_demo"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_partipdem"] <- "part_demo"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_delibdem"] <- "delib_demo"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_egaldem"] <- "egal_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_polyarchy"]          <- "electoral_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_libdem"]             <- "liberal_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_partipdem"]          <- "part_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_delibdem"]           <- "delib_demo"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_egaldem"]            <- "egal_demo"
 
+names(df_Vdem_s)[names(df_Vdem_s) == "v2clstown"]              <- "state_ownership"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2xnp_regcorr"]          <- "regime_corruption"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_corr"]               <- "political_corr"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_execorr"]            <- "executive_corr"
 
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_regime_amb"]         <- "regime_type"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2cacamps"]              <- "political_polarization"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_gdp"]                  <- "gdp_vdem"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_gdppc"]                <- "gdp_pc_vdem"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_polity2"]              <- "polity2"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2x_ex_military"]        <- "military_centr"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2dlencmps"]             <- "spending"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2svdomaut"]             <- "autonomy"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_regionpol_6C"]         <- "region_pg"
+names(df_Vdem_s)[names(df_Vdem_s) == "v2xcs_ccsi"]             <- "civil_soc"
 
-names(df_Vdem_s)[names(df_Vdem_s) == "v2clstown"] <- "state_ownership"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2xnp_regcorr"] <- "regime_corruption"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_corr"] <- "political_corr"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_execorr"] <- "executive_corr"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2xnp_client"]           <- "clientelism_index"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2x_pubcorr"]            <- "pub_sect_corr_index"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2excrptps"]             <- "pub_sect_corr_exch"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2exthftps"]             <- "pub_sect_theft"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2svstterr"]             <- "state_auth_terr"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2stfisccap"]            <- "revenues_source"
+# names(df_Vdem_s)[names(df_Vdem_s) == "v2stcritapparm"]         <- "appointment_in_ssfs"
 
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_regime_amb"] <- "regime_type"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2cacamps"] <- "political_polarization"
-names(df_Vdem_s)[names(df_Vdem_s) == "e_gdp"] <- "gdp_vdem"
-names(df_Vdem_s)[names(df_Vdem_s) == "e_gdppc"] <- "gdp_pc_vdem"
-names(df_Vdem_s)[names(df_Vdem_s) == "e_polity2"] <- "polity2"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_ex_military"] <- "military_centr"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2dlencmps"] <- "spending"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2svdomaut"] <- "autonomy"
-names(df_Vdem_s)[names(df_Vdem_s) == "e_regionpol_6C"] <- "region_pg"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2xcs_ccsi"] <- "civil_soc"
-
-names(df_Vdem_s)[names(df_Vdem_s) == "v2xnp_client"] <- "clientelism_index"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2x_pubcorr"] <- "pub_sect_corr_index"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2excrptps"] <- "pub_sect_corr_exch"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2exthftps"] <- "pub_sect_theft"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2svstterr"] <- "state_auth_terr"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2stfisccap"] <- "revenues_source"
-names(df_Vdem_s)[names(df_Vdem_s) == "v2stcritapparm"] <- "appointment_in_ssfs"
-
-names(df_Vdem_s)[names(df_Vdem_s) == "e_regionpol"] <- "regio_pol"
-names(df_Vdem_s)[names(df_Vdem_s) == "e_regiongeo"] <- "regio_geo"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_regionpol"]            <- "regio_pol"
+names(df_Vdem_s)[names(df_Vdem_s) == "e_regiongeo"]            <- "regio_geo"
 
 
 # left join with base year
@@ -674,8 +664,8 @@ df_HOD_Dec_2021$end_date<-2021
 df_HOD_Dec_2021<-Drop_NA(df_HOD_Dec_2021, year)
 
 ## Create date variables
-df_HOD_Dec_2021$Date.start <- as.Date(paste0(df_HOD_Dec_2021$year, "-", "01", "-01"))
-df_HOD_Dec_2021$Date.end <- as.Date(paste0(df_HOD_Dec_2021$end_date, "-", "01", "-01"))
+df_HOD_Dec_2021$Date.start <- as.Date(paste0(df_HOD_Dec_2021$year,     "-", "01", "-01"))
+df_HOD_Dec_2021$Date.end   <- as.Date(paste0(df_HOD_Dec_2021$end_date, "-", "01", "-01"))
 
 
 ## reshape
@@ -986,9 +976,9 @@ Aiddata<- read.csv(file_path)
 df_Aiddata<-Aiddata
 
 #change names
-df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"] <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"]            <- "Serbia"
 df_Aiddata$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
-df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"] <- "Russia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"]          <- "Russia"
 
 #assign ISO3
 df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
@@ -1065,9 +1055,9 @@ sub_folder_name<-"Roughness"
 ### download dataset
 ```{r}
 
- download_create_folder_and_unzip(desktop_path,
-                            sub_folder_name,
-                           "https://diegopuga.org/data/rugged/rugged_data.zip")
+ # download_create_folder_and_unzip(desktop_path,
+ #                            sub_folder_name,
+ #                           "https://diegopuga.org/data/rugged/rugged_data.zip")
 
 ```
 
@@ -1081,7 +1071,7 @@ df_rugged<- read.csv(file_path)
 ### process
 ```{r}
 #change names
-df_rugged$country[df_rugged$country=="Yugoslavia"] <- "Serbia"
+df_rugged$country[df_rugged$country=="Yugoslavia"]            <- "Serbia"
 df_rugged$country[df_rugged$country=="Serbia and Montenegro"] <- "Serbia"
 
 #assign ISO3
@@ -1099,10 +1089,10 @@ sub_folder_name<-"KOF"
 
 #### Create folder and download
 ```{r}
-download_and_create_folder("KOFGI_2023_public.xlsx",
-                           desktop_path,
-                           sub_folder_name,
-                           "https://ethz.ch/content/dam/ethz/special-interest/dual/kof-dam/documents/Globalization/2023/KOFGI_2023_public.xlsx")
+# download_and_create_folder("KOFGI_2023_public.xlsx",
+#                            desktop_path,
+#                            sub_folder_name,
+#                            "https://ethz.ch/content/dam/ethz/special-interest/dual/kof-dam/documents/Globalization/2023/KOFGI_2023_public.xlsx")
 ```
 
 #### Import
@@ -1186,12 +1176,20 @@ process_EmDat_1 <- function(data, min_affected) {
   data <- subset(data, DisasterGroup == "Natural")
   
   # Select variables of interest
-  data <- data[c("DisNo", "StartYear", "EndYear", "StartMonth", "EndMonth",
-                 "DisasterGroup", "DisasterSubgroup", "DisasterType",
-                 "DisasterSubtype", "ISO", "Country")]
+  data <- data[c("DisNo",
+                 "StartYear",
+                 "EndYear",
+                 "StartMonth",
+                 "EndMonth",
+                 "DisasterGroup",
+                 "DisasterSubgroup",
+                 "DisasterType",
+                 "DisasterSubtype",
+                 "ISO",
+                 "Country")]
   
   # Rename variables
-  names(data)[names(data) == "Year"] <- "year"
+  names(data)[names(data) == "Year"]    <- "year"
   names(data)[names(data) == "Country"] <- "country_Emdat"
   
   # Drop events without date
@@ -1203,12 +1201,12 @@ process_EmDat_1 <- function(data, min_affected) {
   
   # Rename countries
   replacements <- c(
-    "Czechoslovakia" = "Czech Republic (the)",
-    "Germany Fed Rep" = "Germany",
-    "Korea (the Republic of)" = "Korea South",
+    "Czechoslovakia"                              = "Czech Republic (the)",
+    "Germany Fed Rep"                             = "Germany",
+    "Korea (the Republic of)"                     = "Korea South",
     "Korea (the Democratic People's Republic of)" = "Korea North",
-    "Serbia Montenegro" = "Serbia",
-    "Yugoslavia" = "Serbia"
+    "Serbia Montenegro"                           = "Serbia",
+    "Yugoslavia"                                  = "Serbia"
   )
   data$country_Emdat <- ifelse(data$country_Emdat %in% names(replacements), replacements[data$country_Emdat], data$country_Emdat)
   
@@ -1505,7 +1503,7 @@ path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
-folder_path <- file.path(path,"df_Ind_var.rds")
+folder_path <- file.path(path,"df_Ind_var_v2.rds")
 ## save file
 saveRDS(df_Ind_var, folder_path)
 

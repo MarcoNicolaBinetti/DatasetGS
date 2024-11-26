@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 20 11 2024
+## 26 11 2024
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -1134,9 +1134,6 @@ df_aid_sec$ln_Hum_plus_ER_aid_tot <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid
 df_aid_sec$extended_aid_tot       <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot
 df_aid_sec$ln_extended_aid_tot    <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot)
 
-
-
-
 ```
 
 ### Merge with emdat country year level dataset
@@ -1193,96 +1190,6 @@ df_AID_EMDAT_100ky <-process_AID(EM_dat_100k_processed_3,df_aid_sec)
 
 ```
 
-##### Calculating average aid sent during natural disaster year
-```{r}
-
- #Function to calculate the mean of current and previous years
-
-
-# process_AID_2 <- function(df_input) {
-# 
-#     means <- c()
-#   
-#  for (year in unique(df_input$year)) {
-#     # Calculate mean for the current year and all preceding years
-#     value <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year])
-#     
-#     means <- c(means, value)
-#  }
-#   
-#  # Create a year-level data frame
-#  means_df <- data.frame(year = unique(df_input$year), year_mean_Hum_plus_ERaid = means)
-#   
-#  return(means_df)
-# }
-# 
-
-
-process_AID_2 <- function(df_input) {
-
-  # Initialize lists to store rolling averages
-  means_Hum_plus_ERaid   <- c()
-  means_extended_aid_tot <- c()
-
-  # Loop through each unique year in the dataset
-  for (year in unique(df_input$year)) {
-    # Calculate the rolling average for Hum_plus_ER_aid_tot
-    hum_plus_mean           <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year], na.rm = TRUE)
-    means_Hum_plus_ERaid    <- c(means_Hum_plus_ERaid, hum_plus_mean)
-
-    # Calculate the rolling average for extended_aid_tot
-    extended_mean           <- mean(df_input$extended_aid_tot[df_input$year <= year], na.rm = TRUE)
-    means_extended_aid_tot  <- c(means_extended_aid_tot, extended_mean)
-  }
-
-  # Create a combined data frame with the results
-  means_df <- data.frame(
-    year = unique(df_input$year),
-    year_mean_Hum_plus_ERaid   = means_Hum_plus_ERaid,
-    year_mean_extended_aid_tot = means_extended_aid_tot
-  )
-
-  # Replace values with NA for years after 2013
-  means_df[means_df$year > 2013, c("year_mean_Hum_plus_ERaid", "year_mean_extended_aid_tot")] <- NA
-
-  return(means_df)
-}
-
-# Summarize each dataset
-df_AID_dis1k_y_small   <- process_AID_2(df_AID_EMDAT_1ky)
-df_AID_dis5k_y_small   <- process_AID_2(df_AID_EMDAT_5ky)
-df_AID_dis50k_y_small  <- process_AID_2(df_AID_EMDAT_50ky)
-df_AID_dis100k_y_small <- process_AID_2(df_AID_EMDAT_100ky)
-
-```
-
-
-##### Calculating wich countries received more sharing behaviour than the average
-```{r}
-
-# Function to summarize data by year
-process_AID_3 <- function(df_input,df_input_2) {
-  
-## merge mean with country year aid sec dataset 
-df_output= left_join(df_input_2, df_input, by = c("year"="year"))
-
-df_output$dummy_Hplus_ERaid  <-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$year_mean_Hum_plus_ERaid,1,0)
-df_output$dummy_extended_aid <-ifelse(df_output$extended_aid_tot>    df_output$year_mean_extended_aid_tot,1,0)
-
-  return(df_output)
-}
-
-
-# Summarize each dataset
-df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_EMDAT_1ky)
-df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_EMDAT_5ky)
-df_AID_dis50k_y   <- process_AID_3(df_AID_dis50k_y_small,df_AID_EMDAT_50ky)
-df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_EMDAT_100ky)
-
-
-```
-
-
 
 ### Add UNOCHA to 2019
 ```{r}
@@ -1291,7 +1198,7 @@ unocha<-read_excel("UNOCHA Funding received.xlsx")
 unocha_long <-pivot_longer(unocha,2:11, names_to="year", values_to="Hum_plus_ER_aid_tot") %>%
   dplyr::rename(iso3c=`Country Code`) %>% 
   drop_na(Hum_plus_ER_aid_tot) %>%
-  filter(year>2014) # from 2014
+  filter(year>=2014) # from 2014
 
 # Generate annual means
 #   means <- c()
@@ -1308,26 +1215,113 @@ unocha_long$year<-as.numeric(unocha_long$year)
 
 #unocha_long$dummy_Hplus_ERaid<-ifelse(unocha_long$Hum_plus_ER_aid_tot>unocha_long$year_mean_Hum_plus_ERaid,1,0)
 
-# Fill in blank variables for bind 
-unocha_long <- unocha_long %>% 
-  mutate(Emergency_Response_tot = NA,
-         Humanitarian_Aid_tot= NA,
-         ln_Hum_plus_ER_aid_tot= NA,
-         year_mean_Hum_plus_ERaid = NA)
+# # Fill in blank variables for bind 
+# unocha_long <- unocha_long %>% 
+#   mutate(Emergency_Response_tot = NA,
+#          Humanitarian_Aid_tot= NA,
+#          ln_Hum_plus_ER_aid_tot= NA,
+#          year_mean_Hum_plus_ERaid = NA)
  
-# Join to full aid data and fill mean threshold from 2013
-df_aid_sec_joined<-rbind(df_AID_dis50k_y %>% filter(year<2014),unocha_long) %>%
-  arrange(year) %>%
-  ungroup() %>%
-  fill(year_mean_Hum_plus_ERaid)
+# # Join to full aid data and fill mean threshold from 2013
+# df_aid_sec_joined<-rbind(df_AID_dis50k_y %>% filter(year<2014),unocha_long) %>%
+#   arrange(year) %>%
+#   ungroup() %>%
+#   fill(year_mean_Hum_plus_ERaid)
 
-df_aid_sec_joined$dummy_Hplus_ERaid<-ifelse(df_aid_sec_joined$Hum_plus_ER_aid_tot>df_aid_sec_joined$year_mean_Hum_plus_ERaid,1,0)
+replace_na_post_2014 <- function(df1, df2) {
+  # Join df1 with df2 to get aid values for matching year and iso3c
+  df1 <- df1 %>%
+    left_join(df2 %>% dplyr::select(iso3c, year, Hum_plus_ER_aid_tot), 
+              by = c("iso3c", "year"), 
+              suffix = c("", "_df2")) %>%
+    mutate(
+      Hum_plus_ER_aid_tot = ifelse(
+        is.na(Hum_plus_ER_aid_tot) & year >= 2014,
+        Hum_plus_ER_aid_tot_df2, # Use aid values from df2
+        Hum_plus_ER_aid_tot # Keep original values otherwise
+      ),
+      Hum_plus_ER_aid_tot = ifelse(is.na(Hum_plus_ER_aid_tot), 0, Hum_plus_ER_aid_tot) # Set remaining NAs to 0
+    ) %>%
+    dplyr::select(-Hum_plus_ER_aid_tot_df2) # Drop the temporary column
+  
+  return(df1)
+}
+
+df_AID_dis1k_y    <- replace_na_post_2014(df_AID_EMDAT_1ky,unocha_long)
+df_AID_dis5k_y    <- replace_na_post_2014(df_AID_EMDAT_5ky,unocha_long)
+df_AID_dis50k_y   <- replace_na_post_2014(df_AID_EMDAT_50ky,unocha_long)
+df_AID_dis100k_y  <- replace_na_post_2014(df_AID_EMDAT_100ky,unocha_long)
 
 ```
 
+##### Calculating average aid sent during natural disaster year
+```{r}
+
+ #Function to calculate the mean of current and previous years
+
+
+process_AID_2 <- function(df_input) {
+
+    means <- c()
+
+ for (year in unique(df_input$year)) {
+    # Calculate mean for the current year and all preceding years
+    value <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year])
+
+    means <- c(means, value)
+ }
+
+ # Create a year-level data frame
+ means_df <- data.frame(year = unique(df_input$year), year_mean_Hum_plus_ERaid = means)
+
+ means_df$year_mean_Hum_plus_ERaid<-ifelse(means_df$year>2013 ,NA, means_df$year_mean_Hum_plus_ERaid)
+
+ means_df <- means_df[order(means_df$year), ]
+
+ means_df$year_mean_Hum_plus_ERaid <- na.locf(means_df$year_mean_Hum_plus_ERaid)
+
+ return(means_df)
+}
+
+
+# Summarize each dataset
+df_AID_dis1k_y_small   <- process_AID_2(df_AID_dis1k_y)
+df_AID_dis5k_y_small   <- process_AID_2(df_AID_dis5k_y)
+df_AID_dis50k_y_small  <- process_AID_2(df_AID_dis50k_y)
+df_AID_dis100k_y_small <- process_AID_2(df_AID_dis100k_y)
+
+```
+
+##### Calculating wich countries received more sharing behaviour than the average
+```{r}
+
+# Function to summarize data by year
+process_AID_3 <- function(df_input,df_input_2) {
+  
+## merge mean with country year aid sec dataset 
+df_output= left_join(df_input_2, df_input, by = c("year"="year"))
+
+df_output$dummy_Hplus_ERaid  <-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$year_mean_Hum_plus_ERaid,1,0)
+#df_output$dummy_extended_aid <-ifelse(df_output$extended_aid_tot>    df_output$year_mean_extended_aid_tot,1,0)
+
+  return(df_output)
+}
+
+
+# Summarize each dataset
+df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_dis1k_y)
+df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_dis5k_y)
+df_AID_dis50k_y   <- process_AID_3(df_AID_dis50k_y_small,df_AID_dis50k_y)
+df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_dis100k_y)
+
+
+```
+
+
+
 # Code GlobSol 5k
 ```{r}
-df5k= left_join(df_ICWES_dis5k_y, df_aid_sec_joined, by = c("year" = "year", "iso3c" = "iso3c"))
+df5k= left_join(df_ICWES_dis5k_y, df_AID_dis5k_y, by = c("year" = "year", "iso3c" = "iso3c"))
 # drop NA agreement (keep only country years with disasters)
 df5k<-Drop_NA(df5k, dummy_agreement)
 #df<-Drop_NA(df, dummy_Hplus_ERaid)
@@ -1351,7 +1345,10 @@ df5k <- df5k %>%
 #     dummy_agreement == 0 & dummy_extended_aid == 1 ~ 3,
 #     dummy_agreement == 0 & dummy_extended_aid == 0 ~ 4
 #   ))
-# 
+
+
+table(df5k$GlobSol)
+
 
 #test_df<-subset(df5k,df5k$year<2014)
 
@@ -1363,7 +1360,7 @@ df5k <- df5k %>%
 
 # Code GlobSol 50k
 ```{r}
-df50k= left_join(df_ICWES_dis50k_y, df_aid_sec_joined, by = c("year" = "year", "iso3c" = "iso3c"))
+df50k= left_join(df_ICWES_dis50k_y, df_AID_dis50k_y, by = c("year" = "year", "iso3c" = "iso3c"))
 # drop NA agreement (keep only country years with disasters)
 df50k<-Drop_NA(df50k, dummy_agreement)
 #df<-Drop_NA(df, dummy_Hplus_ERaid)
@@ -1407,7 +1404,7 @@ table(df50k$GlobSol)
 
 # Code GlobSol 100k
 ```{r}
-df100k= left_join(df_ICWES_dis100k_y, df_aid_sec_joined, by = c("year" = "year", "iso3c" = "iso3c"))
+df100k= left_join(df_ICWES_dis100k_y, df_AID_dis100k_y, by = c("year" = "year", "iso3c" = "iso3c"))
 # drop NA agreement (keep only country years with disasters)
 df100k<-Drop_NA(df100k, dummy_agreement)
 #df<-Drop_NA(df, dummy_Hplus_ERaid)
@@ -1455,17 +1452,17 @@ path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
-folder_path <- file.path(path,"globsol_df50k.rds")
+folder_path <- file.path(path,"globsol_df50k_v2.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_df5k.rds")
+folder_path <- file.path(path,"globsol_df5k_v2.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_df100k.rds")
+folder_path <- file.path(path,"globsol_df100k_v2.rds")
 ## save file
 saveRDS(df100k,folder_path)
 

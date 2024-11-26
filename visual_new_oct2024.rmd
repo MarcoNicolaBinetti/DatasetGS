@@ -17,8 +17,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 # Rescale variables mean centred for each year
 
-df_g <- df_full%>%
-mutate(aid_scaled = Hum_plus_ER_aid_tot-year_mean_Hum_plus_ERaid,
+df_g <- df50k%>%
+mutate(aid_scaled = extended_aid_tot-year_mean_extended_aid_tot,
         Norm_scaled = NormAgr-year_mean_NormAgr)
   
 ```
@@ -30,8 +30,8 @@ library(RColorBrewer)
 
 # Plot the dataset
 p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
- geom_point(aes(colour = factor(GlobSol))) +
- #geom_text(aes(label=paste(iso3c,year)))+
+ geom_point(aes(colour = factor(GlobSol2))) +
+ geom_text(aes(label=iso3c))+
  labs(x = "Identification", y = "Joint Action") +
  geom_vline(xintercept = 0, linetype = "dashed", alpha=0.5) +
  geom_hline(yintercept = 0, linetype = "dashed", alpha=0.5) +

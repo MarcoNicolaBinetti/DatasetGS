@@ -5,7 +5,7 @@ date: "4/25/2024"
 output: html_document
 ---
 
-## 30 08 2024
+## 26 11 2024
 # load libraries
 ```{r, include=FALSE}
 library(plyr)
@@ -34,7 +34,7 @@ library(scales)
 # Remove lists 
 ```{r, include=FALSE}
 ## remove lists
-rm(list=ls())
+#rm(list=ls())
 ```
 
 # Functions
@@ -81,12 +81,12 @@ sub_folder_name <- "Compiled"
 ## Import Globsol dataset
 ### 50k 500d
 ```{r}
-# set DF
-DF<-c("globsol_df5k_500d.rds")
-# load DF
-Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
-# importing DF 
-df_Globsol5k500d <- readRDS(Df_path)
+# # set DF
+# DF<-c("globsol_df5k_500d.rds")
+# # load DF
+# Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
+# # importing DF 
+# df_Globsol5k500d <- readRDS(Df_path)
 
 ```
 
@@ -96,7 +96,7 @@ df_Globsol5k500d <- readRDS(Df_path)
 ### 5k
 ```{r}
 # set DF
-DF<-c("globsol_df5k.rds")
+DF<-c("globsol_df5k_v2.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -107,7 +107,7 @@ df_Globsol5k <- readRDS(Df_path)
 ### 50k
 ```{r}
 # set DF
-DF<-c("globsol_df50k.rds")
+DF<-c("globsol_df50k_v2.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -119,7 +119,7 @@ df_Globsol50k <- readRDS(Df_path)
 ### 100k
 ```{r}
 # set DF
-DF<-c("globsol_df100k.rds")
+DF<-c("globsol_df100k_v2.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -131,7 +131,7 @@ df_Globsol100k <- readRDS(Df_path)
 ## Import Independent and control variables
 ```{r}
 # set DF
-DF<-c("df_ind_var.rds")
+DF<-c("df_ind_var_v2.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -305,7 +305,7 @@ df_scaled$dis_count_lag_1<-df_scaled$biological_dummy_lag_1_50k+df_scaled$climat
 ```{r}
 #saving it
 #namefile<-"df_full_5.csv"
-namefile<-"df_full.csv"
+namefile<-"df_full_v2.csv"
 #namefile<-"df_full_100.csv"
 #namefile<-"df_full_5k_500d.csv"
 
