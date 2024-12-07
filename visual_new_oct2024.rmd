@@ -298,6 +298,7 @@ final_plot <- (map1 + map2) / (map3 + map4) +
 # Save or display the final plot
 ggsave("AidData_Sample_Description.png", final_plot, width = 8, height = 6)
 print(final_plot)
+
 ```
 
 
