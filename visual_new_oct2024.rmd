@@ -10,8 +10,299 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Load libraries
+```{r, include=FALSE}
+library(RColorBrewer)
+library(Hmisc)
+library(data.table)
+
+library(R.utils)
+library(tidyverse)
+library(naniar)
+library(geosphere)
+library(zoo)
+library(rworldmap)
+library(gridExtra)
+
+
+library(classInt)
+library(devtools)
+library(DT)
+library(dvmisc)
+library(ggpubr)
+library(gtools)
+library(foreign)
+
+
+library(countrycode)
+
+```
 
 ## Remove lists
+```{r}
+## remove lists
+rm(list=ls())
+```
+
+# Import DFs
+## Set folders
+```{r}
+## set url Marco Nextclod
+desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
+#desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
+
+main_folder_name <- "Global Solidarity"
+sub_folder_name <- "Compiled"
+```
+
+### 50k
+```{r}
+# set DF
+DF<-c("globsol_df50k_v2.rds")
+# load DF
+Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
+# importing DF 
+df_Globsol50k <- readRDS(Df_path)
+
+```
+
+## plotting maps
+```{r}
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+library(patchwork) # For combining plots
+```
+
+```{r}
+df<-df_Globsol50k
+```
+
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+library(patchwork) # For combining plots
+
+# Example dataset (replace this with your actual dataset)
+# df <- read.csv("your_dataset.csv")
+
+# Summarize data: Identify countries with at least one occurrence of each GlobSol value
+df_summary <- df %>%
+  group_by(iso3c) %>%
+  summarize(
+    GlobSol1 = any(GlobSol == 1),
+    GlobSol2 = any(GlobSol == 2),
+    GlobSol3 = any(GlobSol == 3),
+    GlobSol4 = any(GlobSol == 4)
+  )
+
+# Load world map
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Remove Antarctica
+world <- world %>% filter(iso_a3 != "ATA")
+
+# Flag countries not in the dataset as NA
+world_data <- world %>%
+  left_join(df_summary, by = c("iso_a3" = "iso3c")) %>%
+  mutate(
+    Present = !is.na(GlobSol1) | !is.na(GlobSol2) | !is.na(GlobSol3) | !is.na(GlobSol4), # Check if country is in dataset
+    GlobSol1 = ifelse(Present, GlobSol1, NA),
+    GlobSol2 = ifelse(Present, GlobSol2, NA),
+    GlobSol3 = ifelse(Present, GlobSol3, NA),
+    GlobSol4 = ifelse(Present, GlobSol4, NA)
+  )
+
+# Define a function to create maps for each GlobSol category
+create_map <- function(data, column, title, fill_color) {
+  ggplot(data) +
+    geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
+    scale_fill_manual(
+      values = c("TRUE" = fill_color, "FALSE" = "white", "NA" = "grey"), # Grey for countries not in dataset
+      na.value = "grey"
+    ) +
+    labs(title = title, fill = NULL) +
+    theme_void() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+      legend.position = "none"
+    )
+}
+
+# Create maps for each GlobSol category with specified colors
+map1 <- create_map(world_data, "GlobSol1", "Full Solidarity", "red")
+map2 <- create_map(world_data, "GlobSol2", "Symbolic Solidarity", "blue")
+map3 <- create_map(world_data, "GlobSol3", "Coercive Solidarity", "green")
+map4 <- create_map(world_data, "GlobSol4", "Minimal Solidarity", "purple")
+
+# Combine maps into a single image with a centered title
+final_plot <- (map1 + map2) / (map3 + map4) +
+  plot_annotation(
+    title = "Distribution of GlobSol Worldwide",
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
+    )
+  )
+
+# Save or display the final plot
+ggsave("GlobSol_Distribution.png", final_plot, width = 8, height = 6)
+print(final_plot)
+
+
+
+```
+
+```{r}
+sub_folder_name<-"Aidata"
+main_folder_name <- "DFGlobalLab"
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
+## import  dataset
+Aiddata<- read.csv(file_path)
+
+```
+
+```{r}
+
+#load dataset
+df_Aiddata_sectoral<-Aiddata
+
+#create schort code
+df_Aiddata_sectoral$Short_code<-c((substr(( c(df_Aiddata_sectoral$coalesced_purpose_code)), 1, 2)))
+
+## rename codes
+# Define replacements using a named vector
+replacements <- c(
+  "10" = "Social_Infra",
+  "11" = "Education",
+  "12" = "Health",
+  "13" = "Population_Policies",
+  "14" = "Water_Supply_Sanitation",
+  "15" = "Gov_Civ_Soc",
+  "16" = "Soc_Infra",
+  "20" = "Eco_Infra",
+  "21" = "Trans_Stor",
+  "22" = "Comm",
+  "23" = "Energy_Gen_Supp",
+  "24" = "Banking",
+  "25" = "Business",
+  "30" = "Production Sectors",
+  "31" = "Agri_For_Fish",
+  "32" = "Ind_Min_Cons",
+  "33" = "Trade_policy",
+  "41" = "Env_Protection",
+  "42" = "Women",
+  "43" = "Other",
+  "51" = "Budget_Support",
+  "52" = "Food_Security",
+  "53" = "Commodity_Assistance",
+  "60" = "Debt",
+  "70" = "Humanitarian_Aid",
+  "72" = "Emergency_Response",
+  "73" = "Reconstruction_Relief",
+  "74" = "Disaster_Prevention",
+  "91" = "Administrative_costs",
+  "92" = "Support_NGO",
+  "93" = "Refugees_Donor",
+  "99" = "Unallocated"
+)
+
+# Apply replacements using named vector and %in% operator
+df_Aiddata_sectoral$Short_code <- replacements[as.character(df_Aiddata_sectoral$Short_code)]
+
+#change names countries
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"]            <- "Serbia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Serbia and Montenegro"] <- "Serbia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Soviet Union"]          <- "Russia"
+
+#assign ISO3
+df_Aiddata_sectoral$iso3c <- countrycode(df_Aiddata_sectoral$recipient, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_Aiddata_sectoral<-df_Aiddata_sectoral[!is.na(df_Aiddata_sectoral$iso3c), ]
+
+## aggregate at country recipient purpose level
+df_Aiddata_sectoral<- df_Aiddata_sectoral %>% 
+  group_by(iso3c, year,Short_code ) %>%
+  summarize(commitment_tot = sum(commitment_amount_usd_constant_sum))
+
+
+
+
+
+
+```
+```{r}
+# Summarize data to identify recipient countries and aid types
+df_summary <- df_Aiddata_sectoral %>%
+  group_by(iso3c) %>%
+  summarize(
+    Received_Aid = any(commitment_tot > 0),
+    Humanitarian_Aid = any(Short_code == "Humanitarian_Aid"),
+    Emergency_Response = any(Short_code == "Emergency_Response"),
+    Emergency_Humanitarian = any(Short_code %in% c("Humanitarian_Aid", "Emergency_Response"))
+  )
+
+# Load world map
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Remove Antarctica
+world <- world %>% filter(iso_a3 != "ATA")
+
+# Join summarized data with world map
+world_data <- world %>%
+  left_join(df_summary, by = c("iso_a3" = "iso3c")) %>%
+  mutate(
+    Received_Aid = replace_na(Received_Aid, FALSE),
+    Humanitarian_Aid = replace_na(Humanitarian_Aid, FALSE),
+    Emergency_Response = replace_na(Emergency_Response, FALSE),
+    Emergency_Humanitarian = replace_na(Emergency_Humanitarian, FALSE)
+  )
+
+# Define a function to create maps for each condition
+create_map <- function(data, column, title) {
+  ggplot(data) +
+    geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
+    scale_fill_manual(
+      values = c("TRUE" = "gray", "FALSE" = "white"),
+      na.value = "white"
+    ) +
+    labs(title = title, fill = NULL) +
+    theme_void() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+      legend.position = "none"
+    )
+}
+
+# Create maps for each condition
+map1 <- create_map(world_data, "Received_Aid", "Recipient countries")
+map2 <- create_map(world_data, "Humanitarian_Aid", "Humanitarian aid receivers")
+map3 <- create_map(world_data, "Emergency_Response", "Emergency response receivers")
+map4 <- create_map(world_data, "Emergency_Humanitarian", "Emergency/Humanitarian receivers")
+
+# Combine maps into a single image with a centered title
+final_plot <- (map1 + map2) / (map3 + map4) +
+  plot_annotation(
+    title = "AidData: Sample Description",
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
+    )
+  )
+
+# Save or display the final plot
+ggsave("AidData_Sample_Description.png", final_plot, width = 8, height = 6)
+print(final_plot)
+```
+
+
+
+
 
 ## New visuals
 ```{r}
@@ -24,7 +315,6 @@ mutate(aid_scaled = extended_aid_tot-year_mean_extended_aid_tot,
 ```
 
 ```{r}
-library(RColorBrewer)
 #xlim<-mean(df_g$Norm_scaled)
 #ylim<-mean(df_g$aid_scaled)
 
