@@ -5,7 +5,7 @@ date: "4/18/2024"
 output: html_document
 ---
 
-## 26 11 2024
+## 09 12 2024
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -1382,12 +1382,12 @@ process_EmDat_fat <- function(data) {
 
   # Rename countries
   replacements <- c(
-    "Czechoslovakia" = "Czech Republic (the)",
-    "Germany Fed Rep" = "Germany",
-    "Korea (the Republic of)" = "Korea South",
+    "Czechoslovakia"                              = "Czech Republic (the)",
+    "Germany Fed Rep"                             = "Germany",
+    "Korea (the Republic of)"                     = "Korea South",
     "Korea (the Democratic People's Republic of)" = "Korea North",
-    "Serbia Montenegro" = "Serbia",
-    "Yugoslavia" = "Serbia"
+    "Serbia Montenegro"                           = "Serbia",
+    "Yugoslavia"                                  = "Serbia"
   )
 
   data$Country <- ifelse(data$Country %in% names(replacements), replacements[data$Country], data$Country)

@@ -1,0 +1,611 @@
+---
+title: "Untitled"
+author: "MNB"
+date: "12/9/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 09 12 2024
+# Restart R
+```{r}
+.rs.restartR()
+```
+
+
+## Libraries
+```{r, include=FALSE}
+library(Hmisc)
+library(data.table)
+
+library(R.utils)
+library(tidyverse)
+library(naniar)
+library(zoo)
+
+
+library(classInt)
+#library(devtools)
+library(DT)
+library(dvmisc)
+#library(ggpubr)
+library(gtools)
+library(foreign)
+
+library(lubridate)
+
+library(readxl)
+library(haven)
+library(jsonlite)
+
+
+library(reshape)
+
+library(countrycode)
+
+library(roll)
+```
+
+# Remove lists 
+```{r, include=FALSE}
+## remove lists
+rm(list=ls())
+```
+
+# Funtions 
+```{r, include=FALSE}
+
+# exclude
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+drop_columns <- function(data, columns_to_drop) {
+  data <- data[, names(data) %!in% columns_to_drop, drop = FALSE]
+  return(data)
+}
+
+
+## drop NAs from column
+Drop_NA <- function(dataset, col_name){
+  col_name <- enquo(col_name)
+  dataset %>%
+    drop_na((!!col_name)) %>%
+    as.data.frame()
+}
+
+## create 1 and 2 period lags (grouping by a variable)
+Lag_12 <- function(dataset,col_name,x){
+  {
+    col_name <- enquo(col_name)
+    dataset %>%
+      group_by(!!col_name) %>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,1),
+                    .names = paste0("{.col}_lag_",1)))%>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,2),
+                    .names = paste0("{.col}_lag_",2)))
+    
+  } 
+}
+
+## create 1 and 2 period lags 
+Lag_12_ngby <- function(dataset,x){
+  {
+    dataset %>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,1),
+                    .names = paste0("{.col}_lag_",1)))%>%
+      mutate(across(all_of(x),
+                    .fns = ~ lag(.,2),
+                    .names = paste0("{.col}_lag_",2)))
+    
+  } 
+}
+
+## assign 0 to NAs
+Nas_to_0 <- function(dataset, x) {
+  
+  dataset %>% mutate_at(all_of(x), ~replace(., is.na(.), 0))
+  
+}
+
+
+download_and_create_folder <- function(file_name, desktop_path, folder_name, url) {
+  
+  # Combine the desktop path with the folder name
+  folder_path <- file.path(desktop_path,main_folder_name, folder_name)
+  
+  
+  # Check if the folder exists
+  if (!file.exists(folder_path)) {
+    # If the folder doesn't exist, create it
+    dir.create(folder_path)
+    cat("Folder", folder_path, "created.\n")
+  } else {
+    # If the folder already exists, do nothing
+    cat("Folder", folder_path, "already exists.\n")
+  }
+  
+  # Specify the file path where you want to save the downloaded file
+  file_path <- paste0(folder_path, "/", file_name)
+  
+  # Download the file
+  download.file(url, file_path, mode = "wb")
+}
+
+
+
+
+download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
+  
+  # Combine the desktop path with the folder name
+  folder_path <- file.path(desktop_path,main_folder_name, folder_name)
+  
+  
+  # Check if the folder exists
+  if (!file.exists(folder_path)) {
+    # If the folder doesn't exist, create it
+    dir.create(folder_path)
+    cat("Folder", folder_path, "created.\n")
+  } else {
+    # If the folder already exists, do nothing
+    cat("Folder", folder_path, "already exists.\n")
+  }
+  
+  # Specify the file path where you want to save the downloaded file
+  file_path <- folder_path
+  
+  # Download the file
+  download.file(url, destfile = "temp.zip", mode = "wb")
+  
+  # Unzip the downloaded file
+  unzip("temp.zip", exdir = file_path)
+  
+  # Delete the temporary zip file
+  file.remove("temp.zip")
+}
+
+
+# Define a function to rename specified columns with a given suffix
+rename_columns <- function(df, suffix, vars_to_change) {
+  # Create new names for the specified variables by adding the suffix
+  new_names <- setNames(paste0(vars_to_change, suffix), vars_to_change)
+  
+  # Rename the columns in the data frame
+  names(df)[names(df) %in% names(new_names)] <- new_names[names(df)[names(df) %in% names(new_names)]]
+  
+  # Return the modified data frame
+  return(df)
+}
+```
+
+# Setting directory for datasets' folders
+```{r}
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+#desktop_path <- file.path("C:", "Users","krogers","Documents")
+```
+
+# Set main folder name
+```{r}
+# Define the name of the folder to check/create
+main_folder_name <- "DFGlobalLab"
+#main_folder_name <- "data"
+```
+
+# Creating folder for datasets
+```{r}
+
+# Combine the desktop path with the folder name
+folder_path <- file.path(desktop_path, main_folder_name)
+
+# Check if the folder exists
+if (!file.exists(folder_path)) {
+  # If the folder doesn't exist, create it
+  dir.create(folder_path)
+  cat("Folder", main_folder_name, "created on the desktop.\n")
+} else {
+  # If the folder already exists, do nothing
+  cat("Folder", main_folder_name, "already exists on the desktop.\n")
+}
+```
+
+# Importing and reshaping Dfs
+
+## Polity 2
+#### Set subfolder name
+```{r}
+sub_folder_name<-"polity2"
+```
+
+#### Create folder and download
+```{r}
+# download_and_create_folder("p5v2018.xls",
+#                            desktop_path,
+#                            sub_folder_name,
+#                            "http://www.systemicpeace.org/inscr/p5v2018.xls")
+```
+
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xls")
+## import  dataset
+Polity2<- read_excel(file_path)
+```
+
+# Create bases - at year and month levels
+```{r}
+df_Polity2<-Polity2
+
+# Create base at year level
+## subset years of interests
+df_Polity2<-subset(df_Polity2, df_Polity2$year>1970 & Polity2$year<2020)
+
+# Rename countries
+  replacements <- c(
+    "Czechoslovakia"    = "Czech Republic (the)",
+    "Serbia Montenegro" = "Serbia",
+    "Yugoslavia"        = "Serbia"
+  )
+  df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
+
+## assign ISO3C
+df_Polity2$iso3c <- countrycode(df_Polity2$country, "country.name", "iso3c")
+
+## subset only columns of interest
+df_Base_Y<-df_Polity2[c("country",
+                        "iso3c",
+                        "year")]
+
+# Complete panel
+df_Base_Y<-df_Base_Y %>%
+  complete(iso3c,year=c(1971:2021)) %>%
+  group_by(iso3c) %>% fill(country) %>%
+  ungroup()
+
+## drop iso3c NA
+df_Base_Y<-Drop_NA(df_Base_Y, iso3c)
+
+#drop duplicates (usual yuogoslavia and soviet union "problem" with name change to serbia and russia)
+df_Base_Y<-df_Base_Y %>% 
+                distinct(year, iso3c , .keep_all = TRUE)
+
+## correct names
+df_Base_Y<-janitor::clean_names(df_Base_Y)
+
+# Create base at month level
+## set list of countries
+Countries<-as.data.frame(unique(df_Base_Y$country))
+names(Countries)[1] <- "country"
+Countries$Dummy<-1
+## assign ISO3C
+Countries$iso3c <- countrycode(Countries$country, "country.name", "iso3c")
+## set list of months
+Date<-as.data.frame(seq(as.Date("1980-1-1"), as.Date("2021-12-31"), by = "month"))
+names(Date)[1] <- "Date.month"
+Date$Dummy<-1
+Date$Date.month<-as.yearmon(Date$Date.month)
+## create base
+df_Base_YM<-left_join(Countries,Date)
+## drop dummy
+List<-c("Dummy")
+df_Base_YM<-drop_columns(df_Base_YM,List)
+## create year variable
+df_Base_YM$year <- as.integer(c((substr(( c(df_Base_YM$Date.month)), 5, 8))))
+
+## correct names
+df_Base_YM<-janitor::clean_names(df_Base_YM)
+
+```
+
+## Diego Puga colonial heritage
+## https://diegopuga.org/data/rugged/
+### Set name folder
+```{r}
+sub_folder_name<-"Roughness"
+```
+### download dataset
+```{r}
+
+ # download_create_folder_and_unzip(desktop_path,
+ #                            sub_folder_name,
+ #                           "https://diegopuga.org/data/rugged/rugged_data.zip")
+
+```
+
+### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "rugged_data.csv")
+## import  dataset
+df_rugged<- read.csv(file_path)
+```
+
+### process
+```{r}
+#change names
+df_rugged$country[df_rugged$country=="Yugoslavia"]            <- "Serbia"
+df_rugged$country[df_rugged$country=="Serbia and Montenegro"] <- "Serbia"
+
+#assign ISO3
+df_rugged$iso3c <- countrycode(df_rugged$country, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_rugged<-df_rugged[!is.na(df_rugged$iso3c), ]
+```
+
+## Temperatures
+```{r}
+# Fetch the data
+temperatures       <- read.csv("https://ourworldindata.org/grapher/monthly-temperature-anomalies.csv?v=1&csvType=full&useColumnShortNames=true")
+df_temperatures    <-temperatures
+
+#create year var
+df_temperatures$year  <- c((substr(( c(df_temperatures$Day)), 1, 4)))
+
+## assign iso3c
+df_temperatures$iso3c <- countrycode(df_temperatures$Entity, "country.name", "iso3c")
+
+## drop if iso3c is NA
+df_temperatures       <-Drop_NA(df_temperatures, iso3c)
+
+# keep vars of interest
+df_temperatures       <- df_temperatures[c("iso3c",
+                                            "year",
+                                            "temperature_anomaly")]
+
+
+## aggregate at country iso3c level
+df_temperatures <- df_temperatures %>%
+  group_by(iso3c, year) %>%
+   dplyr::summarize(temp_anom = mean(temperature_anomaly, na.rm = TRUE))
+
+
+# assign 0s to NAs
+List<-c("temp_anom")
+# create lags
+df_temperatures <- Lag_12(df_temperatures, iso3c, List)
+
+## correct names
+df_temperatures<-janitor::clean_names(df_temperatures)
+
+```
+
+## Precipitations
+```{r}
+# Fetch the data
+precipitation             <- read.csv("https://ourworldindata.org/grapher/average-precipitation-per-year.csv?v=1&csvType=full&useColumnShortNames=true")
+df_precipitation          <-precipitation
+
+## assign iso3c
+df_precipitation$iso3c     <- countrycode(df_precipitation$Entity, "country.name", "iso3c")
+
+df_precipitation$prep_yrl <-df_precipitation$total_precipitation
+
+# keep vars of interest
+df_precipitation           <- df_precipitation[c("iso3c",
+                                               "Year",
+                                               "prep_yrl")]
+
+# assign 0s to NAs
+List<-c("prep_yrl")
+# create lags
+df_precipitation <- Lag_12(df_precipitation, iso3c, List)
+
+## correct names
+df_precipitation<-janitor::clean_names(df_precipitation)
+
+```
+
+
+
+## EMDAT data on disasters in the country
+#### Set subfolder name
+```{r}
+sub_folder_name<-"EMDAT"
+```
+
+#### Importing dataset
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta")
+## import  dataset
+EMDAT<- haven::read_dta(file_path)
+```
+
+
+```{r}
+
+# Function to process dataset
+process_EmDat_1 <- function(data) {
+  # Subset years
+  data <- subset(data, StartYear >= 1970)
+  
+  # Drop technological disasters
+  data <- subset(data, DisasterGroup == "Natural")
+  
+  # Select variables of interest
+  data <- data[c("DisNo",
+                 "StartYear",
+                 "EndYear",
+                 "StartMonth",
+                 "EndMonth",
+                 "DisasterGroup",
+                 "DisasterSubgroup",
+                 "DisasterType",
+                 "DisasterSubtype",
+                 "ISO",
+                 "Country")]
+  
+  # Rename variables
+  names(data)[names(data) == "Year"]    <- "year"
+  names(data)[names(data) == "Country"] <- "country_Emdat"
+  
+  # Drop events without date
+  data <- data[complete.cases(data$StartMonth, data$EndMonth), ]
+  
+  # Create date variables
+  data$Date.start <- as.Date(paste0(data$StartYear, "-", data$StartMonth, "-01"))
+  data$Date.end <- as.Date(paste0(data$EndYear, "-", data$EndMonth, "-01"))
+  
+  # Rename countries
+  replacements <- c(
+    "Czechoslovakia"                              = "Czech Republic (the)",
+    "Germany Fed Rep"                             = "Germany",
+    "Korea (the Republic of)"                     = "Korea South",
+    "Korea (the Democratic People's Republic of)" = "Korea North",
+    "Serbia Montenegro"                           = "Serbia",
+    "Yugoslavia"                                  = "Serbia"
+  )
+  data$country_Emdat <- ifelse(data$country_Emdat %in% names(replacements), replacements[data$country_Emdat], data$country_Emdat)
+  
+  # Create ISO codes
+  data$iso3c <- countrycode(data$country_Emdat, "country.name", "iso3c")
+  
+  # Drop NA ISO codes
+  data <- data[complete.cases(data$iso3c), ]
+  
+  # Subset variables
+  data <- data[c("DisNo", "iso3c", "DisasterSubgroup", "Date.start", "Date.end")]
+  
+  # Sort dataset
+  data <- data[order(data$iso3c, data$Date.start), ]
+  
+  return(data)
+}
+
+# Apply function 
+EM_dat <- process_EmDat_1(EMDAT )
+
+  
+  
+```
+
+#### Getting it in a country-year-month panel format
+```{r}
+
+process_EmDat_2 <- function(df, df_basey) {
+# Reshape dataset
+df <- df %>%
+  group_by(iso3c, DisNo, DisasterSubgroup) %>%
+  summarise(date = list(seq(floor_date(min(Date.start), unit = "month"),
+                            floor_date(max(Date.end), unit = "month"),
+                            by = "month"))) %>%
+  unnest(cols = c(date))
+
+# Sort dataframe
+df <- df[order(df$iso3c, df$date), ]
+
+# Create dummy for count
+df$count <- 1
+
+# Count events
+df <- df %>%
+  group_by(iso3c, DisasterSubgroup, date) %>%
+  summarise(count = sum(count))
+
+# Reshape
+df <- dcast(df, date + iso3c ~ DisasterSubgroup)
+
+# Merge with vector dates countries
+df$Date_month <- as.yearmon(df$date)
+df <- left_join(df_basey, df, by = c("date_month" = "Date_month", "iso3c" = "iso3c"))
+
+# List variables
+List <- setdiff(names(df), c("country", "year", "iso3c", "count", "date_month", "date"))
+
+# Assign 0s
+df <- df %>%
+  mutate(across(all_of(List), ~ replace_na(., 0)))
+
+# Drop date
+df <- dplyr::select(df, -date)
+
+# Create variable year
+df$year <- as.double(substr(df$date_month, 5, 9))
+
+
+# Create dummy variables
+df[List] <- lapply(df[List], function(x) as.integer(x > 0))
+colnames(df)[colnames(df) %in% List] <- paste0(colnames(df)[colnames(df) %in% List], "_dummy")
+
+# List variables
+List <- grep("_dummy$", names(df), value = TRUE)
+
+# Create lags
+df <- Lag_12(df, iso3c, List)
+
+# Clean names
+df <- janitor::clean_names(df)
+
+  
+  return(df)
+}
+
+# Process each dataset
+EM_dat_processed_2 <- process_EmDat_2(EM_dat, df_Base_YM)
+
+
+```
+
+#### Getting it in a country-year panel format
+```{r}
+process_EmDat_3 <- function(df, df_basey) {
+  df <- df %>%
+    group_by(iso3c, year) %>%
+     dplyr::summarize(
+      across(ends_with("_dummy"), sum)
+    )
+  
+  # create dummy variables
+  List <- setdiff(names(df), c("iso3c", "year"))
+  for (variable in List) {
+    new_name <- sub("_n_m$", "_dummy", variable)
+    df[[new_name]] <- ifelse(df[[variable]] == 0, 0, 1)
+  }
+  
+  # Merge with Base
+  df <- left_join(df_basey, df, by = c("year", "iso3c"))
+  
+  # Assign 0s
+  df <- df %>%
+    mutate(across(List, ~ replace_na(., 0)))
+  
+  # Lag 12
+  df <- Lag_12(df, iso3c, List)
+  
+  # Clean names
+  df <-  janitor::clean_names(df)
+  
+  return(df)
+}
+
+# Process each dataset
+EM_dat_processed_3 <- process_EmDat_3(EM_dat_processed_2, df_Base_Y)
+
+
+```
+
+
+# Merge datasets main independent and controls
+```{r}
+## add humanitarian dfs
+df_main <- left_join(df_basey, EM_dat_processed_3, by = c("year" = "year", "iso3c" = "iso3c"))
+## add vdem indexes
+df_main <- left_join(df_main, df_precipitation, by = c("year" = "year", "iso3c" = "iso3c"))
+## add conf events
+df_main <- left_join(df_main, df_temperatures, by = c("year" = "year", "iso3c" = "iso3c"))
+## add geo and colonial eritage
+df_main <- left_join(df_Ind_var, df_rugged, by = c("iso3c" = "iso3c"))
+```
+
+
+
+
+
+
+
+
+
+
+
