@@ -33,17 +33,17 @@ library(gridExtra)
 
 
 library(classInt)
-library(devtools)
+#library(devtools)
 library(DT)
 library(dvmisc)
-library(ggpubr)
+#library(ggpubr)
 library(gtools)
 library(foreign)
 
 
 library(countrycode)
 
-
+library(patchwork)
 
 # Load necessary libraries
 library(dplyr)
@@ -125,7 +125,11 @@ create_map <- function(data, column, title, fill_color) {
   ggplot(data) +
     geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
     scale_fill_manual(
-      values = c("TRUE" = fill_color, "FALSE" = "white", "NA" = "grey"), # Grey for countries not in dataset
+      values = c(
+        "TRUE" = scales::alpha(fill_color, 0.7), # Reduce alpha for transparency
+        "FALSE" = "white", 
+        "NA" = "grey"
+      ), # Grey for countries not in dataset
       na.value = "grey"
     ) +
     labs(title = title, fill = NULL) +
@@ -152,7 +156,7 @@ final_plot <- (map1 + map2) / (map3 + map4) +
   )
 
 # Save or display the final plot
-ggsave("GlobSol_Distribution.png", final_plot, width = 8, height = 6)
+ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Figures/GlobSol_Distribution.png", final_plot, width = 8, height = 6)
 print(final_plot)
 
 
@@ -300,13 +304,10 @@ final_plot <- (map1 + map2) / (map3 + map4) +
   )
 
 # Save or display the final plot
-ggsave("AidData_Sample_Description.png", final_plot, width = 8, height = 6)
+ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Figures/AidData_Sample_Description.png", final_plot, width = 8, height = 6)
 print(final_plot)
 
 ```
-
-
-
 
 
 ## New visuals
