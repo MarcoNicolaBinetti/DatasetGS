@@ -25,15 +25,15 @@ library(geosphere)
 library(zoo)
 library(stringr)
 library(tidytext)
-library(rworldmap)
-library(gridExtra)
+#library(rworldmap)
+#library(gridExtra)
 
 
 library(classInt)
-library(devtools)
+#library(devtools)
 library(DT)
 library(dvmisc)
-library(ggpubr)
+#library(ggpubr)
 library(gtools)
 library(foreign)
 #library(GADMTools)
@@ -359,7 +359,7 @@ process_EmDat_1 <- function(data, min_affected) {
   
   # Create date variables
   data$Date.start <- as.Date(paste0(data$StartYear, "-", data$StartMonth, "-01"))
-  data$Date.end   <- as.Date(paste0(data$EndYear,   "-", tedata$EndMonth, "-01"))
+  data$Date.end   <- as.Date(paste0(data$EndYear,   "-", data$EndMonth, "-01"))
   
   # Rename countries
   replacements <- c(
