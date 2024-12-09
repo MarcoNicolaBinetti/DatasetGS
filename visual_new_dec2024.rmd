@@ -9,6 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Restart R
+```{r}
+.rs.restartR()
+```
+
+
 ## Load libraries
 ```{r, include=FALSE}
 library(RColorBrewer)
@@ -35,6 +41,13 @@ library(foreign)
 
 library(countrycode)
 
+
+
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
 ```
 
 ## Remove lists
@@ -66,13 +79,6 @@ df_Globsol50k <- readRDS(Df_path)
 ```
 
 ## plotting maps
-```{r}
-library(dplyr)
-library(ggplot2)
-library(sf)
-library(rnaturalearth)
-library(patchwork) # For combining plots
-```
 
 ```{r}
 df<-df_Globsol50k
@@ -80,12 +86,7 @@ df<-df_Globsol50k
 
 
 ```{r}
-# Load necessary libraries
-library(dplyr)
-library(ggplot2)
-library(sf)
-library(rnaturalearth)
-library(patchwork) # For combining plots
+
 
 # Example dataset (replace this with your actual dataset)
 # df <- read.csv("your_dataset.csv")
@@ -237,6 +238,7 @@ df_Aiddata_sectoral<- df_Aiddata_sectoral %>%
 
 
 ```
+
 ```{r}
 # Summarize data to identify recipient countries and aid types
 df_summary <- df_Aiddata_sectoral %>%
@@ -307,23 +309,26 @@ print(final_plot)
 
 ## New visuals
 ```{r}
+
+df50k<-df_Globsol50k
+
 # Rescale variables mean centred for each year
 
 df_g <- df50k%>%
-mutate(aid_scaled = extended_aid_tot-year_mean_extended_aid_tot,
+mutate(aid_scaled = Hum_plus_ER_aid_tot-year_mean_Hum_plus_ERaid,
         Norm_scaled = NormAgr-year_mean_NormAgr)
   
 ```
 
 ```{r}
-#xlim<-mean(df_g$Norm_scaled)
-#ylim<-mean(df_g$aid_scaled)
+xlim<-mean(df_g$Norm_scaled)
+ylim<-mean(df_g$aid_scaled)
 
 # Plot the dataset
 p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
- geom_point(aes(colour = factor(GlobSol2))) +
- geom_text(aes(label=iso3c))+
- labs(x = "Identification", y = "Joint Action") +
+ geom_point(aes(colour = factor(GlobSol))) +
+ #geom_text(aes(label=iso3c))+
+ labs(x = "Identification", y = "Joint sharing") +
  geom_vline(xintercept = 0, linetype = "dashed", alpha=0.5) +
  geom_hline(yintercept = 0, linetype = "dashed", alpha=0.5) +
  scale_x_continuous(breaks=c(min(df_g$Norm_scaled)-14,0,max(df_g$Norm_scaled)),

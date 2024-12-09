@@ -359,7 +359,7 @@ process_EmDat_1 <- function(data, min_affected) {
   
   # Create date variables
   data$Date.start <- as.Date(paste0(data$StartYear, "-", data$StartMonth, "-01"))
-  data$Date.end <- as.Date(paste0(data$EndYear, "-", data$EndMonth, "-01"))
+  data$Date.end   <- as.Date(paste0(data$EndYear,   "-", tedata$EndMonth, "-01"))
   
   # Rename countries
   replacements <- c(
@@ -1123,16 +1123,16 @@ df_aid_sec<-df_Aiddata_sectoral
 df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
                                                       "year",
                                                       "Humanitarian_Aid_tot",
-                                                      "Emergency_Response_tot",
-                                                      "Reconstruction_Relief_tot")]
+                                                      #"Reconstruction_Relief_tot",
+                                                      "Emergency_Response_tot")]
 
 
 # claculate sum of aid 
 df_aid_sec$Hum_plus_ER_aid_tot    <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
 df_aid_sec$ln_Hum_plus_ER_aid_tot <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
 
-df_aid_sec$extended_aid_tot       <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot
-df_aid_sec$ln_extended_aid_tot    <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot)
+#df_aid_sec$extended_aid_tot       <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot
+#df_aid_sec$ln_extended_aid_tot    <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot+df_aid_sec$Reconstruction_Relief_tot)
 
 ```
 

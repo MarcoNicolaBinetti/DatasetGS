@@ -21,12 +21,12 @@ library(geosphere)
 library(zoo)
 library(stringr)
 library(tidytext)
-library(rworldmap)
+#library(rworldmap)
 library(gridExtra)
 
 
 library(classInt)
-library("ggplot2")
+#library("ggplot2")
 library(devtools)
 library(DT)
 library(dvmisc)
@@ -34,7 +34,7 @@ library(ggpubr)
 library(gtools)
 library(foreign)
 
-library(spdep)
+#library(spdep)
 library(lubridate)
 
 
