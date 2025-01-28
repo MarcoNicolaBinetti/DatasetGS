@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 09 12 2024
+## 28 1 2025
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -302,6 +302,11 @@ df_Base_YM<-drop_columns(df_Base_YM,List)
 ## create year variable
 df_Base_YM$year <- as.integer(c((substr(( c(df_Base_YM$Date.month)), 5, 8))))
 
+
+# drop countries pre USSR collapse if year <1990
+df_Base_YM<-left_join(df_Base_Y, df_Base_YM, by = c("country" = "country", "iso3c" = "iso3c", "year" = "year"))
+
+
 ## correct names
 df_Base_YM<-janitor::clean_names(df_Base_YM)
 
@@ -421,7 +426,7 @@ df <- df %>%
   summarise(count = sum(count))
 
 # Reshape
-df <- dcast(df, date + iso3c ~ DisasterSubgroup)
+df <- reshape2::dcast(df, date + iso3c ~ DisasterSubgroup)
 
 # Merge with vector dates countries
 df$Date_month <- as.yearmon(df$date)

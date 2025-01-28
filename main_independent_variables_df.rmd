@@ -5,7 +5,7 @@ date: "4/18/2024"
 output: html_document
 ---
 
-## 09 12 2024
+## 28 1 2025
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -27,10 +27,10 @@ library(gridExtra)
 
 library(classInt)
 #library("ggplot2")
-library(devtools)
+#library(devtools)
 library(DT)
 library(dvmisc)
-library(ggpubr)
+#library(ggpubr)
 library(gtools)
 library(foreign)
 
@@ -255,7 +255,8 @@ df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2020)
     "Serbia Montenegro" = "Serbia",
     "Yugoslavia"        = "Serbia"
   )
-  df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
+
+df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
 
 ## assign ISO3C
 df_Polity2$iso3c <- countrycode(df_Polity2$country, "country.name", "iso3c")
@@ -265,11 +266,11 @@ df_Base_Y<-df_Polity2[c("country",
                         "iso3c",
                         "year")]
 
-# Complete panel
-df_Base_Y<-df_Base_Y %>%
-  complete(iso3c,year=c(1981:2021)) %>%
-  group_by(iso3c) %>% fill(country) %>%
-  ungroup()
+# # Complete panel
+# df_Base_Y<-df_Base_Y %>%
+#   complete(iso3c,year=c(1981:2021)) %>%
+#   group_by(iso3c) %>% fill(country) %>%
+#   ungroup()
 
 ## drop iso3c NA
 df_Base_Y<-Drop_NA(df_Base_Y, iso3c)
@@ -300,6 +301,11 @@ List<-c("Dummy")
 df_Base_YM<-drop_columns(df_Base_YM,List)
 ## create year variable
 df_Base_YM$year <- as.integer(c((substr(( c(df_Base_YM$Date.month)), 5, 8))))
+
+
+# drop countries pre USSR collapse if year <1990
+df_Base_YM<-left_join(df_Base_Y, df_Base_YM, by = c("country" = "country", "iso3c" = "iso3c", "year" = "year"))
+
 
 ## correct names
 df_Base_YM<-janitor::clean_names(df_Base_YM)
