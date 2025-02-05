@@ -57,7 +57,7 @@ rm(list=ls())
 ```{r}
 ## set url Marco Nextclod
 desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
-#desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
+desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
 
 main_folder_name <- "Global Solidarity"
 sub_folder_name <- "Compiled"
@@ -307,7 +307,7 @@ print(final_plot)
 ## New visuals
 ```{r}
 
-df50k<-df_Globsol50k
+df50k<-readRDS("C:/Users/krogers/Nextcloud/Global Solidarity/Compiled/globsol_df50k_v2.rds")
 
 # Rescale variables mean centred for each year
 
@@ -353,23 +353,27 @@ print(p) +
 ## With labels
 ```{r}
 library(ggrepel)
+library(tidyverse)
+
+gs2<-df_g %>% filter(GlobSol==4)
 
 lab<-df_g %>% 
   mutate(label=
-           ifelse(year=="2005" & iso3c=="USA","\nHurricane Katrina,  USA 2005", 
-           ifelse(year=="2009" & iso3c=="TWN","\nTyphoon Morakot, Taiwan 2009",
+           ifelse(year=="2014" & iso3c=="CHN","\nYunnan Earthquake,  China 2014", 
+           ifelse(year=="2002" & iso3c=="AUT","\nAustria Floods, 2002",
            ifelse(year=="2005" & iso3c=="PAK"," \nKashmir Earthquake,\n Pakistan 2005",NA)))) %>%
     mutate(label2=
-           ifelse(year=="2006" & iso3c=="SDN","Sudan\nFloods\n2006 ",NA)) %>%
+           ifelse(year=="2006" & iso3c=="SDN","Sudan\nFloods,\n2006 ",NA)) %>%
   filter(!is.na(label)|!is.na(label2))
 
 
-p+geom_text(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,hjust=0.3, vjust=0.8))+
+p+geom_text(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,hjust=0.6, vjust=0.8))+
   geom_text(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label2),hjust=1.2)+
   geom_point(data=lab,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
   ggtitle("")
 
-#ggsave("./plots/labelled_scatter_20240910.png", width=8,height=5)
+ggsave("./plots/labelled_scatter_20240205.png", width=8,height=5)
+
 ```
 
 
