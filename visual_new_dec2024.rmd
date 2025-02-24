@@ -154,7 +154,6 @@ ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/fi
 print(final_plot)
 
 
-
 ```
 
 ```{r}
