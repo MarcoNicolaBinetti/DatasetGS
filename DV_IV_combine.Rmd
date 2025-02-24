@@ -19,9 +19,9 @@ library(tidyverse)
 library(tidyr)
 library(naniar)
 #library(ggplot2)
-library(stargazer)
-library(brms)
-library(sandwich)
+#library(stargazer)
+#library(brms)
+#library(sandwich)
 library(lmtest)
 library(magrittr) # for pipes
 library(nnet) # for the multinom()-function
@@ -168,7 +168,6 @@ df_full <- df_full[ , names(df_full) %!in% c("country.x",
 # start analysis
 ## preprocess data
 ```{r}
-
 ## select vars if interest
 List<-c("count_HO_lag_1",
         "nat_rents_lag_1",
@@ -231,6 +230,7 @@ List<-c("count_HO_lag_1",
         "military_centr_lag_1",
         "mil_per_lag_1",
         "dis_death",
+        "DamAd",
         "mil_exp_usd_lag_1",
         "autonomy_lag_1",
         "executive_corr_lag_1",

@@ -5,7 +5,7 @@ date: "4/18/2024"
 output: html_document
 ---
 
-## 28 1 2025
+## 24 2 2025
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -55,7 +55,7 @@ library(roll)
 # Remove lists 
 ```{r, include=FALSE}
 ## remove lists
-rm(list=ls())
+#rm(list=ls())
 ```
 
 # Funtions 
@@ -1450,6 +1450,85 @@ EM_dat_fat <- process_EmDat_fat(EMDAT)
 
 ```
 
+#### Calculate number of costs per year 
+```{r}
+
+# Function to process dataset
+process_EmDat_fat <- function(data) {
+
+    # Subset years
+  data <- subset(data, StartYear >= 1980)
+  
+  # Drop technological disasters
+  data <- subset(data, DisasterGroup == "Natural")
+  
+  # Select variables of interest
+  data <- data[c("DisNo", "StartYear", "EndYear", "Country", "DisasterSubgroup", "TotalDamageAdjusted000US")]
+  
+
+  # Rename countries
+  replacements <- c(
+    "Czechoslovakia"                              = "Czech Republic (the)",
+    "Germany Fed Rep"                             = "Germany",
+    "Korea (the Republic of)"                     = "Korea South",
+    "Korea (the Democratic People's Republic of)" = "Korea North",
+    "Serbia Montenegro"                           = "Serbia",
+    "Yugoslavia"                                  = "Serbia"
+  )
+
+  data$Country <- ifelse(data$Country %in% names(replacements), replacements[data$Country], data$Country)
+  
+  # Create ISO codes
+  data$iso3c <- countrycode(data$Country, "country.name", "iso3c")
+  
+  # Drop NA ISO codes
+  data <- data[complete.cases(data$iso3c), ]
+  
+  # Subset variables
+  data <- data[c("iso3c", "DisasterSubgroup", "EndYear","TotalDamageAdjusted000US")]
+  
+
+     # List variables
+  List <-  c("TotalDamageAdjusted000US")
+  # # Assign 0s
+  # data <- data %>%
+  #   mutate(across(all_of(List), ~ replace_na(., 0)))
+
+  # Count costs
+  data <- data %>%
+  group_by(iso3c, EndYear) %>%
+  summarise(DamAd = sum(TotalDamageAdjusted000US))
+
+    names(data)[names(data) == "EndYear"] <- "year"
+    names(data)[names(data) == "DamAd"] <- "DamAd"
+
+
+    
+     # merge with base  
+  data <- left_join(df_Base_Y, data, by = c("year" = "year", "iso3c" = "iso3c"))
+  
+     # List variables
+  List <-  c("DamAd")
+  # Assign 0s
+  # data <- data %>%
+  #   mutate(across(all_of(List), ~ replace_na(., 0)))
+
+      
+ #list variables aiddata 
+List<- c("DamAd")
+
+## lag variables of 1 to 2 years
+data<-Lag_12(data, iso3c, List) 
+  
+  
+  return(data)
+}
+
+# Apply function for different thresholds
+EM_dat_cost <- process_EmDat_fat(EMDAT)
+
+
+```
 
 ## Merge different Mdat datasets
 ```{r}
@@ -1482,6 +1561,8 @@ df_Ind_var <- left_join(df_Ind_var, df_rugged, by = c("iso3c" = "iso3c"))
 df_Ind_var <- left_join(df_Ind_var, df_EMDAT_full, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add fat Mdata
 df_Ind_var <- left_join(df_Ind_var, EM_dat_fat, by = c("year" = "year", "iso3c" = "iso3c"))
+## add cost Mdata
+df_Ind_var <- left_join(df_Ind_var, EM_dat_cost, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add KOF index
 df_Ind_var <- left_join(df_Ind_var, df_KOFIndex, by = c("year" = "year", "iso3c" = "iso3c"))
 ## Add RPE
