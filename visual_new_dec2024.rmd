@@ -120,7 +120,7 @@ create_map <- function(data, column, title, fill_color) {
     geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
     scale_fill_manual(
       values = c(
-        "TRUE" = scales::alpha(fill_color, 0.7), # Reduce alpha for transparency
+        "TRUE" = scales::alpha(fill_color, 1), # Reduce alpha for transparency
         "FALSE" = "white", 
         "NA" = "grey"
       ), # Grey for countries not in dataset
@@ -135,13 +135,13 @@ create_map <- function(data, column, title, fill_color) {
 }
 
 # Create maps for each GlobSol category with specified colors
-map1 <- create_map(world_data, "GlobSol1", "Full Solidarity", "red")
-map2 <- create_map(world_data, "GlobSol2", "Symbolic Solidarity", "blue")
-map3 <- create_map(world_data, "GlobSol3", "Coercive Solidarity", "green")
-map4 <- create_map(world_data, "GlobSol4", "Minimal Solidarity", "purple")
+map1 <- create_map(world_data, "GlobSol1", "Full Solidarity", "#e41a1c")
+map2 <- create_map(world_data, "GlobSol2", "Symbolic Solidarity", "#377eb8")
+map3 <- create_map(world_data, "GlobSol3", "Coercive Solidarity", "#4daf4a")
+map4 <- create_map(world_data, "GlobSol4", "Minimal Solidarity", "#984ea3")
 
 # Combine maps into a single image with a centered title
-final_plot <- (map1 + map2) / (map3 + map4) +
+final_plot <- (map3 + map1) / (map4 + map2) +
   plot_annotation(
     title = "Distribution of GlobSol Worldwide",
     theme = theme(
@@ -298,7 +298,7 @@ final_plot <- (map1 + map2) / (map3 + map4) +
   )
 
 # Save or display the final plot
-ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/GlobSol_Distribution.png", final_plot, width = 8, height = 6)
+ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/Aid_Distribution.png", final_plot, width = 8, height = 6)
 print(final_plot)
 
 ```
