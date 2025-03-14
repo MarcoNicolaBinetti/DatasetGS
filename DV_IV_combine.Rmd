@@ -100,12 +100,12 @@ sub_folder_name <- "Compiled"
 
 ### 5k
 ```{r}
-# # set DF
-# DF<-c("globsol_df5k_v2.rds")
-# # load DF
-# Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
-# # importing DF 
-# df_Globsol5k <- readRDS(Df_path)
+# set DF
+DF<-c("globsol_df5k_v2.rds")
+# load DF
+Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
+# importing DF
+df_Globsol5k <- readRDS(Df_path)
 
 ```
 
@@ -146,8 +146,8 @@ df_IndVars <- readRDS(Df_path)
 
 # Set dataset for analysis
 ```{r}
-#df_DepVars <-df_Globsol5k
-df_DepVars  <-df_Globsol50k
+df_DepVars <-df_Globsol5k
+#df_DepVars  <-df_Globsol50k
 #df_DepVars <-df_Globsol100k
 #df_DepVars <-df_Globsol5k500d
 
@@ -330,9 +330,9 @@ df_scaled$Last_time[df_scaled$Last_time == 0] <- NA
 ## Export file
 ```{r}
 #saving it
-#namefile<-"df_full_5.csv"
-namefile<-"df_full_v2.csv"
-#namefile<-"df_full_100.csv"
+namefile<-"df_full_v2_5000.csv"
+#namefile<-"df_full_v2.csv"
+#namefile<-"df_full_v2_100000.csv"
 #namefile<-"df_full_5k_500d.csv"
 
 ## correct names
