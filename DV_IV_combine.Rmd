@@ -136,7 +136,7 @@ df_Globsol100k <- readRDS(Df_path)
 ## Import Independent and control variables
 ```{r}
 # set DF
-DF<-c("df_ind_var_v2.rds")
+DF<-c("df_ind_var_v3.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -146,8 +146,8 @@ df_IndVars <- readRDS(Df_path)
 
 # Set dataset for analysis
 ```{r}
-df_DepVars <-df_Globsol5k
-#df_DepVars  <-df_Globsol50k
+#df_DepVars <-df_Globsol5k
+df_DepVars  <-df_Globsol50k
 #df_DepVars <-df_Globsol100k
 #df_DepVars <-df_Globsol5k500d
 
@@ -239,7 +239,11 @@ List<-c("count_HO_lag_1",
         "age_dep_ratio_lag_1",
         "lit_rate_lag_1",
                    "regio_pol",
-                   "regio_geo")
+                   "regio_geo",
+        "commitment_tot_lag_1",
+                                                        "commitment_tot_pc_lag_1",
+        "commitment_tot_lag_1",
+                                                        "commitment_tot_pc_lag_1")
 
 df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","Hum_plus_ER_aid_tot","NormAgr","iso3c","year")] 
 
@@ -330,8 +334,8 @@ df_scaled$Last_time[df_scaled$Last_time == 0] <- NA
 ## Export file
 ```{r}
 #saving it
-namefile<-"df_full_v2_5000.csv"
-#namefile<-"df_full_v2.csv"
+#namefile<-"df_full_v3_5000.csv"
+namefile<-"df_full_v3.csv"
 #namefile<-"df_full_v2_100000.csv"
 #namefile<-"df_full_5k_500d.csv"
 
