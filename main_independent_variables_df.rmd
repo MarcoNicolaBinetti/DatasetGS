@@ -55,7 +55,7 @@ library(roll)
 # Remove lists 
 ```{r, include=FALSE}
 ## remove lists
-#rm(list=ls())
+rm(list=ls())
 ```
 
 # Funtions 
@@ -440,7 +440,7 @@ df_WorldBank<-Lag_12(df_WorldBank, iso3c, List)
 df_WorldBank<-janitor::clean_names(df_WorldBank)
 
 ```
-# NMC (add dataset)
+# AidData
 ```{r}
 
 ```
