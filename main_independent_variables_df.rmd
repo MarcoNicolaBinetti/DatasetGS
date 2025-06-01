@@ -440,8 +440,130 @@ df_WorldBank<-Lag_12(df_WorldBank, iso3c, List)
 df_WorldBank<-janitor::clean_names(df_WorldBank)
 
 ```
-# AidData
+### AidData
+#### Link df: https://www.aiddata.org/data/aiddata-core-research-release-level-1-v3-0
+#### Create folder and download
+#### Set name folder
 ```{r}
+sub_folder_name<-"Aidata"
+```
+#### Create folder and download
+```{r}
+# download_create_folder_and_unzip(desktop_path,
+#                            sub_folder_name,
+#                            "https://github.com/AidData-WM/public_datasets/releases/download/v3.0/AidDataCore_ResearchRelease_Level1_v3.0.zip")
+```
+
+#### Import
+```{r}
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
+## import  dataset
+Aiddata<- read.csv(file_path)
+```
+
+
+#### Reshaping AidData 
+##### Calculating total amount of aid
+```{r}
+
+
+df_Aiddata<-Aiddata
+
+## aggregate at country recipient level
+df_Aiddata<- df_Aiddata %>% 
+  group_by(recipient, year ) %>%
+  summarize(AidData_tot_commit = sum(commitment_amount_usd_constant_sum))
+
+#change names
+df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"]            <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
+df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"]          <- "Russia"
+
+#assign ISO3
+df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_Aiddata<-df_Aiddata[!is.na(df_Aiddata$iso3c), ]
+
+#create Aiddata country date dataset
+df_Aiddata_C<-as.data.frame(unique(df_Aiddata$iso3c))
+names(df_Aiddata_C)[1] <- "iso3c"
+df_Aiddata_C$Dummy<-1
+Date_Y_AidData<-as.data.frame(seq(as.Date("1970-1-1"), as.Date("2013-12-31"), by = "year"))
+names(Date_Y_AidData)[1] <- "year"
+Date_Y_AidData$Dummy<-1
+Date_Y_AidData$year<-as.double((substr(( c(Date_Y_AidData$year)), 1, 4)))
+df_Aiddata_CY<-left_join(df_Aiddata_C,Date_Y_AidData)
+
+# merge with with aid data country year vector
+df_Aiddata<-left_join(df_Aiddata_CY,df_Aiddata, by = c("iso3c" = "iso3c","year"="year"))
+
+#drop duplicates (usual yuogoslavia and soviet union "problem" with name change to serbia and russia)
+df_Aiddata<-df_Aiddata %>% 
+                distinct(year, iso3c , .keep_all = TRUE)
+
+## merge with world Bank Population
+WorldBank_pop <- WDI(
+  country = "all",
+  indicator = c("Pop_tot"="SP.POP.TOTL"),
+  start = 1960,
+  end = 2020,
+  extra = TRUE,
+  cache = NULL,
+  latest = NULL,
+  language = "en"
+)
+
+## assign ISO3
+names(WorldBank_pop)[names(WorldBank_pop) == "country"] <- "country_wb"
+WorldBank_pop$iso3c <- countrycode(WorldBank_pop$country_wb, "country.name", "iso3c")
+
+# merge with aid data 
+df_Aiddata<-left_join(df_Aiddata,WorldBank_pop)
+
+##assign 0s and NAs
+List<-c("AidData_tot_commit")
+df_Aiddata<-Nas_to_0(df_Aiddata, List)
+
+#divide by population
+df_Aiddata$AidData_tot_commit_per_cap<-df_Aiddata$AidData_tot_commit/df_Aiddata$Pop_tot
+
+# keep var of interest
+df_Aiddata <- df_Aiddata[ , !names(df_Aiddata) %in% c("Dummy",
+                                                      "iso2c",
+                                                      "country_wb",
+                                                      "Pop_tot",
+                                                      "region",
+                                                      "capital",
+                                                      "longitude",
+                                                      "latitude",
+                                                      "income",
+                                                      "lending",
+                                                      "recipient")]
+## merge with Base
+df_Aiddata= left_join(df_Base_Y, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
+
+#list variables aidata
+List<- colnames(df_Aiddata)[!colnames(df_Aiddata) %in% c("iso3c", "year")]
+
+# assign 0s
+df_Aiddata<-Nas_to_0(df_Aiddata,List)
+
+# Replace values with NA for years after 2013
+df_Aiddata[df_Aiddata$year > 2013, List] <- NA
+
+## aggregate at country recipient level
+df_Aiddata<- df_Aiddata %>% 
+  group_by(iso3c, year ) %>%
+  summarize(commitment_tot = sum(AidData_tot_commit),
+            commitment_tot_pc = sum(AidData_tot_commit_per_cap))
+            
+
+# list variables aidata
+List<- colnames(df_Aiddata)[colnames(df_Aiddata) %in% c("commitment_tot",
+                                                        "commitment_tot_pc")]
+                           ## lag variables of 1 to 2 years
+df_Aiddata<-Lag_12(df_Aiddata, iso3c, List)
 
 ```
 
@@ -1567,6 +1689,8 @@ df_Ind_var <- left_join(df_Ind_var, EM_dat_cost, by = c("year" = "year", "iso3c"
 df_Ind_var <- left_join(df_Ind_var, df_KOFIndex, by = c("year" = "year", "iso3c" = "iso3c"))
 ## Add RPE
 df_Ind_var <- left_join(df_Ind_var, df_rpc, by = c("year" = "year", "iso3c" = "ISO3"))
+## Add Aid
+df_Ind_var <- left_join(df_Ind_var, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
 
 ```
 
@@ -1590,7 +1714,7 @@ path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
-folder_path <- file.path(path,"df_Ind_var_v2.rds")
+folder_path <- file.path(path,"df_Ind_var_v3.rds")
 ## save file
 saveRDS(df_Ind_var, folder_path)
 
@@ -1622,7 +1746,7 @@ if (!file.exists(folder_path)) {
 ## Export file
 ```{r}
 #saving it
-namefile<-"df_Ind_var.rds"
+namefile<-"df_Ind_var_v3.rds"
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 #folder_path_wb <-(paste0(userpath,"Nextcloud/Global Solidarity/Compiled/df_Ind_var.rds"))
 saveRDS(df_Ind_var, folder_path_wb)
