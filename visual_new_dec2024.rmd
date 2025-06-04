@@ -143,14 +143,15 @@ map4 <- create_map(world_data, "GlobSol4", "Minimal Solidarity", "#984ea3")
 # Combine maps into a single image with a centered title
 final_plot <- (map3 + map1) / (map4 + map2) +
   plot_annotation(
-    title = "Distribution of GlobSol Worldwide",
+    title = "",
     theme = theme(
       plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
     )
   )
 
 # Save or display the final plot
-ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/GlobSol_Distribution.png", final_plot, width = 8, height = 6)
+#ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/GlobSol_Distribution.png", 
+ ggsave("./plots/map_new.png", final_plot, width = 8, height = 6, dpi=300)
 print(final_plot)
 
 
@@ -310,7 +311,7 @@ df50k<-readRDS("C:/Users/marco/Nextcloud/Global Solidarity/Compiled/globsol_df50
 
 # Rescale variables mean centred for each year
 
-df_g <- df50k%>%
+df_g <- df_Globsol50k%>%
 mutate(aid_scaled = Hum_plus_ER_aid_tot-year_mean_Hum_plus_ERaid,
         Norm_scaled = NormAgr-year_mean_NormAgr)
   
@@ -341,6 +342,8 @@ p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
                               "Minimal")) +
  theme(panel.background = element_blank(),
         axis.ticks=element_blank(),
+         axis.text=element_text(size=10),
+       legend.text = element_text(size=10),
         legend.position=c(0.8,0.8))
 
 print(p) + 
@@ -359,7 +362,7 @@ p_final <- p +
   geom_point(data = lab, aes(x = Norm_scaled, y = aid_scaled), shape = 1, size = 3) +
   ggtitle("")
 
-ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/plot_export2.png", plot = p_final, width = 10, height = 6, dpi = 300)
+ggsave("./plots/new_scatter.png", plot = p_final, width = 8, height = 6,dpi=300)
 
 ```
 
