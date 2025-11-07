@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 28 1 2025
+## 07 11 2025
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -728,7 +728,7 @@ df_ICWES_g2g_dis100k <- process_ICEWS_1(df_ICWES_g2g_dis100k)
 
 ##### Remove from environment df_ICWES to save memory
 ```{r}
-rm(df_ICWES)
+#rm(df_ICWES)
 ```
 
 ##### Calculating number of countries sending verbal support during and after natural disaster
@@ -756,6 +756,8 @@ df_ICWES_dis1k_y   <-process_ICEWS_2(df_ICWES_g2g_dis1k)
 df_ICWES_dis5k_y   <-process_ICEWS_2(df_ICWES_g2g_dis5k)
 df_ICWES_dis50k_y  <-process_ICEWS_2(df_ICWES_g2g_dis50k)
 df_ICWES_dis100k_y <-process_ICEWS_2(df_ICWES_g2g_dis100k)
+
+summary(df_ICWES_dis50k_y)
 
 ```
 
@@ -807,6 +809,7 @@ df_ICEWS_EMDAT_5ky   <-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
 df_ICEWS_EMDAT_50ky  <-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
 df_ICEWS_EMDAT_100ky <-process_ICEWS_4(EM_dat_100k_processed_3,df_ICWES_dis100k_y)
 
+summary(df_ICEWS_EMDAT_50ky)
 
 ```
 
@@ -838,7 +841,6 @@ df_ICWES_dis5k_y_small   <- process_ICEWS_3(df_ICEWS_EMDAT_5ky)
 df_ICWES_dis50k_y_small  <- process_ICEWS_3(df_ICEWS_EMDAT_50ky)
 df_ICWES_dis100k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_100ky)
 
-
 ```
 
 ##### Calculating wich countries received more normative agreement than the average
@@ -866,11 +868,13 @@ df_output <- df_input[ , names(df_input) %in% c("iso3c",
 
 
 # Summarize each dataset
-df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICWES_dis1k_y)
-df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICWES_dis5k_y)
-df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICWES_dis50k_y)
-df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small,df_ICWES_dis100k_y)
+df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small,df_ICEWS_EMDAT_100ky)
 
+
+summary(df_ICWES_dis50k_y)
 
 ```
 

@@ -120,6 +120,17 @@ df_Globsol50k <- readRDS(Df_path)
 
 ```
 
+### 50k no assistance
+```{r}
+# set DF
+DF<-c("globsol_df50k_v2_no_assistance.rds")
+# load DF
+Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
+# importing DF 
+df_Globsol50k_noass <- readRDS(Df_path)
+
+```
+
 
 ### 100k
 ```{r}
@@ -150,6 +161,7 @@ df_IndVars <- readRDS(Df_path)
 df_DepVars  <-df_Globsol50k
 #df_DepVars <-df_Globsol100k
 #df_DepVars <-df_Globsol5k500d
+#df_DepVars <-df_Globsol50k_noass
 
 ```
 
@@ -338,6 +350,7 @@ df_scaled$Last_time[df_scaled$Last_time == 0] <- NA
 namefile<-"df_full_v3.csv"
 #namefile<-"df_full_v2_100000.csv"
 #namefile<-"df_full_5k_500d.csv"
+#namefile<-"df_full_v3_noass.csv"
 
 ## correct names
 df_scaled<-janitor::clean_names(df_scaled)
