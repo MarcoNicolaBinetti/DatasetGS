@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 28 1 2025
+## 08 11 2025
 
 ## Load libraries
 ```{r, include=FALSE}
@@ -78,6 +78,8 @@ df_Globsol50k <- readRDS(Df_path)
 
 ```{r}
 df<-df_Globsol50k
+
+table(df_Globsol50k$GlobSol)
 ```
 
 # PLot distribution of GS geographic
@@ -151,7 +153,7 @@ final_plot <- (map3 + map1) / (map4 + map2) +
 
 # Save or display the final plot
 #ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/GlobSol_Distribution.png", 
- ggsave("./plots/map_new.png", final_plot, width = 8, height = 6, dpi=300)
+ ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/map_new.png", final_plot, width = 8, height = 6, dpi=300)
 print(final_plot)
 
 
@@ -312,8 +314,8 @@ df50k<-readRDS("C:/Users/marco/Nextcloud/Global Solidarity/Compiled/globsol_df50
 # Rescale variables mean centred for each year
 
 df_g <- df_Globsol50k%>%
-mutate(aid_scaled = Hum_plus_ER_aid_tot-year_mean_Hum_plus_ERaid,
-        Norm_scaled = NormAgr-year_mean_NormAgr)
+mutate(aid_scaled = Hum_plus_ER_aid_tot-cumulative_year_mean_Hum_plus_ERaid,
+        Norm_scaled = NormAgr-cumulative_mean_of_year_means)
   
 ```
 
@@ -423,7 +425,7 @@ p+geom_text(data=lab,aes(x = Norm_scaled, y = aid_scaled, label=label,hjust=0.6,
   geom_point(data=lab,aes(x = Norm_scaled, y = aid_scaled),shape=1,size=3) + 
   ggtitle("")
 
-ggsave("./plots/labelled_scatter_20240205.png", width=8,height=5)
+ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/labelled_scatter_20240205.png", width=8,height=5)
 
 ```
 
