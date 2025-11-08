@@ -724,6 +724,8 @@ df_ICWES_g2g_dis5k   <- process_ICEWS_1(df_ICWES_g2g_dis5k)
 df_ICWES_g2g_dis50k  <- process_ICEWS_1(df_ICWES_g2g_dis50k)
 df_ICWES_g2g_dis100k <- process_ICEWS_1(df_ICWES_g2g_dis100k)
 
+head(df_ICWES_g2g_dis50k)
+
 ```
 
 ##### Remove from environment df_ICWES to save memory
@@ -757,8 +759,8 @@ df_ICWES_dis5k_y   <-process_ICEWS_2(df_ICWES_g2g_dis5k)
 df_ICWES_dis50k_y  <-process_ICEWS_2(df_ICWES_g2g_dis50k)
 df_ICWES_dis100k_y <-process_ICEWS_2(df_ICWES_g2g_dis100k)
 
-
 summary(df_ICWES_dis50k_y)
+
 ```
 
 ##### Merge ICEWS counts with panel countries that experienced disaster
@@ -784,7 +786,6 @@ df <- df_EMdat[, !names(df_EMdat) %in% lag_columns]
   
   # drop useless vars
 List<-dummy_vars
-
 df<-drop_columns(df,List)
   
 ## merge dataframes
@@ -811,29 +812,29 @@ df_ICEWS_EMDAT_100ky <-process_ICEWS_4(EM_dat_100k_processed_3,df_ICWES_dis100k_
 
 summary(df_ICEWS_EMDAT_50ky)
 
-
 ```
 
 
-##### Calculating average number of countries sending verbal support during and after natural disaster per year
+##### Calculating average number of countries sending verbal support during and after natural disaster per year (rolling mean- the original one)
 ```{r}
 
-#Function to calculate the mean of current and previous years
 process_ICEWS_3 <- function(df_input) {
+  # 1) Collapse the input to one row per year:
+  #    For each 'year', compute the mean of NormAgr, ignoring NAs.
+  ym <- aggregate(NormAgr ~ year, data = df_input,
+                  FUN = function(x) mean(x, na.rm = TRUE))
 
-    means <- c()
-  
- for (year in unique(df_input$year)) {
-    # Calculate mean for the current year and all preceding years
-    value <- mean(df_input$NormAgr[df_input$year <= year])
-    
-    means <- c(means, value)
- }
-  
- # Create a year-level data frame
- means_df <- data.frame(year = unique(df_input$year), year_mean_NormAgr = means)
-  
- return(means_df)
+  # 2) Ensure the rows are in ascending chronological order by 'year'.
+  ym <- ym[order(ym$year), ]
+
+  # 3) Compute the cumulative mean of the *yearly means*:
+  #    - cumsum(ym$NormAgr): running sum of the yearly means
+  #    - seq_len(nrow(ym)):  1, 2, 3, ..., number of years
+  #    - divide to get the running average where each year is equally weighted
+  ym$cumulative_mean_of_year_means <- cumsum(ym$NormAgr) / seq_len(nrow(ym))
+
+  # 4) Return only the 'year' and the newly computed cumulative series.
+  ym[, c("year", "cumulative_mean_of_year_means")]
 }
 
 # Summarize each dataset
@@ -842,25 +843,55 @@ df_ICWES_dis5k_y_small   <- process_ICEWS_3(df_ICEWS_EMDAT_5ky)
 df_ICWES_dis50k_y_small  <- process_ICEWS_3(df_ICEWS_EMDAT_50ky)
 df_ICWES_dis100k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_100ky)
 
+summary(df_ICWES_dis50k_y_small)
 
 ```
+
+
+##### Calculating average number of countries sending verbal support during and after natural disaster per year (no rolling mean)
+```{r}
+
+#Function to calculate the mean of current and previous years
+process_ICEWS_3b  <- function(df_input) {
+  out <- aggregate(NormAgr ~ year, data = df_input,
+                   FUN = function(x) mean(x, na.rm = TRUE))
+  out[order(out$year), c("year", "NormAgr")]
+  names(out) <- c("year", "year_mean_NormAgr")
+  out[order(out$year), ]
+}
+
+# Summarize each dataset
+df_ICWES_dis1k_y_small_b   <- process_ICEWS_3b(df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y_small_b   <- process_ICEWS_3b(df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y_small_b  <- process_ICEWS_3b(df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y_small_b <- process_ICEWS_3b(df_ICEWS_EMDAT_100ky)
+
+summary(df_ICWES_dis50k_y_small_b)
+
+
+```
+
 
 ##### Calculating wich countries received more normative agreement than the average
 ```{r}
 
 # Function to summarize data by year
-process_ICEWS_4 <- function(df_input,df_input_2) {
+process_ICEWS_4 <- function(df_input_2, df_input_3, df_input) {
   
   ## merge with emdat country month level dataset in order to identify declarations 
-df_input= left_join(df_input_2, df_input, by = c("year"="year"))
+df_new= left_join(df_input, df_input_2, by = c("year"="year"))
+df_new= left_join(df_new, df_input_3, by = c("year"="year"))
 
-df_input$dummy_agreement<-ifelse(df_input$NormAgr> df_input$year_mean_NormAgr,1,0)
+df_new$dummy_agreement_roll<-ifelse(df_new$NormAgr> df_new$cumulative_mean_of_year_means,1,0)
+df_new$dummy_agreement_year<-ifelse(df_new$NormAgr> df_new$year_mean_NormAgr,1,0)
 
 
 # keep var of interest
-df_output <- df_input[ , names(df_input) %in% c("iso3c",
+df_output <- df_new[ , names(df_new) %in% c("iso3c",
                                                 "year",
-                                                "dummy_agreement",
+                                                "dummy_agreement_roll",
+                                                "dummy_agreement_year",
+                                                "cumulative_mean_of_year_means",
                                                 "year_mean_NormAgr",
                                                 "NormAgr")]  
   return(df_output)
@@ -870,13 +901,14 @@ df_output <- df_input[ , names(df_input) %in% c("iso3c",
 
 
 # Summarize each dataset
-df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small,df_ICEWS_EMDAT_1ky)
-df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis5k_y_small,df_ICEWS_EMDAT_5ky)
-df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis50k_y_small,df_ICEWS_EMDAT_50ky)
-df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small,df_ICEWS_EMDAT_100ky)
+df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_100ky)
 
 
 summary(df_ICWES_dis50k_y)
+
 ```
 
 
@@ -1264,35 +1296,30 @@ df_AID_dis100k_y  <- replace_na_post_2014(df_AID_EMDAT_100ky,unocha_long)
 
 ```
 
-##### Calculating average aid sent during natural disaster year
+##### Calculating average aid sent during natural disaster year (cumulative mean of means)
 ```{r}
 
  #Function to calculate the mean of current and previous years
 
 
 process_AID_2 <- function(df_input) {
+  # 1) Collapse the input to one row per year:
+  #    For each 'year', compute the mean of NormAgr, ignoring NAs.
+  ym <- aggregate(Hum_plus_ER_aid_tot ~ year, data = df_input,
+                  FUN = function(x) mean(x, na.rm = TRUE))
 
-    means <- c()
+  # 2) Ensure the rows are in ascending chronological order by 'year'.
+  ym <- ym[order(ym$year), ]
 
- for (year in unique(df_input$year)) {
-    # Calculate mean for the current year and all preceding years
-    value <- mean(df_input$Hum_plus_ER_aid_tot[df_input$year <= year])
+  # 3) Compute the cumulative mean of the *yearly means*:
+  #    - cumsum(ym$NormAgr): running sum of the yearly means
+  #    - seq_len(nrow(ym)):  1, 2, 3, ..., number of years
+  #    - divide to get the running average where each year is equally weighted
+  ym$cumulative_year_mean_Hum_plus_ERaid <- cumsum(ym$Hum_plus_ER_aid_tot) / seq_len(nrow(ym))
 
-    means <- c(means, value)
- }
-
- # Create a year-level data frame
- means_df <- data.frame(year = unique(df_input$year), year_mean_Hum_plus_ERaid = means)
-
- means_df$year_mean_Hum_plus_ERaid<-ifelse(means_df$year>2013 ,NA, means_df$year_mean_Hum_plus_ERaid)
-
- means_df <- means_df[order(means_df$year), ]
-
- means_df$year_mean_Hum_plus_ERaid <- na.locf(means_df$year_mean_Hum_plus_ERaid)
-
- return(means_df)
+  # 4) Return only the 'year' and the newly computed cumulative series.
+  ym[, c("year", "cumulative_year_mean_Hum_plus_ERaid")]
 }
-
 
 # Summarize each dataset
 df_AID_dis1k_y_small   <- process_AID_2(df_AID_dis1k_y)
@@ -1300,30 +1327,65 @@ df_AID_dis5k_y_small   <- process_AID_2(df_AID_dis5k_y)
 df_AID_dis50k_y_small  <- process_AID_2(df_AID_dis50k_y)
 df_AID_dis100k_y_small <- process_AID_2(df_AID_dis100k_y)
 
+
+summary(df_AID_dis50k_y_small)
 ```
+
+
+##### Calculating average aid sent during natural disaster year (yearly mean)
+```{r}
+
+#Function to calculate the mean of current and previous years
+process_AID_2b  <- function(df_input) {
+  out <- aggregate(Hum_plus_ER_aid_tot ~ year, data = df_input,
+                   FUN = function(x) mean(x, na.rm = TRUE))
+  out[order(out$year), c("year", "Hum_plus_ER_aid_tot")]
+  names(out) <- c("year", "year_mean_Hum_plus_ERair")
+  out[order(out$year), ]
+}
+
+# Summarize each dataset
+df_AID_dis1k_y_small_b   <- process_AID_2b(df_AID_dis1k_y)
+df_AID_dis5k_y_small_b   <- process_AID_2b(df_AID_dis5k_y)
+df_AID_dis50k_y_small_b  <- process_AID_2b(df_AID_dis50k_y)
+df_AID_dis100k_y_small_b <- process_AID_2b(df_AID_dis100k_y)
+
+summary(df_AID_dis50k_y_small_b)
+```
+
 
 ##### Calculating wich countries received more sharing behaviour than the average
 ```{r}
 
 # Function to summarize data by year
-process_AID_3 <- function(df_input,df_input_2) {
+process_AID_3 <- function(df_input_2, df_input_3, df_input) {
   
-## merge mean with country year aid sec dataset 
-df_output= left_join(df_input_2, df_input, by = c("year"="year"))
+  ## merge with emdat country month level dataset in order to identify declarations 
+df_new= left_join(df_input, df_input_2, by = c("year"="year"))
+df_new= left_join(df_new, df_input_3, by = c("year"="year"))
 
-df_output$dummy_Hplus_ERaid  <-ifelse(df_output$Hum_plus_ER_aid_tot> df_output$year_mean_Hum_plus_ERaid,1,0)
-#df_output$dummy_extended_aid <-ifelse(df_output$extended_aid_tot>    df_output$year_mean_extended_aid_tot,1,0)
+df_new$dummy_Hplus_ERaid_roll<-ifelse(df_new$Hum_plus_ER_aid_tot> df_new$cumulative_year_mean_Hum_plus_ERaid,1,0)
+df_new$dummy_Hplus_ERaid_year<-ifelse(df_new$Hum_plus_ER_aid_tot> df_new$year_mean_Hum_plus_ERair,1,0)
 
+
+# keep var of interest
+df_output <- df_new[ , names(df_new) %in% c("iso3c",
+                                                "year",
+                                                "dummy_Hplus_ERaid_roll",
+                                                "dummy_Hplus_ERaid_year",
+                                                "cumulative_year_mean_Hum_plus_ERaid",
+                                                "year_mean_Hum_plus_ERair",
+                                                "Hum_plus_ER_aid_tot")]  
   return(df_output)
 }
 
-
 # Summarize each dataset
-df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_dis1k_y)
-df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_dis5k_y)
-df_AID_dis50k_y   <- process_AID_3(df_AID_dis50k_y_small,df_AID_dis50k_y)
-df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_dis100k_y)
+df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_dis50k_y_small_b,df_AID_dis1k_y)
+df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_dis50k_y_small_b,df_AID_dis5k_y)
+df_AID_dis50k_y   <- process_AID_3(df_AID_dis50k_y_small,df_AID_dis50k_y_small_b,df_AID_dis50k_y)
+df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_dis50k_y_small_b,df_AID_dis100k_y)
 
+summary(df_AID_dis50k_y)
 
 ```
 
@@ -1333,37 +1395,37 @@ df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_dis100k_y)
 ```{r}
 df5k= left_join(df_ICWES_dis5k_y, df_AID_dis5k_y, by = c("year" = "year", "iso3c" = "iso3c"))
 # drop NA agreement (keep only country years with disasters)
-df5k<-Drop_NA(df5k, dummy_agreement)
+df5k<-Drop_NA(df5k, dummy_agreement_roll)
+df5k<-Drop_NA(df5k, dummy_agreement_year)
 #df<-Drop_NA(df, dummy_Hplus_ERaid)
 # Replace post-2014 NA aid (disaster years) with 0 (low)
-df5k$dummy_Hplus_ERaid<-ifelse(is.na(df5k$dummy_Hplus_ERaid), 0,df5k$dummy_Hplus_ERaid)
+df5k$dummy_Hplus_ERaid_roll<-ifelse(is.na(df5k$dummy_Hplus_ERaid_roll), 0,df5k$dummy_Hplus_ERaid_roll)
+df5k$dummy_Hplus_ERaid_year<-ifelse(is.na(df5k$dummy_Hplus_ERaid_year), 0,df5k$dummy_Hplus_ERaid_year)
 df5k<-df5k%>%filter(year<2020)
 
 df5k <- df5k %>%
   mutate(GlobSol = case_when(
-    dummy_agreement == 1 & dummy_Hplus_ERaid == 1 ~ 1,
-    dummy_agreement == 1 & dummy_Hplus_ERaid == 0 ~ 2,
-    dummy_agreement == 0 & dummy_Hplus_ERaid == 1 ~ 3,
-    dummy_agreement == 0 & dummy_Hplus_ERaid == 0 ~ 4
+    dummy_agreement_roll == 1 & dummy_Hplus_ERaid_roll == 1 ~ 1,
+    dummy_agreement_roll == 1 & dummy_Hplus_ERaid_roll == 0 ~ 2,
+    dummy_agreement_roll == 0 & dummy_Hplus_ERaid_roll == 1 ~ 3,
+    dummy_agreement_roll == 0 & dummy_Hplus_ERaid_roll == 0 ~ 4
   ))
-
-
-# df5k <- df5k %>%
-#   mutate(GlobSol2 = case_when(
-#     dummy_agreement == 1 & dummy_extended_aid == 1 ~ 1,
-#     dummy_agreement == 1 & dummy_extended_aid == 0 ~ 2,
-#     dummy_agreement == 0 & dummy_extended_aid == 1 ~ 3,
-#     dummy_agreement == 0 & dummy_extended_aid == 0 ~ 4
-#   ))
 
 
 table(df5k$GlobSol)
 
 
-#test_df<-subset(df5k,df5k$year<2014)
+df5k <- df5k %>%
+  mutate(GlobSol_yearmean = case_when(
+    dummy_agreement_year == 1 & dummy_Hplus_ERaid_year == 1 ~ 1,
+    dummy_agreement_year == 1 & dummy_Hplus_ERaid_year == 0 ~ 2,
+    dummy_agreement_year == 0 & dummy_Hplus_ERaid_year == 1 ~ 3,
+    dummy_agreement_year == 0 & dummy_Hplus_ERaid_year == 0 ~ 4
+  ))
 
-#table(test_df$GlobSol)
-#table(test_df$GlobSol2)
+
+table(df5k$GlobSol_yearmean)
+
 
 ```
 
@@ -1372,40 +1434,36 @@ table(df5k$GlobSol)
 ```{r}
 df50k= left_join(df_ICWES_dis50k_y, df_AID_dis50k_y, by = c("year" = "year", "iso3c" = "iso3c"))
 # drop NA agreement (keep only country years with disasters)
-df50k<-Drop_NA(df50k, dummy_agreement)
+df50k<-Drop_NA(df50k, dummy_agreement_roll)
+df50k<-Drop_NA(df50k, dummy_agreement_year)
 #df<-Drop_NA(df, dummy_Hplus_ERaid)
 # Replace post-2014 NA aid (disaster years) with 0 (low)
-df50k$dummy_Hplus_ERaid<-ifelse(is.na(df50k$dummy_Hplus_ERaid), 0,df50k$dummy_Hplus_ERaid)
+df50k$dummy_Hplus_ERaid_roll<-ifelse(is.na(df50k$dummy_Hplus_ERaid_roll), 0,df50k$dummy_Hplus_ERaid_roll)
+df50k$dummy_Hplus_ERaid_year<-ifelse(is.na(df50k$dummy_Hplus_ERaid_year), 0,df50k$dummy_Hplus_ERaid_year)
 df50k<-df50k%>%filter(year<2020)
 
 df50k <- df50k %>%
   mutate(GlobSol = case_when(
-    dummy_agreement == 1 & dummy_Hplus_ERaid == 1 ~ 1,
-    dummy_agreement == 1 & dummy_Hplus_ERaid == 0 ~ 2,
-    dummy_agreement == 0 & dummy_Hplus_ERaid == 1 ~ 3,
-    dummy_agreement == 0 & dummy_Hplus_ERaid == 0 ~ 4
+    dummy_agreement_roll == 1 & dummy_Hplus_ERaid_roll == 1 ~ 1,
+    dummy_agreement_roll == 1 & dummy_Hplus_ERaid_roll == 0 ~ 2,
+    dummy_agreement_roll == 0 & dummy_Hplus_ERaid_roll == 1 ~ 3,
+    dummy_agreement_roll == 0 & dummy_Hplus_ERaid_roll == 0 ~ 4
   ))
+
 
 table(df50k$GlobSol)
 
 
-
-# df50k <- df50k %>%
-#   mutate(GlobSol2 = case_when(
-#     dummy_agreement == 1 & dummy_extended_aid == 1 ~ 1,
-#     dummy_agreement == 1 & dummy_extended_aid == 0 ~ 2,
-#     dummy_agreement == 0 & dummy_extended_aid == 1 ~ 3,
-#     dummy_agreement == 0 & dummy_extended_aid == 0 ~ 4
-#   ))
-# 
-# 
-# test_df<-subset(df50k,df50k$year<2014)
-# 
-# table(test_df$GlobSol)
-# table(test_df$GlobSol2)
-# 
+df50k <- df50k %>%
+  mutate(GlobSol_yearmean = case_when(
+    dummy_agreement_year == 1 & dummy_Hplus_ERaid_year == 1 ~ 1,
+    dummy_agreement_year == 1 & dummy_Hplus_ERaid_year == 0 ~ 2,
+    dummy_agreement_year == 0 & dummy_Hplus_ERaid_year == 1 ~ 3,
+    dummy_agreement_year == 0 & dummy_Hplus_ERaid_year == 0 ~ 4
+  ))
 
 
+table(df50k$GlobSol_yearmean)
 
 
 ```
@@ -1416,21 +1474,37 @@ table(df50k$GlobSol)
 ```{r}
 df100k= left_join(df_ICWES_dis100k_y, df_AID_dis100k_y, by = c("year" = "year", "iso3c" = "iso3c"))
 # drop NA agreement (keep only country years with disasters)
-df100k<-Drop_NA(df100k, dummy_agreement)
+df100k<-Drop_NA(df100k, dummy_agreement_roll)
+df100k<-Drop_NA(df100k, dummy_agreement_year)
 #df<-Drop_NA(df, dummy_Hplus_ERaid)
 # Replace post-2014 NA aid (disaster years) with 0 (low)
-df100k$dummy_Hplus_ERaid<-ifelse(is.na(df100k$dummy_Hplus_ERaid), 0,df100k$dummy_Hplus_ERaid)
+df100k$dummy_Hplus_ERaid_roll<-ifelse(is.na(df100k$dummy_Hplus_ERaid_roll), 0,df100k$dummy_Hplus_ERaid_roll)
+df100k$dummy_Hplus_ERaid_year<-ifelse(is.na(df100k$dummy_Hplus_ERaid_year), 0,df100k$dummy_Hplus_ERaid_year)
 df100k<-df100k%>%filter(year<2020)
 
 df100k <- df100k %>%
   mutate(GlobSol = case_when(
-    dummy_agreement == 1 & dummy_Hplus_ERaid == 1 ~ 1,
-    dummy_agreement == 1 & dummy_Hplus_ERaid == 0 ~ 2,
-    dummy_agreement == 0 & dummy_Hplus_ERaid == 1 ~ 3,
-    dummy_agreement == 0 & dummy_Hplus_ERaid == 0 ~ 4
+    dummy_agreement_roll == 1 & dummy_Hplus_ERaid_roll == 1 ~ 1,
+    dummy_agreement_roll == 1 & dummy_Hplus_ERaid_roll == 0 ~ 2,
+    dummy_agreement_roll == 0 & dummy_Hplus_ERaid_roll == 1 ~ 3,
+    dummy_agreement_roll == 0 & dummy_Hplus_ERaid_roll == 0 ~ 4
   ))
 
+
 table(df100k$GlobSol)
+
+
+df100k <- df100k %>%
+  mutate(GlobSol_yearmean = case_when(
+    dummy_agreement_year == 1 & dummy_Hplus_ERaid_year == 1 ~ 1,
+    dummy_agreement_year == 1 & dummy_Hplus_ERaid_year == 0 ~ 2,
+    dummy_agreement_year == 0 & dummy_Hplus_ERaid_year == 1 ~ 3,
+    dummy_agreement_year == 0 & dummy_Hplus_ERaid_year == 0 ~ 4
+  ))
+
+
+table(df100k$GlobSol_yearmean)
+
 ```
 
 # Create compiled DF folder
