@@ -159,9 +159,9 @@ df_IndVars <- readRDS(Df_path)
 ```{r}
 #df_DepVars <-df_Globsol5k
 #df_DepVars  <-df_Globsol50k
-df_DepVars <-df_Globsol100k
+#df_DepVars <-df_Globsol100k
 #df_DepVars <-df_Globsol5k500d
-#df_DepVars <-df_Globsol50k_noass
+df_DepVars <-df_Globsol50k_noass
 
 ```
 
@@ -348,9 +348,9 @@ df_scaled$Last_time[df_scaled$Last_time == 0] <- NA
 #saving it
 #namefile<-"df_full_v3_5000.csv"
 #namefile<-"df_full_v3.csv"
-namefile<-"df_full_v3_100000.csv"
+#namefile<-"df_full_v3_100000.csv"
 #namefile<-"df_full_5k_500d.csv"
-#namefile<-"df_full_v3_noass.csv"
+namefile<-"df_full_v3_noass.csv"
 
 ## correct names
 df_scaled<-janitor::clean_names(df_scaled)

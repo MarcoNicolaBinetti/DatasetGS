@@ -1,13 +1,9 @@
 ---
-title: "DatasetCompiler"
+title: "dataset_compiler_code_without_assistance_promise_v2"
 author: "MNB"
-date: "25/4/2024"
+date: "11/20/2025"
 output: html_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## 20 11 2025
 ## Libraries
@@ -690,7 +686,11 @@ List <- c("Express intent to cooperate militarily",
           "Express intent to provide military protection or peacekeeping",
           "Express intent to settle dispute",
           "Express intent to ease administrative sanctions",
-          "Express intent to accept mediation")
+          "Express intent to accept mediation",
+          "Express intent to cooperate economically",
+          "Express intent to provide economic aid",
+          "Express intent to provide humanitarian aid",
+          "Express intent to provide material aid")
 
 ## Dropping observations containing strings in the list
 df_ICWES_g2g <- subset(df_ICWES_g2g, (event_text %!in% List))
@@ -1243,9 +1243,6 @@ df_AID_EMDAT_5ky   <-process_AID(EM_dat_5k_processed_3,df_aid_sec)
 df_AID_EMDAT_50ky  <-process_AID(EM_dat_50k_processed_3,df_aid_sec)
 df_AID_EMDAT_100ky <-process_AID(EM_dat_100k_processed_3,df_aid_sec)
 
-
-summary(df_AID_EMDAT_50ky)
-
 ```
 
 
@@ -1545,6 +1542,7 @@ if (!file.exists(folder_path)) {
   cat("Folder", main_folder_name, "already exists on the desktop.\n")
 }
 ```
+
 ## Export dataset to Nextcoloud
 ```{r}
 # Set path for Marco nextcloud
@@ -1552,17 +1550,17 @@ path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
-folder_path <- file.path(path,"globsol_df50k_v2.rds")
+folder_path <- file.path(path,"globsol_df50k_v2_no_assistance.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_df5k_v2.rds")
+folder_path <- file.path(path,"globsol_df5k_v2_no_assistance.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_df100k_v2.rds")
+folder_path <- file.path(path,"globsol_df100k_v2_no_assistance.rds")
 ## save file
 saveRDS(df100k,folder_path)
 
@@ -1573,17 +1571,17 @@ saveRDS(df100k,folder_path)
 
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df50k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df50k_no_assistance.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df5k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df5k_no_assistance.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df100k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df100k_no_assistance.rds")
 ## save file
 saveRDS(df100k,folder_path)
 
@@ -1594,5 +1592,4 @@ saveRDS(df100k,folder_path)
 ```{r}
 
 ```
-
 
