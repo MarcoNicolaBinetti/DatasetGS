@@ -911,10 +911,10 @@ df_output <- df_new[ , names(df_new) %in% c("iso3c",
 
 
 # Summarize each dataset
-df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_1ky)
-df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_5ky)
-df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_50ky)
-df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_100ky)
+df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis1k_y_small_b, df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis5k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis50k_y_small, df_ICWES_dis50k_y_small_b, df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small, df_ICWES_dis100k_y_small_b, df_ICEWS_EMDAT_100ky)
 
 
 summary(df_ICWES_dis50k_y)
@@ -1390,10 +1390,10 @@ df_output <- df_new[ , names(df_new) %in% c("iso3c",
 }
 
 # Summarize each dataset
-df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_dis50k_y_small_b,df_AID_dis1k_y)
-df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_dis50k_y_small_b,df_AID_dis5k_y)
+df_AID_dis1k_y    <- process_AID_3(df_AID_dis1k_y_small,df_AID_dis1k_y_small_b,df_AID_dis1k_y)
+df_AID_dis5k_y    <- process_AID_3(df_AID_dis5k_y_small,df_AID_dis5k_y_small_b,df_AID_dis5k_y)
 df_AID_dis50k_y   <- process_AID_3(df_AID_dis50k_y_small,df_AID_dis50k_y_small_b,df_AID_dis50k_y)
-df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_dis50k_y_small_b,df_AID_dis100k_y)
+df_AID_dis100k_y  <- process_AID_3(df_AID_dis100k_y_small,df_AID_dis100k_y_small_b,df_AID_dis100k_y)
 
 summary(df_AID_dis50k_y)
 
