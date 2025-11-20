@@ -70,15 +70,16 @@ DF<-c("globsol_df50k_v2.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
-df <- readRDS(Df_path)
+df_Globsol50k <- readRDS(Df_path)
 
 ```
 
 ## plotting maps
 
 ```{r}
+df<-df_Globsol50k
 
-table(df$GlobSol)
+table(df_Globsol50k$GlobSol)
 ```
 
 # PLot distribution of GS geographic
@@ -154,11 +155,159 @@ print(final_plot)
 
 ```
 
+```{r}
+sub_folder_name<-"Aidata"
+main_folder_name <- "DFGlobalLab"
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+
+file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
+## import  dataset
+Aiddata<- read.csv(file_path)
+
+```
+
+```{r}
+
+#load dataset
+df_Aiddata_sectoral<-Aiddata
+
+#create schort code
+df_Aiddata_sectoral$Short_code<-c((substr(( c(df_Aiddata_sectoral$coalesced_purpose_code)), 1, 2)))
+
+## rename codes
+# Define replacements using a named vector
+replacements <- c(
+  "10" = "Social_Infra",
+  "11" = "Education",
+  "12" = "Health",
+  "13" = "Population_Policies",
+  "14" = "Water_Supply_Sanitation",
+  "15" = "Gov_Civ_Soc",
+  "16" = "Soc_Infra",
+  "20" = "Eco_Infra",
+  "21" = "Trans_Stor",
+  "22" = "Comm",
+  "23" = "Energy_Gen_Supp",
+  "24" = "Banking",
+  "25" = "Business",
+  "30" = "Production Sectors",
+  "31" = "Agri_For_Fish",
+  "32" = "Ind_Min_Cons",
+  "33" = "Trade_policy",
+  "41" = "Env_Protection",
+  "42" = "Women",
+  "43" = "Other",
+  "51" = "Budget_Support",
+  "52" = "Food_Security",
+  "53" = "Commodity_Assistance",
+  "60" = "Debt",
+  "70" = "Humanitarian_Aid",
+  "72" = "Emergency_Response",
+  "73" = "Reconstruction_Relief",
+  "74" = "Disaster_Prevention",
+  "91" = "Administrative_costs",
+  "92" = "Support_NGO",
+  "93" = "Refugees_Donor",
+  "99" = "Unallocated"
+)
+
+# Apply replacements using named vector and %in% operator
+df_Aiddata_sectoral$Short_code <- replacements[as.character(df_Aiddata_sectoral$Short_code)]
+
+#change names countries
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"]            <- "Serbia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Serbia and Montenegro"] <- "Serbia"
+df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Soviet Union"]          <- "Russia"
+
+#assign ISO3
+df_Aiddata_sectoral$iso3c <- countrycode(df_Aiddata_sectoral$recipient, "country.name", "iso3c")
+
+#drop iso3c NAs
+df_Aiddata_sectoral<-df_Aiddata_sectoral[!is.na(df_Aiddata_sectoral$iso3c), ]
+
+## aggregate at country recipient purpose level
+df_Aiddata_sectoral<- df_Aiddata_sectoral %>% 
+  group_by(iso3c, year,Short_code ) %>%
+  summarize(commitment_tot = sum(commitment_amount_usd_constant_sum))
+
+
+
+
+
+
+```
+
+```{r}
+# Summarize data to identify recipient countries and aid types
+df_summary <- df_Aiddata_sectoral %>%
+  group_by(iso3c) %>%
+  summarize(
+    Received_Aid = any(commitment_tot > 0),
+    Humanitarian_Aid = any(Short_code == "Humanitarian_Aid"),
+    Emergency_Response = any(Short_code == "Emergency_Response"),
+    Emergency_Humanitarian = any(Short_code %in% c("Humanitarian_Aid", "Emergency_Response"))
+  )
+
+# Load world map
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Remove Antarctica
+world <- world %>% filter(iso_a3 != "ATA")
+
+# Join summarized data with world map
+world_data <- world %>%
+  left_join(df_summary, by = c("iso_a3" = "iso3c")) %>%
+  mutate(
+    Received_Aid = replace_na(Received_Aid, FALSE),
+    Humanitarian_Aid = replace_na(Humanitarian_Aid, FALSE),
+    Emergency_Response = replace_na(Emergency_Response, FALSE),
+    Emergency_Humanitarian = replace_na(Emergency_Humanitarian, FALSE)
+  )
+
+# Define a function to create maps for each condition
+create_map <- function(data, column, title) {
+  ggplot(data) +
+    geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
+    scale_fill_manual(
+      values = c("TRUE" = "gray", "FALSE" = "white"),
+      na.value = "white"
+    ) +
+    labs(title = title, fill = NULL) +
+    theme_void() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+      legend.position = "none"
+    )
+}
+
+# Create maps for each condition
+map1 <- create_map(world_data, "Received_Aid", "Recipient countries")
+map2 <- create_map(world_data, "Humanitarian_Aid", "Humanitarian aid receivers")
+map3 <- create_map(world_data, "Emergency_Response", "Emergency response receivers")
+map4 <- create_map(world_data, "Emergency_Humanitarian", "Emergency/Humanitarian receivers")
+
+# Combine maps into a single image with a centered title
+final_plot <- (map1 + map2) / (map3 + map4) +
+  plot_annotation(
+    title = "AidData: Sample Description",
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
+    )
+  )
+
+# Save or display the final plot
+ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/Aid_Distribution.png", final_plot, width = 8, height = 6)
+print(final_plot)
+
+```
+
+
 ## New visuals
 ```{r}
+
 # Rescale variables mean centred for each year
 
-df_g <- df %>%
+df_g <- df_Globsol50k%>%
 mutate(aid_scaled = Hum_plus_ER_aid_tot-cumulative_year_mean_Hum_plus_ERaid,
         Norm_scaled = NormAgr-cumulative_mean_of_year_means)
   
@@ -193,9 +342,6 @@ p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
        legend.text = element_text(size=10),
         legend.position=c(0.8,0.8))
 
-print(p) + 
-  ggtitle("Distribution of Normative Agreement and Sharing Behaviour, 1995-2019 \n(mean-centred by year)")
-
 lab <- df_g %>% 
   mutate(label = ifelse(year == "2014" & iso3c == "CHN", "\nYunnan Earthquake,  China 2014", 
                  ifelse(year == "2002" & iso3c == "AUT", "\nAustria Floods, 2002",
@@ -209,6 +355,8 @@ p_final <- p +
   geom_point(data = lab, aes(x = Norm_scaled, y = aid_scaled), shape = 1, size = 3) +
   ggtitle("")
 
-ggsave("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/Fig1.png", plot = p_final, width = 8, height = 6,dpi=300)
+ggsave("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/Fig1.png", final_plot, width = 8, height = 6, dpi=300)
+print(p_final)
 
 ```
+
