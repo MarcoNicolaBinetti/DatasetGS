@@ -478,6 +478,9 @@ summary(EM_dat_50k_processed_2)
 ##### Getting it in a country-year panel format
 ```{r, include=FALSE}
 
+
+
+
 process_EmDat_3 <- function(df, df_basey) {
   
   df <- df %>%
