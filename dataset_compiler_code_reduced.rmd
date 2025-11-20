@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 08 11 2025
+## 20 11 2025
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -1179,7 +1179,7 @@ df_aid_sec <- df_aid_sec[ , names(df_aid_sec) %in% c("iso3c",
                                                       "Emergency_Response_tot")]
 
 
-# claculate sum of aid 
+# calculate sum of aid 
 df_aid_sec$Hum_plus_ER_aid_tot    <-      df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot
 df_aid_sec$ln_Hum_plus_ER_aid_tot <-log(1+df_aid_sec$Humanitarian_Aid_tot+df_aid_sec$Emergency_Response_tot)
 
