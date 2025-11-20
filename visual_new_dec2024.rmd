@@ -355,7 +355,7 @@ p_final <- p +
   geom_point(data = lab, aes(x = Norm_scaled, y = aid_scaled), shape = 1, size = 3) +
   ggtitle("")
 
-ggsave("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/Fig1.png", final_plot, width = 8, height = 6, dpi=300)
+ggsave("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/figures/Fig1.png", p_final, width = 8, height = 6, dpi=300)
 print(p_final)
 
 ```
