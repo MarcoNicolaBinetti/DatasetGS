@@ -74,7 +74,7 @@ gen_formula <- function(dependent_var, var_list) {
 ```{r}
 ## set url Marco Nextclod
 desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
-desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
+#desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
 
 main_folder_name <- "Global Solidarity"
 sub_folder_name <- "Compiled"
