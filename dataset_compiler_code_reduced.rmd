@@ -1,7 +1,7 @@
 ---
 title: "DatasetCompiler"
-author: "MNB"
-date: "25/4/2024"
+author: "anon"
+date: "24/12/2025"
 output: html_document
 ---
 
@@ -9,12 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 20 11 2025
-## Libraries
+# Libraries
 ```{r, include=FALSE}
 library(Hmisc)
 library(data.table)
-
 library(R.utils)
 library(plyr)
 library(dplyr)
@@ -25,36 +23,18 @@ library(geosphere)
 library(zoo)
 library(stringr)
 library(tidytext)
-#library(rworldmap)
-#library(gridExtra)
-
-
 library(classInt)
-#library(devtools)
 library(DT)
 library(dvmisc)
-#library(ggpubr)
 library(gtools)
 library(foreign)
-#library(GADMTools)
-#library(maps)
-
-
 library(spdep)
 library(lubridate)
-
-
 library(WDI)
 library(readxl)
 library(haven)
-
-
 library(reshape)
-
-#library(geojsonio)
-
 library(countrycode)
-
 library(roll)
 ```
 
@@ -64,24 +44,17 @@ library(roll)
 rm(list=ls())
 ```
 
-# Funtions 
+# Functions 
 ```{r}
-# # calculate mode
-# mode <- function(v) {
-#   uniqv <- unique(v)
-#   uniqv[which.max(tabulate(match(v, uniqv)))]
-# }
 
-
-# exclude
+## exclude
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-# drop columns
+## drop columns
 drop_columns <- function(data, columns_to_drop) {
   data <- data[, names(data) %!in% columns_to_drop, drop = FALSE]
   return(data)
 }
-
 
 ## drop NAs from column
 Drop_NA <- function(dataset, col_name){
@@ -93,7 +66,6 @@ Drop_NA <- function(dataset, col_name){
 
 ## create 1 and 2 period lags (grouping by a variable)
 Lag_12 <- function(dataset,col_name,x){
-  {
     col_name <- enquo(col_name)
     dataset %>%
       group_by(!!col_name) %>%
@@ -103,13 +75,10 @@ Lag_12 <- function(dataset,col_name,x){
       mutate(across(all_of(x),
                     .fns = ~ lag(.,2),
                     .names = paste0("{.col}_lag_",2)))
-    
-  } 
 }
 
 ## create 1 and 2 period lags 
 Lag_12_ngby <- function(dataset,x){
-  {
     dataset %>%
       mutate(across(all_of(x),
                     .fns = ~ lag(.,1),
@@ -117,18 +86,15 @@ Lag_12_ngby <- function(dataset,x){
       mutate(across(all_of(x),
                     .fns = ~ lag(.,2),
                     .names = paste0("{.col}_lag_",2)))
-    
-  } 
 }
 
 ## assign 0 to NAs
 Nas_to_0 <- function(dataset, x) {
   
   dataset %>% mutate_at(all_of(x), ~replace(., is.na(.), 0))
-  
 }
 
-
+## create new data folder
 download_and_create_folder <- function(file_name, desktop_path, folder_name, url) {
   
   # Combine the desktop path with the folder name
@@ -153,8 +119,7 @@ download_and_create_folder <- function(file_name, desktop_path, folder_name, url
 }
 
 
-
-
+## create and unzip new data folder
 download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
   
   # Combine the desktop path with the folder name
@@ -189,16 +154,16 @@ download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
 
 # Setting directory for datasets' folders
 ```{r, include=FALSE}
-desktop_path <- file.path("C:", "Users", "marco", "Desktop")
-#desktop_path <- file.path("C:", "Users","krogers","Documents")
+#desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+desktop_path <- file.path("C:", "Users","krogers","Documents")
 ```
 
 
 # Set main folder name
 ```{r, include=FALSE}
 # Define the name of the folder to check/create
-main_folder_name <- "DFGlobalLab"
-#main_folder_name <- "data"
+#main_folder_name <- "DFGlobalLab"
+main_folder_name <- "data"
 ```
 
 # Creating folder for datasets
@@ -227,7 +192,7 @@ sub_folder_name<-"polity2"
 ```
 
 #### Create folder and download
-```{r}
+```{r, eval=F}
 # download_and_create_folder("p5v2018.xls",
 #                            desktop_path,
 #                            sub_folder_name,
@@ -238,23 +203,23 @@ sub_folder_name<-"polity2"
 ```{r}
 file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "p5v2018.xls")
 ## import  dataset
-Polity2<- read_excel(file_path)
+df_Polity2<- read_excel(file_path)
 ```
 
 # Create bases - at year and month levels
 ```{r}
-df_Polity2<-Polity2
 
 # Create base at year level
-## subset years of interests
-df_Polity2<-subset(df_Polity2, df_Polity2$year>1980 & Polity2$year<2020)
+## subset years of interests only
+df_Polity2<-subset(df_Polity2, df_Polity2$year>1994 & df_Polity2$year<2019)
+
+unique(df_Polity2)
 
 # Rename countries
-  replacements <- c(
-    "Czechoslovakia"    = "Czech Republic (the)",
-    "Serbia Montenegro" = "Serbia",
-    "Yugoslavia"        = "Serbia"
-  )
+  replacements <- c("Yugoslavia" = "Serbia",
+                    "Serbia and Montenegro" = "Serbia",
+                    "Congo-Brazzaville" = "Congo Brazzaville",
+                    "Ivory Coast" = "Cote D'Ivoire")
 
 df_Polity2$country <- ifelse(df_Polity2$country %in% names(replacements), replacements[df_Polity2$country], df_Polity2$country)
 
@@ -266,21 +231,17 @@ df_Base_Y<-df_Polity2[c("country",
                         "iso3c",
                         "year")]
 
-# # Complete panel
-# df_Base_Y<-df_Base_Y %>%
-#   complete(iso3c,year=c(1981:2021)) %>%
-#   group_by(iso3c) %>% fill(country) %>%
-#   ungroup()
-
 ## drop iso3c NA
 df_Base_Y<-Drop_NA(df_Base_Y, iso3c)
 
-#drop duplicates (usual yuogoslavia and soviet union "problem" with name change to serbia and russia)
+#check for duplicates
+check_duplicates<-df_Base_Y %>% group_by(year,iso3c) %>%
+  reframe(n=n()) %>% filter(n>1)
+rm(check_duplicates)
+
+#drop extra SDN 2011
 df_Base_Y<-df_Base_Y %>% 
                 distinct(year, iso3c , .keep_all = TRUE)
-
-## correct names
-df_Base_Y<-janitor::clean_names(df_Base_Y)
 
 # Create base at month level
 ## set list of countries
@@ -290,7 +251,7 @@ Countries$Dummy<-1
 ## assign ISO3C
 Countries$iso3c <- countrycode(Countries$country, "country.name", "iso3c")
 ## set list of months
-Date<-as.data.frame(seq(as.Date("1980-1-1"), as.Date("2021-12-31"), by = "month"))
+Date<-as.data.frame(seq(as.Date("1995-1-1"), as.Date("2018-12-31"), by = "month"))
 names(Date)[1] <- "Date.month"
 Date$Dummy<-1
 Date$Date.month<-as.yearmon(Date$Date.month)
@@ -302,16 +263,14 @@ df_Base_YM<-drop_columns(df_Base_YM,List)
 ## create year variable
 df_Base_YM$year <- as.integer(c((substr(( c(df_Base_YM$Date.month)), 5, 8))))
 
-
-# drop countries pre USSR collapse if year <1990
-df_Base_YM<-left_join(df_Base_Y, df_Base_YM, by = c("country" = "country", "iso3c" = "iso3c", "year" = "year"))
-
+# drop countries pre independence
+df_Base_YM<-left_join(df_Base_Y, df_Base_YM, by = c("country" = "country", "iso3c" = "iso3c", "year" = "year")) 
 
 ## correct names
 df_Base_YM<-janitor::clean_names(df_Base_YM)
 
-
 summary(df_Base_YM)
+
 ```
 
 ### EMDAT
@@ -327,20 +286,22 @@ file_path<-file.path(desktop_path,main_folder_name, sub_folder_name, "emdat.dta"
 ## import  dataset
 EMDAT<- haven::read_dta(file_path)
 
-#EMDAT<-subset(EMDAT, EMDAT$TotalDeaths>499)
+summary(EMDAT)
 
 ```
 
 #### Reshaping EMDAT
 ##### Adjusting names of countries, setting variables etc.
 ```{r, include=FALSE}
+
 # Function to process dataset
 process_EmDat_1 <- function(data, min_affected) {
+  
   # Subset years
-  data <- subset(data, StartYear >= 1980)
+  data <- subset(data, StartYear > 1993)
   
   # Subset only big disasters
-  data <- subset(data, NoAffected > min_affected)
+  data <- subset(data, TotalAffected > min_affected)
   
   # Drop technological disasters
   data <- subset(data, DisasterGroup == "Natural")
@@ -355,6 +316,7 @@ process_EmDat_1 <- function(data, min_affected) {
                  "DisasterSubgroup",
                  "DisasterType",
                  "DisasterSubtype",
+                 "TotalDeaths",
                  "Country")]
   
   # Rename variables
@@ -370,13 +332,11 @@ process_EmDat_1 <- function(data, min_affected) {
   
   # Rename countries
   replacements <- c(
-    "Czechoslovakia"                              = "Czech Republic (the)",
+    "Czechoslovakia"                              = "Czech Republic",
     "Germany Fed Rep"                             = "Germany",
     "Korea (the Republic of)"                     = "Korea South",
     "Korea (the Democratic People's Republic of)" = "Korea North",
-    "Serbia Montenegro"                           = "Serbia",
-    "Yugoslavia"                                  = "Serbia"
-  )
+    "Serbia Montenegro"                           = "Serbia" )
   
   data$country_Emdat <- ifelse(data$country_Emdat %in% names(replacements), replacements[data$country_Emdat], data$country_Emdat)
   
@@ -387,7 +347,7 @@ process_EmDat_1 <- function(data, min_affected) {
   data <- data[complete.cases(data$iso3c), ]
   
   # Subset variables
-  data <- data[c("DisNo", "iso3c", "DisasterSubgroup", "Date.start", "Date.end")]
+  data <- data[c("DisNo", "iso3c", "DisasterSubgroup", "Date.start", "Date.end","TotalDeaths")]
   
   # Sort dataset
   data <- data[order(data$iso3c, data$Date.start), ]
@@ -401,20 +361,33 @@ EM_dat_5k   <- process_EmDat_1(EMDAT, 5000)
 EM_dat_50k  <- process_EmDat_1(EMDAT, 50000)
 EM_dat_100k <- process_EmDat_1(EMDAT, 100000)
 
-```
+summary(EM_dat_50k)
 
+check <- EM_dat_50k %>%
+  mutate(endyear=year(Date.end),
+         cy=paste0(iso3c,endyear)) %>%
+  filter(endyear>1994,endyear<2019)
+check1 <- unique(check$cy) # 863 disaster-endyears ( all territories)
+
+```
 
 ##### Getting it in a country-year-month panel format
 ```{r, include=FALSE}
 
 process_EmDat_2 <- function(df, df_basey) {
-# Reshape dataset
+  
+# Reshape dataset - monthly
 df <- df %>%
   group_by(iso3c, DisNo, DisasterSubgroup) %>%
   summarise(date = list(seq(floor_date(min(Date.start), unit = "month"),
                             floor_date(max(Date.end), unit = "month"),
                             by = "month"))) %>%
   unnest(cols = c(date))
+
+# List unique disasters
+dis_list <- df %>% 
+    group_by(iso3c, date_month=as.yearmon(date)) %>%
+  summarise(dis_ids = list(sort(unique(DisNo))), .groups = "drop")
 
 # Sort dataframe
 df <- df[order(df$iso3c, df$date), ]
@@ -447,7 +420,6 @@ df <- dplyr::select(df, -date)
 # Create variable year
 df$year <- as.double(substr(df$date_month, 5, 9))
 
-
 # Create dummy variables
 df[List] <- lapply(df[List], function(x) as.integer(x > 0))
 colnames(df)[colnames(df) %in% List] <- paste0(colnames(df)[colnames(df) %in% List], "_dummy")
@@ -461,7 +433,9 @@ df <- Lag_12(df, iso3c, List)
 # Clean names
 df <- janitor::clean_names(df)
 
-  
+# Join disaster list
+df <- left_join(df, dis_list, by=c("iso3c","date_month"))
+
   return(df)
 }
 
@@ -475,22 +449,23 @@ summary(EM_dat_50k_processed_2)
 
 ```
 
+
 ##### Getting it in a country-year panel format
 ```{r, include=FALSE}
-
-
-
-
 process_EmDat_3 <- function(df, df_basey) {
   
+  # Summarise: disaster dummy by type / list and count disasters per year
   df <- df %>%
     group_by(iso3c, year) %>%
-    summarize(
-      across(ends_with("_dummy"), sum)
+    summarise(
+      across(ends_with("_dummy"), sum),
+      dis_ids = list(unique(na.omit(unlist(dis_ids)))),
+      dis_count = n_distinct(na.omit(unlist(dis_ids))),
+      .groups = "drop"
     )
   
   # create dummy variables
-  List <- setdiff(names(df), c("iso3c", "year"))
+  List <- setdiff(names(df), c("iso3c", "year", "dis_ids", "dis_count"))
   for (variable in List) {
     new_name <- sub("_n_m$", "_dummy", variable)
     df[[new_name]] <- ifelse(df[[variable]] == 0, 0, 1)
@@ -499,15 +474,22 @@ process_EmDat_3 <- function(df, df_basey) {
   # Merge with Base
   df <- left_join(df_basey, df, by = c("year", "iso3c"))
   
-  # Assign 0s
+  # Assign 0s to dummy variables (but not to dis_ids_year or dis_count_unique)
   df <- df %>%
-    mutate(across(List, ~ replace_na(., 0)))
+    mutate(across(all_of(List), ~ replace_na(., 0)))
+  
+  # Add zeros
+  df <- df %>%
+    mutate(dis_ids = if_else(sapply(dis_ids, length) == 0, 
+                              list(NA_character_), 
+                              dis_ids),
+      dis_count = replace_na(dis_count, 0))
   
   # Lag 12
   df <- Lag_12(df, iso3c, List)
   
   # Clean names
-  df <-  janitor::clean_names(df)
+  df <- janitor::clean_names(df)
   
   return(df)
 }
@@ -520,7 +502,62 @@ EM_dat_100k_processed_3 <- process_EmDat_3(EM_dat_100k_processed_2, df_Base_Y)
 
 summary(EM_dat_50k_processed_3)
 
+check2 <- nrow(EM_dat_50k_processed_3 %>% mutate(cy=paste0(iso3c,year)) %>% filter(dis_count>0)) # 912 CY disasters occurring (states only)
+
 ```
+
+#### Sum deaths per country-year 
+```{r, include=FALSE}
+
+process_EmDat_4 <- function(df, emdat_dv) {
+  
+  # spread deaths across years for multi-year disasters
+  df_1 <- df %>%
+  group_by(iso3c, DisNo, TotalDeaths) %>%
+  summarise(year = list(seq(floor_date(min(Date.start), unit = "year"),
+                            floor_date(max(Date.end), unit = "year"),
+                            by = "year"))) %>%
+  unnest(cols = c(year)) %>%
+  mutate(year = as.numeric(year(year)),
+         n_years = n(),
+         year_deaths = TotalDeaths / n_years, na.rm=T) %>%
+  ungroup() %>%
+    group_by(iso3c,year) %>%
+    summarise(dis_death=round(sum(year_deaths,na.rm=T),0))
+  
+  # List disasters ending eachyear
+  df_2<-df %>%
+     group_by(iso3c, year=year(Date.end)) %>%
+     summarise(end_dis_ids = list(sort(unique(DisNo))), .groups = "drop")
+
+  #Join end list
+  df_1 <- left_join(df_1, df_2, by = c("year", "iso3c"))
+  
+  #Join to Emdat DV
+  df_3 <- left_join(emdat_dv, df_1, by = c("year", "iso3c"))
+  
+    # Add zeros
+  df_3 <- df_3 %>%
+    mutate(end_dis_ids = if_else(sapply(end_dis_ids, length) == 0, 
+                              list(NA_character_), 
+                              end_dis_ids),
+      dis_death = replace_na(dis_death, 0))
+  
+  return(df_3)
+}
+
+# Process each dataset
+EM_dat_1k_processed_4   <- process_EmDat_4(EM_dat_1k, EM_dat_1k_processed_3)
+EM_dat_5k_processed_4   <- process_EmDat_4(EM_dat_5k, EM_dat_5k_processed_3)
+EM_dat_50k_processed_4  <- process_EmDat_4(EM_dat_50k, EM_dat_50k_processed_3)
+EM_dat_100k_processed_4 <- process_EmDat_4(EM_dat_100k,EM_dat_100k_processed_3)
+
+summary(EM_dat_50k_processed_4)
+
+check3 <- nrow(EM_dat_50k_processed_4[!is.na(EM_dat_50k_processed_4$end_dis_ids),]) # 846 disaster-endyears (states only)
+
+```
+
 
 
 ### ICEWS
@@ -599,7 +636,7 @@ if (!file.exists(folder_path)) {
 #### Importing ICEWS from the rds. file. this helps to skip the "Importing ICEWS from row data" block of code
 ```{r}
 URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
-#URL_df<-paste0(folder_path,"/", "icews.rds")
+URL_df<-paste0(folder_path,"/", "icews.rds")
 
 # importing icews df
 df_ICWES <- readRDS(URL_df)
@@ -629,8 +666,8 @@ df_ICWES<-Drop_NA(df_ICWES, iso3c_source)
 df_ICWES$gov_sender<-ifelse(grepl("Govern", df_ICWES$source_sector),1,0)
 df_ICWES$gov_target<-ifelse(grepl("Govern", df_ICWES$target_sectors),1,0)
 
-
 summary(df_ICWES)
+
 ```
 
 ##### Subsetting events of interest
@@ -743,7 +780,7 @@ head(df_ICWES_g2g_dis50k)
 
 ##### Remove from environment df_ICWES to save memory
 ```{r}
-#rm(df_ICWES)
+rm(df_ICWES)
 ```
 
 ##### Calculating number of countries sending verbal support during and after natural disaster
@@ -780,7 +817,7 @@ summary(df_ICWES_dis50k_y)
 ```{r}
 
 # Function to summarize data by year
-process_ICEWS_4 <- function(df_EMdat, df_ICEWS_input ) {
+process_ICEWS_3 <- function(df_EMdat, df_ICEWS_input ) {
 
 # Identify columns containing the string "lag"
 lag_columns <- grep("lag", names(df_EMdat), value = TRUE)
@@ -818,10 +855,10 @@ df_ICEWS_EMDAT<-df_ICEWS_EMDAT[df_ICEWS_EMDAT$year > 1994,]
   return(df_ICEWS_EMDAT)
 }
 
-df_ICEWS_EMDAT_1ky   <-process_ICEWS_4(EM_dat_1k_processed_3,df_ICWES_dis1k_y)  
-df_ICEWS_EMDAT_5ky   <-process_ICEWS_4(EM_dat_5k_processed_3,df_ICWES_dis5k_y)
-df_ICEWS_EMDAT_50ky  <-process_ICEWS_4(EM_dat_50k_processed_3,df_ICWES_dis50k_y)
-df_ICEWS_EMDAT_100ky <-process_ICEWS_4(EM_dat_100k_processed_3,df_ICWES_dis100k_y)
+df_ICEWS_EMDAT_1ky   <-process_ICEWS_3(EM_dat_1k_processed_4,df_ICWES_dis1k_y)  
+df_ICEWS_EMDAT_5ky   <-process_ICEWS_3(EM_dat_5k_processed_4,df_ICWES_dis5k_y)
+df_ICEWS_EMDAT_50ky  <-process_ICEWS_3(EM_dat_50k_processed_4,df_ICWES_dis50k_y)
+df_ICEWS_EMDAT_100ky <-process_ICEWS_3(EM_dat_100k_processed_4,df_ICWES_dis100k_y)
 
 summary(df_ICEWS_EMDAT_50ky)
 
@@ -831,53 +868,49 @@ summary(df_ICEWS_EMDAT_50ky)
 ##### Calculating average number of countries sending verbal support during and after natural disaster per year (rolling mean- the original one)
 ```{r}
 
-process_ICEWS_3 <- function(df_input) {
-  # 1) Collapse the input to one row per year:
-  #    For each 'year', compute the mean of NormAgr, ignoring NAs.
-  ym <- aggregate(NormAgr ~ year, data = df_input,
-                  FUN = function(x) mean(x, na.rm = TRUE))
+cummean_ICEWS <- function(df) {
+  
+  #sort df
+  df <- df[order(df$year), ]
+  
+  # Cumulative mean by row
+  df$cum_mean_NormAgr <- cumsum(df$NormAgr) / seq_len(nrow(df))
 
-  # 2) Ensure the rows are in ascending chronological order by 'year'.
-  ym <- ym[order(ym$year), ]
-
-  # 3) Compute the cumulative mean of the *yearly means*:
-  #    - cumsum(ym$NormAgr): running sum of the yearly means
-  #    - seq_len(nrow(ym)):  1, 2, 3, ..., number of years
-  #    - divide to get the running average where each year is equally weighted
-  ym$cumulative_mean_of_year_means <- cumsum(ym$NormAgr) / seq_len(nrow(ym))
-
-  # 4) Return only the 'year' and the newly computed cumulative series.
-  ym[, c("year", "cumulative_mean_of_year_means")]
+  # grab last per year
+  out <- aggregate(cum_mean_NormAgr ~ year, data = df,
+                      FUN = function(x) tail(x, 1))
+  
+  out[, c("year", "cum_mean_NormAgr")]
 }
 
 # Summarize each dataset
-df_ICWES_dis1k_y_small   <- process_ICEWS_3(df_ICEWS_EMDAT_1ky)
-df_ICWES_dis5k_y_small   <- process_ICEWS_3(df_ICEWS_EMDAT_5ky)
-df_ICWES_dis50k_y_small  <- process_ICEWS_3(df_ICEWS_EMDAT_50ky)
-df_ICWES_dis100k_y_small <- process_ICEWS_3(df_ICEWS_EMDAT_100ky)
+df_ICWES_dis1k_y_small   <- cummean_ICEWS(df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y_small   <- cummean_ICEWS(df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y_small  <- cummean_ICEWS(df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y_small <- cummean_ICEWS(df_ICEWS_EMDAT_100ky)
 
 summary(df_ICWES_dis50k_y_small)
 
 ```
 
 
-##### Calculating average number of countries sending verbal support during and after natural disaster per year (no rolling mean)
+##### Calculating average number of countries sending verbal support during and after natural disaster per year 
 ```{r}
 
 #Function to calculate the mean of current and previous years
-process_ICEWS_3b  <- function(df_input) {
+yearmean_ICEWS  <- function(df_input) {
   out <- aggregate(NormAgr ~ year, data = df_input,
                    FUN = function(x) mean(x, na.rm = TRUE))
-  out[order(out$year), c("year", "NormAgr")]
+  out <- out[order(out$year), ]
   names(out) <- c("year", "year_mean_NormAgr")
-  out[order(out$year), ]
+  out
 }
 
 # Summarize each dataset
-df_ICWES_dis1k_y_small_b   <- process_ICEWS_3b(df_ICEWS_EMDAT_1ky)
-df_ICWES_dis5k_y_small_b   <- process_ICEWS_3b(df_ICEWS_EMDAT_5ky)
-df_ICWES_dis50k_y_small_b  <- process_ICEWS_3b(df_ICEWS_EMDAT_50ky)
-df_ICWES_dis100k_y_small_b <- process_ICEWS_3b(df_ICEWS_EMDAT_100ky)
+df_ICWES_dis1k_y_small_b   <- yearmean_ICEWS(df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y_small_b   <- yearmean_ICEWS(df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y_small_b  <- yearmean_ICEWS(df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y_small_b <- yearmean_ICEWS(df_ICEWS_EMDAT_100ky)
 
 summary(df_ICWES_dis50k_y_small_b)
 
@@ -889,24 +922,28 @@ summary(df_ICWES_dis50k_y_small_b)
 ```{r}
 
 # Function to summarize data by year
-process_ICEWS_4 <- function(df_input_2, df_input_3, df_input) {
+process_ICEWS_5 <- function(df_input_2, df_input_3, df_input) {
   
   ## merge with emdat country month level dataset in order to identify declarations 
 df_new= left_join(df_input, df_input_2, by = c("year"="year"))
 df_new= left_join(df_new, df_input_3, by = c("year"="year"))
 
-df_new$dummy_agreement_roll<-ifelse(df_new$NormAgr> df_new$cumulative_mean_of_year_means,1,0)
+df_new$dummy_agreement_roll<-ifelse(df_new$NormAgr> df_new$cum_mean_NormAgr,1,0)
 df_new$dummy_agreement_year<-ifelse(df_new$NormAgr> df_new$year_mean_NormAgr,1,0)
 
 
 # keep var of interest
 df_output <- df_new[ , names(df_new) %in% c("iso3c",
-                                                "year",
-                                                "dummy_agreement_roll",
-                                                "dummy_agreement_year",
-                                                "cumulative_mean_of_year_means",
-                                                "year_mean_NormAgr",
-                                                "NormAgr")]  
+                                            "year",
+                                            "dummy_agreement_roll",
+                                            "dummy_agreement_year",
+                                            "cum_mean_NormAgr",
+                                            "year_mean_NormAgr",
+                                            "NormAgr",
+                                            "dis_count",
+                                            "dis_death",
+                                            "dis_ids",
+                                            "end_dis_ids")]  
   return(df_output)
 }
 
@@ -914,10 +951,10 @@ df_output <- df_new[ , names(df_new) %in% c("iso3c",
 
 
 # Summarize each dataset
-df_ICWES_dis1k_y   <- process_ICEWS_4(df_ICWES_dis1k_y_small, df_ICWES_dis1k_y_small_b, df_ICEWS_EMDAT_1ky)
-df_ICWES_dis5k_y   <- process_ICEWS_4(df_ICWES_dis5k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_5ky)
-df_ICWES_dis50k_y  <- process_ICEWS_4(df_ICWES_dis50k_y_small, df_ICWES_dis50k_y_small_b, df_ICEWS_EMDAT_50ky)
-df_ICWES_dis100k_y <- process_ICEWS_4(df_ICWES_dis100k_y_small, df_ICWES_dis100k_y_small_b, df_ICEWS_EMDAT_100ky)
+df_ICWES_dis1k_y   <- process_ICEWS_5(df_ICWES_dis1k_y_small, df_ICWES_dis1k_y_small_b, df_ICEWS_EMDAT_1ky)
+df_ICWES_dis5k_y   <- process_ICEWS_5(df_ICWES_dis5k_y_small, df_ICWES_dis5k_y_small_b, df_ICEWS_EMDAT_5ky)
+df_ICWES_dis50k_y  <- process_ICEWS_5(df_ICWES_dis50k_y_small, df_ICWES_dis50k_y_small_b, df_ICEWS_EMDAT_50ky)
+df_ICWES_dis100k_y <- process_ICEWS_5(df_ICWES_dis100k_y_small, df_ICWES_dis100k_y_small_b, df_ICEWS_EMDAT_100ky)
 
 
 summary(df_ICWES_dis50k_y)
@@ -1238,10 +1275,10 @@ df_AID_EMDAT<-df_AID_EMDAT[df_AID_EMDAT$year > 1994,]
   return(df_AID_EMDAT)
 }
 
-df_AID_EMDAT_1ky   <-process_AID(EM_dat_1k_processed_3,df_aid_sec)  
-df_AID_EMDAT_5ky   <-process_AID(EM_dat_5k_processed_3,df_aid_sec)
-df_AID_EMDAT_50ky  <-process_AID(EM_dat_50k_processed_3,df_aid_sec)
-df_AID_EMDAT_100ky <-process_AID(EM_dat_100k_processed_3,df_aid_sec)
+df_AID_EMDAT_1ky   <-process_AID(EM_dat_1k_processed_4,df_aid_sec)  
+df_AID_EMDAT_5ky   <-process_AID(EM_dat_5k_processed_4,df_aid_sec)
+df_AID_EMDAT_50ky  <-process_AID(EM_dat_50k_processed_4,df_aid_sec)
+df_AID_EMDAT_100ky <-process_AID(EM_dat_100k_processed_4,df_aid_sec)
 
 
 summary(df_AID_EMDAT_50ky)
@@ -1258,33 +1295,7 @@ unocha_long <-pivot_longer(unocha,2:11, names_to="year", values_to="Hum_plus_ER_
   drop_na(Hum_plus_ER_aid_tot) %>%
   filter(year>=2014) # from 2014
 
-# Generate annual means
-#   means <- c()
-# for (year in unique(unocha_long$year)) {
-#    value <- mean(unocha_long$Hum_plus_ER_aid_tot[unocha_long$year <= year])
-#    means <- c(means, value)
-# }  # Divide by ratio from analysis in compare-aid-data.R
-# means_df <- data.frame(year = unique(unocha_long$year), year_mean_Hum_plus_ERaid = means/3.9)
-
-# unocha_long <-unocha_long %>%
-#   left_join(means_df)
-
 unocha_long$year<-as.numeric(unocha_long$year)
-
-#unocha_long$dummy_Hplus_ERaid<-ifelse(unocha_long$Hum_plus_ER_aid_tot>unocha_long$year_mean_Hum_plus_ERaid,1,0)
-
-# # Fill in blank variables for bind 
-# unocha_long <- unocha_long %>% 
-#   mutate(Emergency_Response_tot = NA,
-#          Humanitarian_Aid_tot= NA,
-#          ln_Hum_plus_ER_aid_tot= NA,
-#          year_mean_Hum_plus_ERaid = NA)
- 
-# # Join to full aid data and fill mean threshold from 2013
-# df_aid_sec_joined<-rbind(df_AID_dis50k_y %>% filter(year<2014),unocha_long) %>%
-#   arrange(year) %>%
-#   ungroup() %>%
-#   fill(year_mean_Hum_plus_ERaid)
 
 replace_na_post_2014 <- function(df1, df2) {
   # Join df1 with df2 to get aid values for matching year and iso3c
@@ -1312,29 +1323,26 @@ df_AID_dis100k_y  <- replace_na_post_2014(df_AID_EMDAT_100ky,unocha_long)
 
 ```
 
-##### Calculating average aid sent during natural disaster year (cumulative mean of means)
+##### Calculating average aid sent during natural disaster year (cumulative mean)
 ```{r}
 
  #Function to calculate the mean of current and previous years
 
-
-process_AID_2 <- function(df_input) {
-  # 1) Collapse the input to one row per year:
-  #    For each 'year', compute the mean of NormAgr, ignoring NAs.
-  ym <- aggregate(Hum_plus_ER_aid_tot ~ year, data = df_input,
-                  FUN = function(x) mean(x, na.rm = TRUE))
-
-  # 2) Ensure the rows are in ascending chronological order by 'year'.
-  ym <- ym[order(ym$year), ]
-
-  # 3) Compute the cumulative mean of the *yearly means*:
-  #    - cumsum(ym$NormAgr): running sum of the yearly means
-  #    - seq_len(nrow(ym)):  1, 2, 3, ..., number of years
-  #    - divide to get the running average where each year is equally weighted
-  ym$cumulative_year_mean_Hum_plus_ERaid <- cumsum(ym$Hum_plus_ER_aid_tot) / seq_len(nrow(ym))
-
-  # 4) Return only the 'year' and the newly computed cumulative series.
-  ym[, c("year", "cumulative_year_mean_Hum_plus_ERaid")]
+process_AID_2 <- function(df) {
+  
+  # sort df
+  df <- df[order(df$year), ]
+  
+  # Cumulative mean
+  df$cumulative_mean <- cumsum(df$Hum_plus_ER_aid_tot) / seq_len(nrow(df))
+  
+  # grab last
+  out <- aggregate(cumulative_mean ~ year, data = df,
+                      FUN = function(x) tail(x, 1))
+  
+  # rename
+  names(out) <- c("year", "cumulative_mean_Hum_plus_ERaid")
+  out
 }
 
 # Summarize each dataset
@@ -1355,9 +1363,9 @@ summary(df_AID_dis50k_y_small)
 process_AID_2b  <- function(df_input) {
   out <- aggregate(Hum_plus_ER_aid_tot ~ year, data = df_input,
                    FUN = function(x) mean(x, na.rm = TRUE))
-  out[order(out$year), c("year", "Hum_plus_ER_aid_tot")]
-  names(out) <- c("year", "year_mean_Hum_plus_ERair")
   out[order(out$year), ]
+  names(out) <- c("year", "year_mean_Hum_plus_ERair")
+  out
 }
 
 # Summarize each dataset
@@ -1380,7 +1388,7 @@ process_AID_3 <- function(df_input_2, df_input_3, df_input) {
 df_new= left_join(df_input, df_input_2, by = c("year"="year"))
 df_new= left_join(df_new, df_input_3, by = c("year"="year"))
 
-df_new$dummy_Hplus_ERaid_roll<-ifelse(df_new$Hum_plus_ER_aid_tot> df_new$cumulative_year_mean_Hum_plus_ERaid,1,0)
+df_new$dummy_Hplus_ERaid_roll<-ifelse(df_new$Hum_plus_ER_aid_tot> df_new$cumulative_mean_Hum_plus_ERaid,1,0)
 df_new$dummy_Hplus_ERaid_year<-ifelse(df_new$Hum_plus_ER_aid_tot> df_new$year_mean_Hum_plus_ERair,1,0)
 
 
@@ -1389,7 +1397,7 @@ df_output <- df_new[ , names(df_new) %in% c("iso3c",
                                                 "year",
                                                 "dummy_Hplus_ERaid_roll",
                                                 "dummy_Hplus_ERaid_year",
-                                                "cumulative_year_mean_Hum_plus_ERaid",
+                                                "cumulative_mean_Hum_plus_ERaid",
                                                 "year_mean_Hum_plus_ERair",
                                                 "Hum_plus_ER_aid_tot")]  
   return(df_output)
@@ -1480,6 +1488,7 @@ df50k <- df50k %>%
 
 
 table(df50k$GlobSol_yearmean)
+round(prop.table(table(df50k$GlobSol_yearmean)) * 100, 2)
 
 
 ```
@@ -1548,7 +1557,7 @@ if (!file.exists(folder_path)) {
 ## Export dataset to Nextcoloud
 ```{r}
 # Set path for Marco nextcloud
-path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
+path<-"C:/Users/krogers/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
@@ -1573,17 +1582,17 @@ saveRDS(df100k,folder_path)
 
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df50k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df50k.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df5k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df5k.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20240313_df100k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df100k.rds")
 ## save file
 saveRDS(df100k,folder_path)
 

@@ -190,7 +190,7 @@ rename_columns <- function(df, suffix, vars_to_change) {
 # Setting directory for datasets' folders
 ```{r}
 desktop_path <- file.path("C:", "Users", "marco", "Desktop")
-#desktop_path <- file.path("C:", "Users","krogers","Documents")
+desktop_path <- file.path("C:", "Users","krogers","Documents")
 ```
 
 
@@ -198,7 +198,7 @@ desktop_path <- file.path("C:", "Users", "marco", "Desktop")
 ```{r}
 # Define the name of the folder to check/create
 main_folder_name <- "DFGlobalLab"
-#main_folder_name <- "data"
+main_folder_name <- "data"
 ```
 
 # Creating folder for datasets
@@ -339,43 +339,43 @@ if (!file.exists(folder_path)) {
 
 ### WB: importing dataset via API
 ```{r}
-# 
-# WorldBank <- WDI(
-#   country = "all",
-#   indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
-#                 "oil_rents"="NY.GDP.PETR.RT.ZS",
-#                 "gas_rents"="NY.GDP.NGAS.RT.ZS",
-#                 "minerals_rents"="NY.GDP.MINR.RT.ZS",
-#                 "GDP"="NY.GDP.MKTP.CD",
-#                 "GDP_pc"="NY.GDP.PCAP.CD",
-#                 "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
-#                 "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
-#                 "Inflation"="FP.CPI.TOTL.ZG",
-#                 "Service_VA"="NV.SRV.TOTL.ZS",
-#                 "Manuf_VA"="NV.IND.MANF.ZS",
-#                 "Industry_VA"="NV.IND.TOTL.ZS",
-#                 "Agricolture_VA"="NV.AGR.TOTL.ZS",
-#                 "Pop_tot"="SP.POP.TOTL",
-#                 "Age_dep_ratio"="SP.POP.DPND",
-#                 "Inf_mort_rate"="SP.DYN.IMRT.IN",
-#                 "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
-#                 "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
-#                 "Trade"="NE.TRD.GNFS.ZS",
-#                 "Export_wb"="NE.EXP.GNFS.ZS",
-#                 "Import_wb"="NE.IMP.GNFS.ZS",
-#                 "FDI"="BX.KLT.DINV.WD.GD.ZS",
-#                 "Mil_per"="MS.MIL.TOTL.P1",
-#                 "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
-#                 "Mil_exp_USD"="MS.MIL.XPND.CD",
-#                 "lit_rate"="SE.ADT.1524.LT.ZS"
-#   ),
-#   start = 1980,
-#   end = 2020,
-#   extra = TRUE,
-#   cache = NULL,
-#   latest = NULL,
-#   language = "en"
-# )
+
+WorldBank <- WDI(
+  country = "all",
+  indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
+                "oil_rents"="NY.GDP.PETR.RT.ZS",
+                "gas_rents"="NY.GDP.NGAS.RT.ZS",
+                "minerals_rents"="NY.GDP.MINR.RT.ZS",
+                "GDP"="NY.GDP.MKTP.CD",
+                "GDP_pc"="NY.GDP.PCAP.CD",
+                "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
+                "GDP_grwt"="NY.GDP.MKTP.KD.ZG",
+                "Inflation"="FP.CPI.TOTL.ZG",
+                "Service_VA"="NV.SRV.TOTL.ZS",
+                "Manuf_VA"="NV.IND.MANF.ZS",
+                "Industry_VA"="NV.IND.TOTL.ZS",
+                "Agricolture_VA"="NV.AGR.TOTL.ZS",
+                "Pop_tot"="SP.POP.TOTL",
+                "Age_dep_ratio"="SP.POP.DPND",
+                "Inf_mort_rate"="SP.DYN.IMRT.IN",
+                "Military_exp_pct_GDP"="MS.MIL.XPND.GD.ZS",
+                "Military_exp_pct_Gov_exp"="MS.MIL.XPND.ZS",
+                "Trade"="NE.TRD.GNFS.ZS",
+                "Export_wb"="NE.EXP.GNFS.ZS",
+                "Import_wb"="NE.IMP.GNFS.ZS",
+                "FDI"="BX.KLT.DINV.WD.GD.ZS",
+                "Mil_per"="MS.MIL.TOTL.P1",
+                "Urb_pop_pct"="SP.URB.TOTL.IN.ZS",
+                "Mil_exp_USD"="MS.MIL.XPND.CD",
+                "lit_rate"="SE.ADT.1524.LT.ZS"
+  ),
+  start = 1980,
+  end = 2020,
+  extra = TRUE,
+  cache = NULL,
+  latest = NULL,
+  language = "en"
+)
 
 ```
 
@@ -1101,21 +1101,21 @@ Aiddata<- read.csv(file_path)
 
 ### prepare dataset
 ```{r}
-df_Aiddata<-Aiddata
+df_Aiddata2<-Aiddata
 
 #change names
-df_Aiddata$recipient[df_Aiddata$recipient=="Yugoslavia"]            <- "Serbia"
-df_Aiddata$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
-df_Aiddata$recipient[df_Aiddata$recipient=="Soviet Union"]          <- "Russia"
+df_Aiddata2$recipient[df_Aiddata$recipient=="Yugoslavia"]            <- "Serbia"
+df_Aiddata2$recipient[df_Aiddata$recipient=="Serbia and Montenegro"] <- "Serbia"
+df_Aiddata2$recipient[df_Aiddata$recipient=="Soviet Union"]          <- "Russia"
 
 #assign ISO3
-df_Aiddata$iso3c <- countrycode(df_Aiddata$recipient, "country.name", "iso3c")
+df_Aiddata2$iso3c <- countrycode(df_Aiddata2$recipient, "country.name", "iso3c")
 
 #drop iso3c NAs
-df_Aiddata<-df_Aiddata[!is.na(df_Aiddata$iso3c), ]
+df_Aiddata2<-df_Aiddata2[!is.na(df_Aiddata2$iso3c), ]
 
 #assign ISO3 donor
-df_Aiddata$iso3c_donor <- countrycode(df_Aiddata$donor, "country.name", "iso3c")
+df_Aiddata2$iso3c_donor <- countrycode(df_Aiddata2$donor, "country.name", "iso3c")
 
 ```
 
@@ -1124,8 +1124,8 @@ df_Aiddata$iso3c_donor <- countrycode(df_Aiddata$donor, "country.name", "iso3c")
 ```{r}
 
 #drop iso3c NAs
-df_donors_state<-df_Aiddata[!is.na(df_Aiddata$iso3c_donor), ]
-df_donors_nonstate<-df_Aiddata[is.na(df_Aiddata$iso3c_donor), ]
+df_donors_state<-df_Aiddata2[!is.na(df_Aiddata2$iso3c_donor), ]
+df_donors_nonstate<-df_Aiddata2[is.na(df_Aiddata2$iso3c_donor), ]
 
 
 
@@ -1263,10 +1263,10 @@ df_KOFIndex <- Lag_12(df_KOFIndex, iso3c, List)
 ```{r}
 library(readxl)
 
-#userpath<-("C:/Users/krogers/")
-#df_rpc<-read_excel(paste0(userpath,"Nextcloud/Global Solidarity/arpc_2020.xlsx"))
+userpath<-("C:/Users/krogers/")
+df_rpc<-read_excel(paste0(userpath,"Nextcloud/Global Solidarity/arpc_2020.xlsx"))
 
-df_rpc <- read_excel("C:/Users/marco/Desktop/DFGlobalLab/RPE/arpc_2020.xlsx")
+#df_rpc <- read_excel("C:/Users/marco/Desktop/DFGlobalLab/RPE/arpc_2020.xlsx")
 
 List=c("rpe_agri","rpe_gdp","rpe_gdp_nonres")
 
@@ -1674,23 +1674,25 @@ df_Ind_var <- left_join(df_Ind_var, df_WorldBank, by = c("year" = "year", "iso3c
 ## add conf events
 df_Ind_var <- left_join(df_Ind_var, df_UCDP_GED_Y, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add membership
-df_Ind_var <- left_join(df_Ind_var, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c"))
+#df_Ind_var <- left_join(df_Ind_var, df_IGOs, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add donors
 df_Ind_var <- left_join(df_Ind_var, df_donors, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add geo and colonial eritage
 df_Ind_var <- left_join(df_Ind_var, df_rugged, by = c("iso3c" = "iso3c"))
 ## add Mdata
-df_Ind_var <- left_join(df_Ind_var, df_EMDAT_full, by = c("year" = "year", "iso3c" = "iso3c"))
+#df_Ind_var <- left_join(df_Ind_var, df_EMDAT_full, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add fat Mdata
-df_Ind_var <- left_join(df_Ind_var, EM_dat_fat, by = c("year" = "year", "iso3c" = "iso3c"))
+#df_Ind_var <- left_join(df_Ind_var, EM_dat_fat, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add cost Mdata
-df_Ind_var <- left_join(df_Ind_var, EM_dat_cost, by = c("year" = "year", "iso3c" = "iso3c"))
+#df_Ind_var <- left_join(df_Ind_var, EM_dat_cost, by = c("year" = "year", "iso3c" = "iso3c"))
 ## add KOF index
-df_Ind_var <- left_join(df_Ind_var, df_KOFIndex, by = c("year" = "year", "iso3c" = "iso3c"))
+#df_Ind_var <- left_join(df_Ind_var, df_KOFIndex, by = c("year" = "year", "iso3c" = "iso3c"))
 ## Add RPE
-df_Ind_var <- left_join(df_Ind_var, df_rpc, by = c("year" = "year", "iso3c" = "ISO3"))
+#df_Ind_var <- left_join(df_Ind_var, df_rpc, by = c("year" = "year", "iso3c" = "ISO3"))
 ## Add Aid
 df_Ind_var <- left_join(df_Ind_var, df_Aiddata, by = c("year" = "year", "iso3c" = "iso3c"))
+
+
 
 ```
 
@@ -1711,6 +1713,7 @@ df_Ind_var <- left_join(df_Ind_var, df_Aiddata, by = c("year" = "year", "iso3c" 
 ```{r}
 # Set path for Marco nextcloud
 path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
+path<-"C:/Users/krogers/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path

@@ -74,7 +74,7 @@ gen_formula <- function(dependent_var, var_list) {
 ```{r}
 ## set url Marco Nextclod
 desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
-#desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
+desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
 
 main_folder_name <- "Global Solidarity"
 sub_folder_name <- "Compiled"
@@ -158,10 +158,10 @@ df_IndVars <- readRDS(Df_path)
 # Set dataset for analysis
 ```{r}
 #df_DepVars <-df_Globsol5k
-#df_DepVars  <-df_Globsol50k
+df_DepVars  <-df_Globsol50k
 #df_DepVars <-df_Globsol100k
 #df_DepVars <-df_Globsol5k500d
-df_DepVars <-df_Globsol50k_noass
+#df_DepVars <-df_Globsol50k_noass
 
 ```
 
@@ -181,83 +181,83 @@ df_full <- df_full[ , names(df_full) %!in% c("country.x",
 ## preprocess data
 ```{r}
 ## select vars if interest
-List<-c("count_HO_lag_1",
-        "nat_rents_lag_1",
-        "trade_part_lag_1",
-        "exp_part_lag_1",
-        "impo_part_lag_1",
-        "N_donors_lag_1",
-        "pop_tot_lag_1",
-        "gdp_lag_1",
-        "gdp_per_cap_ppp_lag_1",
-        "inflation_lag_1",
-        "urb_pop_pct_lag_1",
-        "trade_lag_1",
-        "inf_mort_rate_lag_1",
-        "liberal_demo_lag_1",
-        "regime_corruption_lag_1",
-        "civil_soc_lag_1",
-        "best_fat_lag_1",
-        "food_export_lag_1",
-        "food_import_lag_1",
-        "biological_dummy_50k",
-        "biological_dummy_lag_1_50k",
-        "climatological_dummy_50k",
-        "climatological_dummy_lag_1_50k",
-        "geophysical_dummy_50k",
-        "geophysical_dummy_lag_1_50k",
-        "hydrological_dummy_50k",
-        "hydrological_dummy_lag_1_50k",
-        "meteorological_dummy_50k",
-        "meteorological_dummy_lag_1_50k",
-        "colony_fra",
-        "colony_gbr",
-        "colony_oeu",
-        "colony_prt",
-        "colony_esp",
-        "tropical",
-        "desert",
-        "N_memberships",
-        "NS_donors_ratio_lag_1",
-        "fuel_income_lag_1",
-        "rpe_agri_lag_1",
-        "rpe_gdp_lag_1",
-        "rpe_gdp_nonres_lag_1",
-        "military_exp_pct_gdp_lag_1",
-        "military_exp_pct_gov_exp_lag_1",
-        "KOFTrGI_lag_1",
-        "KOFIpGI_lag_1",
-        "KOFCuGI_lag_1",
-        "KOFPoGI_lag_1",
-        "gas_rents_lag_1",
-        "oil_rents_lag_1",
-        "minerals_rents_lag_1",
-        "service_va_lag_1",
-        "export_wb_lag_1",
-        "import_wb_lag_1",
-        "agricolture_va_lag_1",
-        "rugged",
-        "gdp_grwt_lag_1",
-        "fdi_lag_1",
-        "military_centr_lag_1",
-        "mil_per_lag_1",
-        "dis_death",
-        "DamAd",
-        "mil_exp_usd_lag_1",
-        "autonomy_lag_1",
-        "executive_corr_lag_1",
-        "civil_soc_lag_1",
-        "v2regdur",
-        "age_dep_ratio_lag_1",
-        "lit_rate_lag_1",
-                   "regio_pol",
-                   "regio_geo",
-        "commitment_tot_lag_1",
-                                                        "commitment_tot_pc_lag_1",
-        "commitment_tot_lag_1",
-                                                        "commitment_tot_pc_lag_1")
+# List<-c("count_HO_lag_1",
+#         "nat_rents_lag_1",
+#         "trade_part_lag_1",
+#         "exp_part_lag_1",
+#         "impo_part_lag_1",
+#         "N_donors_lag_1",
+#         "pop_tot_lag_1",
+#         "gdp_lag_1",
+#         "gdp_per_cap_ppp_lag_1",
+#         "inflation_lag_1",
+#         "urb_pop_pct_lag_1",
+#         "trade_lag_1",
+#         "inf_mort_rate_lag_1",
+#         "liberal_demo_lag_1",
+#         "regime_corruption_lag_1",
+#         "civil_soc_lag_1",
+#         "best_fat_lag_1",
+#         "food_export_lag_1",
+#         "food_import_lag_1",
+#         "biological_dummy_50k",
+#         "biological_dummy_lag_1_50k",
+#         "climatological_dummy_50k",
+#         "climatological_dummy_lag_1_50k",
+#         "geophysical_dummy_50k",
+#         "geophysical_dummy_lag_1_50k",
+#         "hydrological_dummy_50k",
+#         "hydrological_dummy_lag_1_50k",
+#         "meteorological_dummy_50k",
+#         "meteorological_dummy_lag_1_50k",
+#         "colony_fra",
+#         "colony_gbr",
+#         "colony_oeu",
+#         "colony_prt",
+#         "colony_esp",
+#         "tropical",
+#         "desert",
+#         "N_memberships",
+#         "NS_donors_ratio_lag_1",
+#         "fuel_income_lag_1",
+#         "rpe_agri_lag_1",
+#         "rpe_gdp_lag_1",
+#         "rpe_gdp_nonres_lag_1",
+#         "military_exp_pct_gdp_lag_1",
+#         "military_exp_pct_gov_exp_lag_1",
+#         "KOFTrGI_lag_1",
+#         "KOFIpGI_lag_1",
+#         "KOFCuGI_lag_1",
+#         "KOFPoGI_lag_1",
+#         "gas_rents_lag_1",
+#         "oil_rents_lag_1",
+#         "minerals_rents_lag_1",
+#         "service_va_lag_1",
+#         "export_wb_lag_1",
+#         "import_wb_lag_1",
+#         "agricolture_va_lag_1",
+#         "rugged",
+#         "gdp_grwt_lag_1",
+#         "fdi_lag_1",
+#         "military_centr_lag_1",
+#         "mil_per_lag_1",
+#         "dis_death",
+#         "DamAd",
+#         "mil_exp_usd_lag_1",
+#         "autonomy_lag_1",
+#         "executive_corr_lag_1",
+#         "civil_soc_lag_1",
+#         "v2regdur",
+#         "age_dep_ratio_lag_1",
+#         "lit_rate_lag_1",
+#                    "regio_pol",
+#                    "regio_geo",
+#         "commitment_tot_lag_1",
+#                                                         "commitment_tot_pc_lag_1",
+#         "commitment_tot_lag_1",
+#                                                         "commitment_tot_pc_lag_1")
 
-df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","GlobSol_yearmean","Hum_plus_ER_aid_tot","NormAgr","iso3c","year")] 
+#df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","GlobSol_yearmean","Hum_plus_ER_aid_tot","NormAgr","iso3c","year")] 
 
 ## drop NAs
 #df_model_data <- na.omit(df_model_data)
@@ -266,7 +266,7 @@ df_model_data <- df_full[ , names(df_full) %in% c(List,"GlobSol","GlobSol_yearme
 #variables_to_scale <- List
 
 # List of variable names to scale
-df_scaled<-df_model_data
+df_scaled<-df_full
 
 # log variables
 #df_scaled$ln_GDP_lag_1<-log(df_scaled$gdp_lag_1)
@@ -317,8 +317,8 @@ df_scaled$colony<-ifelse(df_scaled$colony_fra==1|
                            df_scaled$colony_esp==1,1,0)
 
 ## disaster count
-df_scaled$dis_count<-df_scaled$biological_dummy_50k+df_scaled$climatological_dummy_50k+df_scaled$geophysical_dummy_50k+df_scaled$hydrological_dummy_50k+df_scaled$meteorological_dummy_50k
-df_scaled$dis_count_lag_1<-df_scaled$biological_dummy_lag_1_50k+df_scaled$climatological_dummy_lag_1_50k+df_scaled$geophysical_dummy_lag_1_50k+df_scaled$hydrological_dummy_lag_1_50k+df_scaled$meteorological_dummy_lag_1_50k
+#df_scaled$dis_count<-df_scaled$biological_dummy_50k+df_scaled$climatological_dummy_50k+df_scaled$geophysical_dummy_50k+df_scaled$hydrological_dummy_50k+df_scaled$meteorological_dummy_50k
+#df_scaled$dis_count_lag_1<-df_scaled$biological_dummy_lag_1_50k+df_scaled$climatological_dummy_lag_1_50k+df_scaled$geophysical_dummy_lag_1_50k+df_scaled$hydrological_dummy_lag_1_50k+df_scaled$meteorological_dummy_lag_1_50k
 
 ## create variable last_time: last time a counry experienced th type of solidarity is experiencing now
 df_scaled <- df_scaled %>%
@@ -347,13 +347,14 @@ df_scaled$Last_time[df_scaled$Last_time == 0] <- NA
 ```{r}
 #saving it
 #namefile<-"df_full_v3_5000.csv"
-#namefile<-"df_full_v3.csv"
+namefile<-"df_full_v3.csv"
 #namefile<-"df_full_v3_100000.csv"
 #namefile<-"df_full_5k_500d.csv"
-namefile<-"df_full_v3_noass.csv"
+#namefile<-"df_full_v3_noass.csv"
 
 ## correct names
-df_scaled<-janitor::clean_names(df_scaled)
+df_scaled<-janitor::clean_names(df_scaled) %>%
+  dplyr::select(-dis_ids) %>% dplyr::select(-end_dis_ids)
 
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 write.csv(df_scaled, folder_path_wb, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
