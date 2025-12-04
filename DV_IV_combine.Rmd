@@ -56,7 +56,7 @@ gen_formula <- function(dependent_var, var_list) {
 ## Set folders
 ```{r}
 ## set url Marco Nextclod
-desktop_path <- file.path("C:", "Users", "Marco", "Nextcloud")
+desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
 #desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
 
 main_folder_name <- "Global Solidarity"
@@ -90,7 +90,7 @@ df_Globsol50k <- readRDS(Df_path)
 ### 50k no assistance
 ```{r}
 # set DF
-DF<-c("globsol_df50k_v2_no_assistance.rds")
+DF<-c("globsol_df50k_v2_1_no_assistance.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -123,8 +123,8 @@ df_IndVars <- readRDS(Df_path)
 
 # Set dataset for analysis
 ```{r}
-#df_DepVars <-df_Globsol5k
-df_DepVars  <-df_Globsol50k
+df_DepVars <-df_Globsol5k
+#df_DepVars  <-df_Globsol50k
 #df_DepVars <-df_Globsol100k
 #df_DepVars <-df_Globsol50k_noass
 
@@ -228,8 +228,8 @@ df_slim <- df_full%>%dplyr::select("glob_sol",
                                    "hum_plus_er_aid_tot")
 
 #saving it
-#namefile<-"df_full_v4_1_5000.csv"
-namefile<-"df_full_v4_1.csv"
+namefile<-"df_full_v4_1_5000.csv"
+#namefile<-"df_full_v4_1.csv"
 #namefile<-"df_full_v4_1_100000.csv"
 #namefile<-"df_full_v4_1_noass.csv"
 

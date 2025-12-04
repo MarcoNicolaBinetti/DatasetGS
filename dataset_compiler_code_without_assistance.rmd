@@ -636,7 +636,7 @@ if (!file.exists(folder_path)) {
 #### Importing ICEWS from the rds. file. this helps to skip the "Importing ICEWS from row data" block of code
 ```{r}
 URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
-URL_df<-paste0(folder_path,"/", "icews.rds")
+#URL_df<-paste0(folder_path,"/", "icews.rds")
 
 # importing icews df
 df_ICWES <- readRDS(URL_df)
@@ -753,10 +753,10 @@ head(df_ICWES_g2g)
 
 ##### Merge with emdat country month level dataset in order to identify declarations 
 ```{r}
-df_ICWES_g2g_dis1k=   left_join(df_ICWES_g2g, EM_dat_1k_processed_2, by     = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
-df_ICWES_g2g_dis5k=   left_join(df_ICWES_g2g, EM_dat_5k_processed_2, by     = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+#df_ICWES_g2g_dis1k=   left_join(df_ICWES_g2g, EM_dat_1k_processed_2, by     = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+#df_ICWES_g2g_dis5k=   left_join(df_ICWES_g2g, EM_dat_5k_processed_2, by     = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
 df_ICWES_g2g_dis50k=  left_join(df_ICWES_g2g, EM_dat_50k_processed_2, by    = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
-df_ICWES_g2g_dis100k= left_join(df_ICWES_g2g, EM_dat_100k_processed_2, by   = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
+#df_ICWES_g2g_dis100k= left_join(df_ICWES_g2g, EM_dat_100k_processed_2, by   = c("date_month" = "date_month", "iso3c_target" = "iso3c", "year"="year"))
 
 
 process_ICEWS_1 <- function(df) {
@@ -1564,10 +1564,14 @@ if (!file.exists(folder_path)) {
 path<-"C:/Users/marco/Nextcloud/Global Solidarity/Compiled"
 
 ## create path
-folder_path <- file.path(path,"globsol_df50k_v2_no_assistance.rds")
+folder_path <- file.path(path,"globsol_df50k_v2_1_no_assistance.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
+
+```
+
+```{r}
 
 ```
 
