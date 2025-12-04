@@ -1,0 +1,265 @@
+---
+title: "Untitled"
+author: "MNB"
+date: "12/4/2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+make_coef_plots <- function(dir_path) {
+  # Packages you need
+  library(readxl)
+  library(dplyr)
+  library(purrr)
+  library(ggplot2)
+  library(stringr)
+  library(forcats)
+  
+  ## 1. Read all coeff_*.xlsx files in the folder ----
+  files <- list.files(
+    path       = dir_path,
+    pattern    = "^coeff_.*\\.xlsx$",   # adjust if some are .xls
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No files matching 'coeff_*.xlsx' found in this folder.")
+  }
+  
+  # Nice model names from filenames
+  model_names <- tools::file_path_sans_ext(basename(files))
+  model_names_clean <- gsub("^coeff_", "", model_names)
+  
+  ## 2. Import and stack all datasets ----
+  all_coef <- map2_dfr(
+    .x = files,
+    .y = model_names_clean,
+    ~ read_excel(.x) |>
+      mutate(model = .y)
+  )
+  
+  # Make sure names are standard
+  names(all_coef) <- tolower(names(all_coef))
+  # Expecting: outcome, variable, coef, ll95, ul95, model
+  
+  ## 3. Drop outcome 4 (the base with all zeros) ----
+  coef_clean <- all_coef |>
+    filter(outcome != 4) |>
+    mutate(
+      model   = factor(model, levels = model_names_clean),   # keep file order
+      outcome = factor(outcome)                              # for colouring
+    )
+  
+  ## 4. Helper to build one plot per variable ----
+  plot_for_var <- function(var_name, plot_title = var_name) {
+    coef_clean |>
+      filter(variable == var_name) |>
+      ggplot(aes(x = model, y = coef, colour = outcome)) +
+      geom_hline(yintercept = 0, linetype = "dashed") +
+      geom_point(position = position_dodge(width = 0.4)) +
+      geom_errorbar(
+        aes(ymin = ll95, ymax = ul95),
+        position = position_dodge(width = 0.4),
+        width = 0.2
+      ) +
+      labs(
+        title  = plot_title,
+        x      = "Model",
+        y      = "Coefficient",
+        colour = "Outcome"
+      ) +
+      theme_bw() +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )
+  }
+  
+  ## 5. Create the three requested plots ----
+  p_ln_dis_death   <- plot_for_var("ln_dis_death",
+                                   "Coefficients for ln_dis_death")
+  p_ln_gdp_lag_1   <- plot_for_var("ln_gdp_lag_1",
+                                   "Coefficients for ln_gdp_lag_1")
+  p_nat_rent       <- plot_for_var("nat_rent",
+                                   "Coefficients for nat_rent")
+  
+  # Return as a list so you can use them separately
+  list(
+    ln_dis_death = p_ln_dis_death,
+    ln_gdp_lag_1 = p_ln_gdp_lag_1,
+    nat_rent     = p_nat_rent
+  )
+}
+
+```
+
+```{r}
+plots <- make_coef_plots(
+  "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity"
+)
+```
+
+
+```{r}
+# Show each plot:
+plots$ln_dis_death
+```
+
+
+```{r}
+plots$ln_gdp_lag_1
+```
+
+
+```{r}
+plots$nat_rent
+```
+
+
+# coeffplots for elasticity
+```{r}
+make_elas_plots <- function(dir_path) {
+  # Packages
+  library(readxl)
+  library(dplyr)
+  library(purrr)
+  library(ggplot2)
+  library(stringr)
+  library(forcats)
+  
+  ## 1. Find all elas_*.xls/xlsx files ----
+  files <- list.files(
+    path       = dir_path,
+    pattern    = "^elas_.*\\.xls[x]?$",
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No files matching 'elas_*.xls[x]' found in this folder.")
+  }
+  
+  # Model names from filenames
+  model_names <- tools::file_path_sans_ext(basename(files))
+  model_names_clean <- gsub("^elas_", "", model_names)
+  
+  ## 2. Read and tidy each elas file ----
+  all_elas <- map2_dfr(
+    .x = files,
+    .y = model_names_clean,
+    ~ {
+      # read with NO column names, keep everything
+      raw <- read_excel(.x, col_names = FALSE)
+      
+      # First row: variable names (ln_dis_death, ln_gdp_lag_1, nat_rent, etc.)
+      header_var     <- as.character(raw[1, ])
+      # Second row: outcomes (1bn._predict, 2._predict, 3._predict, 4._predict, etc.)
+      header_outcome <- as.character(raw[2, ])
+      
+      # First column: row labels ("b", "se", "z", "pvalue", "ll", "ul", ...)
+      stat_names <- as.character(raw[[1]])
+      
+      # Find the rows we need
+      b_row  <- which(stat_names == "b")
+      ll_row <- which(stat_names == "ll")
+      ul_row <- which(stat_names == "ul")
+      
+      if (length(b_row) == 0 || length(ll_row) == 0 || length(ul_row) == 0) {
+        stop("Could not find rows 'b', 'll', and 'ul' in file: ", .x)
+      }
+      
+      # Work on all data columns (skip first col with stat names)
+      cols <- 2:ncol(raw)
+      
+      tibble(
+        variable = header_var[cols],
+        outcome  = header_outcome[cols],
+        coef     = as.numeric(unlist(raw[b_row,  cols])),
+        ll95     = as.numeric(unlist(raw[ll_row, cols])),
+        ul95     = as.numeric(unlist(raw[ul_row, cols])),
+        model    = .y
+      )
+    }
+  )
+  
+  ## 3. Keep only the three variables of interest and clean factors ----
+  elas_clean <- all_elas %>%
+    filter(variable %in% c("ln_dis_death", "ln_gdp_lag_1", "nat_rent"),
+           !is.na(coef)) %>%
+    mutate(
+      model   = factor(model, levels = model_names_clean),
+      outcome = factor(
+        outcome,
+        levels = c("1bn._predict", "2._predict", "3._predict", "4._predict")
+      )
+    )
+  
+  ## 4. Helper to build one plot per variable ----
+  plot_for_var <- function(var_name, plot_title = var_name) {
+    elas_clean %>%
+      filter(variable == var_name) %>%
+      ggplot(aes(x = model, y = coef, colour = outcome)) +
+      geom_hline(yintercept = 0, linetype = "dashed") +
+      geom_point(position = position_dodge(width = 0.4)) +
+      geom_errorbar(
+        aes(ymin = ll95, ymax = ul95),
+        position = position_dodge(width = 0.4),
+        width = 0.2
+      ) +
+      labs(
+        title  = plot_title,
+        x      = "Model",
+        y      = "Elasticity",
+        colour = "Outcome"
+      ) +
+      theme_bw() +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )
+  }
+  
+  ## 5. Build the three requested plots ----
+  p_ln_dis_death <- plot_for_var("ln_dis_death",
+                                 "Elasticities for ln_dis_death")
+  p_ln_gdp_lag_1 <- plot_for_var("ln_gdp_lag_1",
+                                 "Elasticities for ln_gdp_lag_1")
+  p_nat_rent     <- plot_for_var("nat_rent",
+                                 "Elasticities for nat_rent")
+  
+  # Return them as a list
+  list(
+    ln_dis_death = p_ln_dis_death,
+    ln_gdp_lag_1 = p_ln_gdp_lag_1,
+    nat_rent     = p_nat_rent
+  )
+}
+```
+
+
+```{r}
+elas_plots <- make_elas_plots(
+  "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity"
+)
+```
+
+
+```{r}
+elas_plots$ln_dis_death    # plot 1: ln_dis_death, 1bn–4._predict, by model
+```
+
+
+```{r}
+elas_plots$ln_gdp_lag_1    # plot 2: ln_gdp_lag_1
+```
+
+
+```{r}
+elas_plots$nat_rent        # plot 3: nat_rent
+
+```
+
+
