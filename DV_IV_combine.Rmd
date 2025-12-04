@@ -56,7 +56,7 @@ gen_formula <- function(dependent_var, var_list) {
 ## Set folders
 ```{r}
 ## set url Marco Nextclod
-desktop_path <- file.path("C:", "Users", "marco", "Nextcloud")
+desktop_path <- file.path("C:", "Users", "Marco", "Nextcloud")
 #desktop_path <- file.path("C:", "Users", "krogers", "Nextcloud")
 
 main_folder_name <- "Global Solidarity"
@@ -68,7 +68,7 @@ sub_folder_name <- "Compiled"
 ### 5k
 ```{r}
 # set DF
-DF<-c("globsol_df5k_v2.rds")
+DF<-c("globsol_df5k_v2_1.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF
@@ -79,7 +79,7 @@ df_Globsol5k <- readRDS(Df_path)
 ### 50k
 ```{r}
 # set DF
-DF<-c("globsol_df50k_v2.rds")
+DF<-c("globsol_df50k_v2_1.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -101,7 +101,7 @@ df_Globsol50k_noass <- readRDS(Df_path)
 ### 100k
 ```{r}
 # set DF
-DF<-c("globsol_df100k_v2.rds")
+DF<-c("globsol_df100k_v2_1.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -113,7 +113,7 @@ df_Globsol100k <- readRDS(Df_path)
 ## Import Independent and control variables
 ```{r}
 # set DF
-DF<-c("df_Ind_var_v3.rds")
+DF<-c("df_Ind_var_v3_1.rds")
 # load DF
 Df_path <- file.path(desktop_path, main_folder_name, sub_folder_name, DF )
 # importing DF 
@@ -124,9 +124,9 @@ df_IndVars <- readRDS(Df_path)
 # Set dataset for analysis
 ```{r}
 #df_DepVars <-df_Globsol5k
-#df_DepVars  <-df_Globsol50k
+df_DepVars  <-df_Globsol50k
 #df_DepVars <-df_Globsol100k
-df_DepVars <-df_Globsol50k_noass
+#df_DepVars <-df_Globsol50k_noass
 
 ```
 
@@ -188,14 +188,14 @@ df_full$Last_time[df_full$Last_time == 0] <- NA
 #namefile<-"df_full_v3_5000.csv"
 #namefile<-"df_full_v3.csv"
 #namefile<-"df_full_v3_100000.csv"
-namefile<-"df_full_v3_noass.csv"
+#namefile<-"df_full_v3_noass.csv"
 
 ## correct names
 df_full<-janitor::clean_names(df_full) %>%
   dplyr::select(-dis_ids) %>% dplyr::select(-end_dis_ids)
 
-folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
-write.csv(df_full, folder_path, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
+# folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
+# write.csv(df_full, folder_path, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
 
 ```
 
@@ -228,12 +228,22 @@ df_slim <- df_full%>%dplyr::select("glob_sol",
                                    "hum_plus_er_aid_tot")
 
 #saving it
-#namefile<-"df_full_v4_5000.csv"
-#namefile<-"df_full_v4.csv"
-#namefile<-"df_full_v4_100000.csv"
-namefile<-"df_full_v4_noass.csv"
+#namefile<-"df_full_v4_1_5000.csv"
+namefile<-"df_full_v4_1.csv"
+#namefile<-"df_full_v4_1_100000.csv"
+#namefile<-"df_full_v4_1_noass.csv"
 
 folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 write.csv(df_slim, folder_path, row.names = FALSE,na = "")  # row.names = FALSE to exclude row indices
 
 ```
+
+
+```{r}
+
+```
+
+
+
+
+

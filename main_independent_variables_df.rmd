@@ -5,7 +5,7 @@ date: "4/18/2024"
 output: html_document
 ---
 
-## 01 12 2025
+## 04 12 2025
 ## Libraries
 ```{r, include=FALSE}
 library(Hmisc)
@@ -283,29 +283,28 @@ if (!file.exists(folder_path)) {
 ### WB: importing dataset via API
 ```{r}
 
-# WorldBank <- WDI(
-#   country = "all",
-#   indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
-#                 "oil_rents"="NY.GDP.PETR.RT.ZS",
-#                 "gas_rents"="NY.GDP.NGAS.RT.ZS",
-#                 "minerals_rents"="NY.GDP.MINR.RT.ZS",
-#                 "GDP"="NY.GDP.MKTP.CD",
-#                 "GDP_pc"="NY.GDP.PCAP.CD",
-#                 "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
-#                 "Inflation"="FP.CPI.TOTL.ZG",
-#                 "Pop_tot"="SP.POP.TOTL",
-#                 "Inf_mort_rate"="SP.DYN.IMRT.IN",
-#                 "Trade"="NE.TRD.GNFS.ZS",
-#                 "Mil_per"="MS.MIL.TOTL.P1",
-#                 "lit_rate"="SE.ADT.1524.LT.ZS"
-#   ),
-#   start = 1993,
-#   end = 2020,
-#   extra = TRUE,
-#   cache = NULL,
-#   latest = NULL,
-#   language = "en"
-# )
+WorldBank <- WDI(
+  country = "all",
+  indicator = c("Nat_rents"="NY.GDP.TOTL.RT.ZS",
+                "oil_rents"="NY.GDP.PETR.RT.ZS",
+                "gas_rents"="NY.GDP.NGAS.RT.ZS",
+                "minerals_rents"="NY.GDP.MINR.RT.ZS",
+                "GDP"="NY.GDP.MKTP.CD",
+                "GDP_pc"="NY.GDP.PCAP.CD",
+                "GDP_per_cap_PPP"="NY.GDP.PCAP.PP.KD",
+                "Inflation"="FP.CPI.TOTL.ZG",
+                "Pop_tot"="SP.POP.TOTL",
+                "Inf_mort_rate"="SP.DYN.IMRT.IN",
+                "Trade"="NE.TRD.GNFS.ZS",
+                "Mil_per"="MS.MIL.TOTL.P1"
+  ),
+  start = 1993,
+  end = 2020,
+  extra = TRUE,
+  cache = NULL,
+  latest = NULL,
+  language = "en"
+)
 
 
 ```
@@ -313,7 +312,7 @@ if (!file.exists(folder_path)) {
 ### Setting path to save DF
 ```{r}
 # setting path to save and import df
-namefile<-"WorldBank.rds"
+namefile<-"WorldBank2_1.rds"
 folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
 ```
 
@@ -321,7 +320,7 @@ folder_path_wb <- file.path(desktop_path, main_folder_name, sub_folder_name, nam
 ```{r}
 #saving it
 
-#saveRDS(WorldBank, folder_path_wb)
+saveRDS(WorldBank, folder_path_wb)
 
 ```
 
@@ -936,10 +935,18 @@ if (!file.exists(folder_path)) {
 ## Export file
 ```{r}
 #saving it
-namefile<-"df_Ind_var_v3.rds"
+namefile<-"df_Ind_var_v3_1.rds"
 folder_path <- file.path(desktop_path, main_folder_name, sub_folder_name, namefile)
-#folder_path_wb <-(paste0(userpath,"Nextcloud/Global Solidarity/Compiled/df_Ind_var.rds"))
 saveRDS(df_Ind_var, folder_path)
+
+
+folder_path <- "C:/Users/Marco/Nextcloud/Global Solidarity/Compiled/df_Ind_var_v3_1.rds"
+saveRDS(df_Ind_var, folder_path)
+
+
+```
+
+```{r}
 
 ```
 

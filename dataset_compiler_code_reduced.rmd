@@ -154,16 +154,16 @@ download_create_folder_and_unzip <- function(desktop_path, folder_name, url) {
 
 # Setting directory for datasets' folders
 ```{r, include=FALSE}
-#desktop_path <- file.path("C:", "Users", "marco", "Desktop")
-desktop_path <- file.path("C:", "Users","krogers","Documents")
+desktop_path <- file.path("C:", "Users", "marco", "Desktop")
+#desktop_path <- file.path("C:", "Users","krogers","Documents")
 ```
 
 
 # Set main folder name
 ```{r, include=FALSE}
 # Define the name of the folder to check/create
-#main_folder_name <- "DFGlobalLab"
-main_folder_name <- "data"
+main_folder_name <- "DFGlobalLab"
+#main_folder_name <- "data"
 ```
 
 # Creating folder for datasets
@@ -636,7 +636,7 @@ if (!file.exists(folder_path)) {
 #### Importing ICEWS from the rds. file. this helps to skip the "Importing ICEWS from row data" block of code
 ```{r}
 URL_df<-paste0(folder_path,"/", "df_ICWES.rds")
-URL_df<-paste0(folder_path,"/", "icews.rds")
+#URL_df<-paste0(folder_path,"/", "icews.rds")
 
 # importing icews df
 df_ICWES <- readRDS(URL_df)
@@ -1557,21 +1557,21 @@ if (!file.exists(folder_path)) {
 ## Export dataset to Nextcoloud
 ```{r}
 # Set path for Marco nextcloud
-path<-"C:/Users/krogers/Nextcloud/Global Solidarity/Compiled"
+path<-"C:/Users/Marco/Nextcloud/Global Solidarity/Compiled"
 
 
 ## create path
-folder_path <- file.path(path,"globsol_df50k_v2.rds")
+folder_path <- file.path(path,"globsol_df50k_v2_1.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_df5k_v2.rds")
+folder_path <- file.path(path,"globsol_df5k_v2_1.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(path,"globsol_df100k_v2.rds")
+folder_path <- file.path(path,"globsol_df100k_v2_1.rds")
 ## save file
 saveRDS(df100k,folder_path)
 
@@ -1582,17 +1582,17 @@ saveRDS(df100k,folder_path)
 
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df50k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df50k_2_1.rds")
 ## save file
 saveRDS(df50k,folder_path)
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df5k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df5k_2_1.rds")
 ## save file
 saveRDS(df5k,folder_path)
 
 ## create path
-folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df100k.rds")
+folder_path <- file.path(desktop_path, main_folder_name,sub_folder_name,"globsol_20251125_df100k_2_1.rds")
 ## save file
 saveRDS(df100k,folder_path)
 
