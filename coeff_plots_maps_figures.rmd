@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(readxl)       # Import Excel files (.xls, .xlsx)
 library(ggplot2)      # Grammar-of-graphics plotting
+library(ggtext)   # for bold axis labels
 library(tidyverse)    # Data wrangling & analysis (dplyr, tidyr, readr, etc.)
 library(RColorBrewer) # Predefined colour palettes for plots
 library(Hmisc)        # Misc. data analysis tools (labelling, summaries, imputation)
@@ -36,7 +37,6 @@ library(countrycode)  # Convert between country names and codes (ISO, WB, etc.)
 library(patchwork)    # Combine ggplot2 plots using + and / operators
 library(sf)           # Simple Features for modern vector spatial data
 library(rnaturalearth)# Easy access to Natural Earth map data (countries, etc.)
-
 ```
 
 ## Remove lists
@@ -337,62 +337,9 @@ ggsave(
 )
 ```
 
-
-
-
-```{r}
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+## Figures 8A, 9A, 10A
 ```{r}
 make_coef_plots <- function(dir_path) {
-  # Packages you need
-  library(readxl)
-  library(dplyr)
-  library(purrr)
-  library(ggplot2)
-  library(stringr)
-  library(forcats)
   
   ## 1. Read all coeff_*.xlsx files in the folder ----
   files <- list.files(
@@ -405,63 +352,123 @@ make_coef_plots <- function(dir_path) {
     stop("No files matching 'coeff_*.xlsx' found in this folder.")
   }
   
-  # Nice model names from filenames
-  model_names <- tools::file_path_sans_ext(basename(files))
-  model_names_clean <- gsub("^coeff_", "", model_names)
+  # Base names of files (without extension)
+  model_names  <- tools::file_path_sans_ext(basename(files))
+  # Strip "coeff_" prefix for internal codes
+  model_codes  <- gsub("^coeff_", "", model_names)
+  # Prettier labels for plotting (replace "_" with space)
+  model_labels <- gsub("_", " ", model_codes)
   
   ## 2. Import and stack all datasets ----
-  all_coef <- map2_dfr(
+  all_coef <- purrr::map2_dfr(
     .x = files,
-    .y = model_names_clean,
-    ~ read_excel(.x) |>
-      mutate(model = .y)
+    .y = model_labels,
+    ~ readxl::read_excel(.x) |>
+      dplyr::mutate(model = .y)           # use pretty label as model name in data
   )
   
   # Make sure names are standard
   names(all_coef) <- tolower(names(all_coef))
   # Expecting: outcome, variable, coef, ll95, ul95, model
   
-  ## 3. Drop outcome 4 (the base with all zeros) ----
-  coef_clean <- all_coef |>
-    filter(outcome != 4) |>
-    mutate(
-      model   = factor(model, levels = model_names_clean),   # keep file order
-      outcome = factor(outcome)                              # for colouring
-    )
-  
-  ## 4. Helper to build one plot per variable ----
-  plot_for_var <- function(var_name, plot_title = var_name) {
-    coef_clean |>
-      filter(variable == var_name) |>
-      ggplot(aes(x = model, y = coef, colour = outcome)) +
-      geom_hline(yintercept = 0, linetype = "dashed") +
-      geom_point(position = position_dodge(width = 0.4)) +
-      geom_errorbar(
-        aes(ymin = ll95, ymax = ul95),
-        position = position_dodge(width = 0.4),
-        width = 0.2
-      ) +
-      labs(
-        title  = plot_title,
-        x      = "Model",
-        y      = "Coefficient",
-        colour = "Outcome"
-      ) +
-      theme_bw() +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1)
-      )
+  ## 3. Define custom model order: "Model main" first, then Model 1A–19A ----
+  # Work with codes for ordering, not labels
+  main_code <- model_codes[grepl("main", model_codes, ignore.case = TRUE)]
+  if (length(main_code) == 0) {
+    warning("No 'Main' model detected in filenames; using first file as main.")
+    main_code <- model_codes[1]
+  } else if (length(main_code) > 1) {
+    warning("Multiple 'Main' models detected; using the first one.")
+    main_code <- main_code[1]
   }
   
-  ## 5. Create the three requested plots ----
-  p_ln_dis_death   <- plot_for_var("ln_dis_death",
-                                   "Coefficients for ln_dis_death")
-  p_ln_gdp_lag_1   <- plot_for_var("ln_gdp_lag_1",
-                                   "Coefficients for ln_gdp_lag_1")
-  p_nat_rent       <- plot_for_var("nat_rent",
-                                   "Coefficients for nat_rent")
+  other_codes <- setdiff(model_codes, main_code)
+  # Order other models by numeric part in their names (1A, 2A, ..., 19A)
+  num_part <- readr::parse_number(other_codes)
+  other_codes_ordered <- other_codes[order(num_part)]
   
-  # Return as a list so you can use them separately
+  # Final order in terms of codes and corresponding labels
+  model_codes_ordered  <- c(main_code, other_codes_ordered)
+  model_labels_ordered <- gsub("_", " ", model_codes_ordered)
+  main_label           <- gsub("_", " ", main_code)   # "Model main"
+  
+  ## 4. Clean coefficients: drop outcome 4 and enforce factor order ----
+  coef_clean <- all_coef |>
+    dplyr::filter(outcome != 4) |>
+    dplyr::mutate(
+      model   = factor(model, levels = model_labels_ordered),
+      outcome = factor(outcome)   # levels "1", "2", "3"
+    )
+  
+  ## 5. Helper: one plot per conceptual variable, grouped & dodged by model ----
+  plot_for_var <- function(var_names, plot_title) {
+    
+    dat <- coef_clean |>
+      dplyr::filter(variable %in% var_names)
+    
+    dodge <- ggplot2::position_dodge(width = 0.4)
+    
+    ggplot2::ggplot(dat, ggplot2::aes(x = model, y = coef, colour = outcome)) +
+      ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+      ggplot2::geom_point(position = dodge) +
+      ggplot2::geom_errorbar(
+        ggplot2::aes(ymin = ll95, ymax = ul95),
+        position = dodge,
+        width = 0.2
+      ) +
+      # Custom colours and legend labels for outcomes
+      ggplot2::scale_colour_manual(
+        name   = "Outcome",
+        breaks = c("1", "2", "3"),
+        labels = c("Full solidarity",
+                   "Symbolic solidarity",
+                   "Transactional solidarity"),
+        values = c("1" = "#e41a1c",
+                   "2" = "#377eb8",
+                   "3" = "#4daf4a")
+      ) +
+      # Show "Model 1" (bold) instead of "Model main"
+      ggplot2::scale_x_discrete(
+        labels = function(x) {
+          ifelse(
+            x == main_label,       # i.e. "Model main"
+            "**Model 1**",         # display label
+            x
+          )
+        }
+      ) +
+      ggplot2::labs(
+        title = plot_title,
+        x     = "Model",
+        y     = "Coefficient size"
+      ) +
+      ggplot2::theme_bw() +
+      ggplot2::theme(
+        axis.text.y = ggtext::element_markdown(),   # markdown for model labels
+        axis.text.x = ggplot2::element_text()       # numeric coef axis
+      ) +
+      ggplot2::coord_flip()   # models on the y-axis, coefs on the x-axis
+  }
+  
+  ## 6. Create the three requested plots ----
+  # 6.1 Disaster severity: ln_dis_death everywhere
+  p_ln_dis_death <- plot_for_var(
+    var_names  = "ln_dis_death",
+    plot_title = "Coefficients for Disaster fatalities"
+  )
+  
+  # 6.2 Economic size: ln_gdp_lag_1 normally, ln_milper in Models 10A & 12A
+  p_ln_gdp_lag_1 <- plot_for_var(
+    var_names  = c("ln_gdp_lag_1", "ln_milper"),
+    plot_title = "Coefficients for Economic/Military size"
+  )
+  
+  # 6.3 Rents: nat_rent normally, strat in Models 11A & 12A
+  p_nat_rent <- plot_for_var(
+    var_names  = c("nat_rent", "strat"),
+    plot_title = "Coefficients for Natural/Strategic rents"
+  )
+  
   list(
     ln_dis_death = p_ln_dis_death,
     ln_gdp_lag_1 = p_ln_gdp_lag_1,
@@ -469,147 +476,236 @@ make_coef_plots <- function(dir_path) {
   )
 }
 
+
+
 ```
 
+# Create figures
 ```{r}
 plots <- make_coef_plots(
   "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity"
 )
 ```
 
-
+# Plot and epxort Fugure 8A
 ```{r}
 # Show each plot:
 plots$ln_dis_death
+
+ggsave(
+  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure8A.png",   # or .pdf, .eps, .tiff, ...
+  plot     = plots$ln_dis_death,
+  width    = 7,   # in inches
+  height   = 5,
+  dpi      = 300  # for raster formats like png
+)
 ```
 
-
+# Plot and epxort Fugure 9A
 ```{r}
 plots$ln_gdp_lag_1
+
+ggsave(
+  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure9A.png",   # or .pdf, .eps, .tiff, ...
+  plot     = plots$ln_gdp_lag_1,
+  width    = 7,   # in inches
+  height   = 5,
+  dpi      = 300  # for raster formats like png
+)
 ```
 
-
+# Plot and epxort Fugure 10A
 ```{r}
 plots$nat_rent
+
+ggsave(
+  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure10A.png",   # or .pdf, .eps, .tiff, ...
+  plot     = plots$nat_rent,
+  width    = 7,   # in inches
+  height   = 5,
+  dpi      = 300  # for raster formats like png
+)
 ```
 
 
-# coeffplots for elasticity
+## Figures 11A, 12A, 13A
 ```{r}
 make_elas_plots <- function(dir_path) {
-  # Packages
-  library(readxl)
-  library(dplyr)
-  library(purrr)
-  library(ggplot2)
-  library(stringr)
-  library(forcats)
-  
+
   ## 1. Find all elas_*.xls/xlsx files ----
   files <- list.files(
     path       = dir_path,
     pattern    = "^elas_.*\\.xls[x]?$",
     full.names = TRUE
   )
-  
+
   if (length(files) == 0) {
     stop("No files matching 'elas_*.xls[x]' found in this folder.")
   }
-  
-  # Model names from filenames
+
+  # Model codes from filenames (e.g. "Model_main", "Model_1A")
   model_names <- tools::file_path_sans_ext(basename(files))
-  model_names_clean <- gsub("^elas_", "", model_names)
-  
+  model_codes <- gsub("^elas_", "", model_names)
+
+  # Pretty labels for plotting: "Model main", "Model 1A", ...
+  model_labels <- gsub("_", " ", model_codes)
+
   ## 2. Read and tidy each elas file ----
-  all_elas <- map2_dfr(
+  all_elas <- purrr::map2_dfr(
     .x = files,
-    .y = model_names_clean,
+    .y = model_labels,     # use pretty label inside the data
     ~ {
-      # read with NO column names, keep everything
-      raw <- read_excel(.x, col_names = FALSE)
-      
-      # First row: variable names (ln_dis_death, ln_gdp_lag_1, nat_rent, etc.)
+      raw <- readxl::read_excel(.x, col_names = FALSE)
+
+      # First row: variable names
       header_var     <- as.character(raw[1, ])
-      # Second row: outcomes (1bn._predict, 2._predict, 3._predict, 4._predict, etc.)
+      # Second row: outcomes
       header_outcome <- as.character(raw[2, ])
-      
-      # First column: row labels ("b", "se", "z", "pvalue", "ll", "ul", ...)
+
+      # First column: row labels ("b", "ll", "ul", ...)
       stat_names <- as.character(raw[[1]])
-      
-      # Find the rows we need
+
       b_row  <- which(stat_names == "b")
       ll_row <- which(stat_names == "ll")
       ul_row <- which(stat_names == "ul")
-      
+
       if (length(b_row) == 0 || length(ll_row) == 0 || length(ul_row) == 0) {
         stop("Could not find rows 'b', 'll', and 'ul' in file: ", .x)
       }
-      
-      # Work on all data columns (skip first col with stat names)
+
       cols <- 2:ncol(raw)
-      
-      tibble(
+
+      tibble::tibble(
         variable = header_var[cols],
         outcome  = header_outcome[cols],
         coef     = as.numeric(unlist(raw[b_row,  cols])),
         ll95     = as.numeric(unlist(raw[ll_row, cols])),
         ul95     = as.numeric(unlist(raw[ul_row, cols])),
-        model    = .y
+        model    = .y          # pretty model label
       )
     }
   )
-  
-  ## 3. Keep only the three variables of interest and clean factors ----
+
+  ## 3. Define custom model order: Model main, then Model 1A, 2A, ... ----
+  main_code <- model_codes[grepl("main", model_codes, ignore.case = TRUE)]
+  if (length(main_code) == 0) {
+    warning("No 'Main' model detected in filenames; using first file as main.")
+    main_code <- model_codes[1]
+  } else if (length(main_code) > 1) {
+    warning("Multiple 'Main' models detected; using the first one.")
+    main_code <- main_code[1]
+  }
+
+  other_codes <- setdiff(model_codes, main_code)
+  num_part <- readr::parse_number(other_codes)
+  other_codes_ordered <- other_codes[order(num_part)]
+
+  model_codes_ordered  <- c(main_code, other_codes_ordered)
+  model_labels_ordered <- gsub("_", " ", model_codes_ordered)
+  main_label           <- gsub("_", " ", main_code)   # "Model main"
+
+  ## 4. Keep variables of interest (including replacements) and clean factors ----
   elas_clean <- all_elas %>%
-    filter(variable %in% c("ln_dis_death", "ln_gdp_lag_1", "nat_rent"),
-           !is.na(coef)) %>%
-    mutate(
-      model   = factor(model, levels = model_names_clean),
+    dplyr::mutate(
+      variable = tolower(trimws(variable)),
+      outcome  = trimws(outcome),
+      model    = factor(model, levels = model_labels_ordered)
+    ) %>%
+    dplyr::filter(
+      variable %in% c(
+        "ln_dis_death",
+        "ln_gdp_lag_1", "ln_milper",   # economic size + replacement
+        "nat_rent",    "strat"        # rents + replacement
+      ),
+      !is.na(coef)
+    ) %>%
+    dplyr::mutate(
       outcome = factor(
         outcome,
         levels = c("1bn._predict", "2._predict", "3._predict", "4._predict")
       )
     )
-  
-  ## 4. Helper to build one plot per variable ----
-  plot_for_var <- function(var_name, plot_title = var_name) {
-    elas_clean %>%
-      filter(variable == var_name) %>%
-      ggplot(aes(x = model, y = coef, colour = outcome)) +
-      geom_hline(yintercept = 0, linetype = "dashed") +
-      geom_point(position = position_dodge(width = 0.4)) +
-      geom_errorbar(
-        aes(ymin = ll95, ymax = ul95),
-        position = position_dodge(width = 0.4),
+
+  ## 5. Helper to build one plot per conceptual variable (can take multiple var names) ----
+  plot_for_var <- function(var_names, plot_title) {
+
+    dat <- elas_clean %>%
+      dplyr::filter(variable %in% var_names)
+
+    dodge <- ggplot2::position_dodge(width = 0.4)
+
+    ggplot2::ggplot(dat, ggplot2::aes(x = model, y = coef, colour = outcome)) +
+      ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+      ggplot2::geom_point(position = dodge) +
+      ggplot2::geom_errorbar(
+        ggplot2::aes(ymin = ll95, ymax = ul95),
+        position = dodge,
         width = 0.2
       ) +
-      labs(
-        title  = plot_title,
-        x      = "Model",
-        y      = "Elasticity",
-        colour = "Outcome"
+      ggplot2::scale_colour_manual(
+        name   = "Outcome",
+        breaks = c("1bn._predict", "2._predict", "3._predict", "4._predict"),
+        labels = c("Full solidarity",
+                   "Symbolic solidarity",
+                   "Transactional solidarity",
+                   "Minimal solidarity"),
+        values = c(
+          "1bn._predict" = "#e41a1c",  # Full
+          "2._predict"   = "#377eb8",  # Symbolic
+          "3._predict"   = "#4daf4a",  # Transactional
+          "4._predict"   = "#984ea3"   # Minimal 
+        )
       ) +
-      theme_bw() +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1)
-      )
+      # Show "Model 1" (bold) instead of "Model main"
+      ggplot2::scale_x_discrete(
+        labels = function(x) {
+          ifelse(
+            x == main_label,       # i.e. "Model main"
+            "**Model 1**",         # display label
+            x
+          )
+        }
+      ) +
+      ggplot2::labs(
+        title = plot_title,
+        x     = "Model",
+        y     = "Elasticity"
+      ) +
+      ggplot2::theme_bw() +
+      ggplot2::theme(
+        axis.text.y = ggtext::element_markdown()
+      ) +
+      ggplot2::coord_flip()   # models on y-axis, elasticities on x-axis
   }
-  
-  ## 5. Build the three requested plots ----
-  p_ln_dis_death <- plot_for_var("ln_dis_death",
-                                 "Elasticities for ln_dis_death")
-  p_ln_gdp_lag_1 <- plot_for_var("ln_gdp_lag_1",
-                                 "Elasticities for ln_gdp_lag_1")
-  p_nat_rent     <- plot_for_var("nat_rent",
-                                 "Elasticities for nat_rent")
-  
-  # Return them as a list
+
+  ## 6. Build the three requested plots ----
+  # 6.1 Disaster severity: ln_dis_death everywhere
+  p_ln_dis_death <- plot_for_var(
+    var_names  = "ln_dis_death",
+    plot_title = "Semi-elasticities for Disaster fatalities"
+  )
+
+  # 6.2 Economic size: ln_gdp_lag_1 normally, ln_milper in Models 10A & 12A
+  p_ln_gdp_lag_1 <- plot_for_var(
+    var_names  = c("ln_gdp_lag_1", "ln_milper"),
+    plot_title = "Semi-elasticities for Economic/Military size"
+  )
+
+  # 6.3 Rents: nat_rent normally, strat in Models 11A & 12A
+  p_nat_rent <- plot_for_var(
+    var_names  = c("nat_rent", "strat"),
+    plot_title = "Semi-elasticities for Natural/Strategic rents"
+  )
+
   list(
     ln_dis_death = p_ln_dis_death,
     ln_gdp_lag_1 = p_ln_gdp_lag_1,
     nat_rent     = p_nat_rent
   )
 }
+
+
+
 ```
 
 
@@ -622,17 +718,41 @@ elas_plots <- make_elas_plots(
 
 ```{r}
 elas_plots$ln_dis_death    # plot 1: ln_dis_death, 1bn–4._predict, by model
+
+ggsave(
+  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure11A.png",   # or .pdf, .eps, .tiff, ...
+  plot     = elas_plots$ln_dis_death ,
+  width    = 7,   # in inches
+  height   = 5,
+  dpi      = 300  # for raster formats like png
+)
 ```
 
 
 ```{r}
 elas_plots$ln_gdp_lag_1    # plot 2: ln_gdp_lag_1
+
+ggsave(
+  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure12A.png",   # or .pdf, .eps, .tiff, ...
+  plot     = elas_plots$ln_gdp_lag_1 ,
+  width    = 7,   # in inches
+  height   = 5,
+  dpi      = 300  # for raster formats like png
+)
+
 ```
 
 
 ```{r}
 elas_plots$nat_rent        # plot 3: nat_rent
 
+ggsave(
+  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure13A.png",   # or .pdf, .eps, .tiff, ...
+  plot     = elas_plots$nat_rent ,
+  width    = 7,   # in inches
+  height   = 5,
+  dpi      = 300  # for raster formats like png
+)
 ```
 
 
