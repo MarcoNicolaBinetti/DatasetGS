@@ -1,7 +1,7 @@
 ---
-title: "Untitled"
-author: "MNB"
-date: "12/4/2025"
+title: "Replication of Figures: Politics of International Solidarity"
+author: "Anon"
+date: "12/9/2025"
 output: html_document
 ---
 
@@ -9,46 +9,53 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Instructions
+
+This script uses:
+
+- The main dataset "globsol_df50k_v2_1.rds", for Figures 1 and 2 in the main text.
+- The table outputs from the Stata analysis, for Figure 3 and all figures from the Appendix.
+
+Run the Stata do file first before attempting to compile this script, from Figure 3 onward.
+
+# Setup
+
 ## Load libraires
 ```{r}
-library(readxl)       # Import Excel files (.xls, .xlsx)
-library(ggplot2)      # Grammar-of-graphics plotting
-library(ggtext)   # for bold axis labels
-library(tidyverse)    # Data wrangling & analysis (dplyr, tidyr, readr, etc.)
-library(RColorBrewer) # Predefined colour palettes for plots
-library(Hmisc)        # Misc. data analysis tools (labelling, summaries, imputation)
-library(data.table)   # High-performance data manipulation with data.table
-
-library(R.utils)      # General utilities (compression, argument parsing, etc.)
-library(naniar)       # Tools for exploring & visualising missing data
-library(geosphere)    # Geodesic distances & spherical geometry for spatial data
-library(zoo)          # Time-series infrastructure & rolling-window functions
-library(rworldmap)    # World map polygons and mapping utilities
-library(gridExtra)    # Arrange multiple ggplot (grid) plots on a page
-
-library(classInt)     # Algorithms for class intervals (e.g. choropleth breaks)
-library(DT)           # Interactive HTML tables (DataTables)
-library(dvmisc)       # Miscellaneous data & performance utilities
-library(gtools)       # Assorted programming tools (mixedsort, permutations, etc.)
-library(foreign)      # Import data from Stata, SPSS, SAS, etc.
-
-library(countrycode)  # Convert between country names and codes (ISO, WB, etc.)
-
-library(patchwork)    # Combine ggplot2 plots using + and / operators
-library(sf)           # Simple Features for modern vector spatial data
-library(rnaturalearth)# Easy access to Natural Earth map data (countries, etc.)
+library(readxl)       
+library(ggplot2)      
+library(ggtext)   
+library(tidyverse)    
+library(RColorBrewer) 
+library(Hmisc)        
+library(data.table)   
+library(R.utils)      
+library(naniar)       
+library(geosphere)    
+library(zoo)          
+library(rworldmap)    
+library(gridExtra)    
+library(classInt)     
+library(DT)           
+library(dvmisc)      
+library(gtools)       
+library(foreign)      
+library(countrycode)  
+library(patchwork)    
+library(sf)           
+library(rnaturalearth)
 ```
 
 ## Remove lists
 ```{r}
-## remove lists
 rm(list=ls())
 ```
 
+# Main text figures 1-3
+
 ## Import data for Figure 1 and 2
 ```{r}
-## adgust path as needed
-full_df <- readRDS("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/globsol_df50k_v2_1.rds")
+full_df <- readRDS("globsol_df50k_v2_1.rds")
 table(full_df$glob_sol)
 ```
 
@@ -58,15 +65,12 @@ df_g <- full_df%>%
 mutate(aid_scaled = Hum_plus_ER_aid_tot-cumulative_mean_Hum_plus_ERaid,
         Norm_scaled = NormAgr-cum_mean_NormAgr)
 
-
-
 xlim<-mean(df_g$Norm_scaled)
 ylim<-mean(df_g$aid_scaled)
 
-# Plot the dataset
+
 p <- ggplot(data=df_g, aes(x = Norm_scaled, y = aid_scaled)) +
  geom_point(aes(colour = factor(GlobSol))) +
- #geom_text(aes(label=iso3c))+
  labs(x = "Identification", y = "Joint sharing") +
  geom_vline(xintercept = 0, linetype = "dashed", alpha=0.5) +
  geom_hline(yintercept = 0, linetype = "dashed", alpha=0.5) +
@@ -100,171 +104,92 @@ Figure1 <- p +
   geom_point(data = lab, aes(x = Norm_scaled, y = aid_scaled), shape = 1, size = 3) +
   ggtitle("")
 
+ggsave("Figure1.png", Figure1, width = 8, height = 6, dpi=600)
 
-ggsave("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure1.png", Figure1, width = 8, height = 6, dpi=600)
-print(Figure1)
 ```
 
 ## Plot and export Figure 2
 ```{r}
 df<-full_df
-# Summarize data: Identify countries with at least one occurrence of each GlobSol value
+
 df_summary <- df %>%
   group_by(iso3c) %>%
   summarise(
     GlobSol1 = any(GlobSol == 1),
     GlobSol2 = any(GlobSol == 2),
     GlobSol3 = any(GlobSol == 3),
-    GlobSol4 = any(GlobSol == 4)
-  )
+    GlobSol4 = any(GlobSol == 4))
 
-# Load world map
-world <- ne_countries(scale = "medium", returnclass = "sf")
 
-# Remove Antarctica
-world <- world %>% filter(iso_a3 != "ATA")
+world <- ne_countries(scale = "medium", returnclass = "sf") %>% filter(iso_a3 != "ATA")
 
 # Flag countries not in the dataset as NA
 world_data <- world %>%
   left_join(df_summary, by = c("iso_a3" = "iso3c")) %>%
   mutate(
-    Present = !is.na(GlobSol1) | !is.na(GlobSol2) | !is.na(GlobSol3) | !is.na(GlobSol4), # Check if country is in dataset
+    Present = !is.na(GlobSol1) | !is.na(GlobSol2) | !is.na(GlobSol3) | !is.na(GlobSol4), 
     GlobSol1 = ifelse(Present, GlobSol1, NA),
     GlobSol2 = ifelse(Present, GlobSol2, NA),
     GlobSol3 = ifelse(Present, GlobSol3, NA),
-    GlobSol4 = ifelse(Present, GlobSol4, NA)
-  )
+    GlobSol4 = ifelse(Present, GlobSol4, NA))
 
 # Define a function to create maps for each GlobSol category
 create_map <- function(data, column, title, fill_color) {
   ggplot(data) +
-    geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
+    geom_sf(aes(fill = !!sym(column)), color = "black") + 
     scale_fill_manual(
       values = c(
-        "TRUE" = scales::alpha(fill_color, 1), # Reduce alpha for transparency
+        "TRUE" = scales::alpha(fill_color, 1),
         "FALSE" = "white", 
-        "NA" = "grey"
-      ), # Grey for countries not in dataset
-      na.value = "grey"
-    ) +
+        "NA" = "grey"), # Grey for countries not in dataset
+      na.value = "grey") +
     labs(title = title, fill = NULL) +
     theme_void() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-      legend.position = "none"
-    )
+    theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+          legend.position = "none")
 }
 
-# Create maps for each GlobSol category with specified colors
 map1 <- create_map(world_data, "GlobSol1", "Full Solidarity", "#e41a1c")
 map2 <- create_map(world_data, "GlobSol2", "Symbolic Solidarity", "#377eb8")
 map3 <- create_map(world_data, "GlobSol3", "Transactional Solidarity", "#4daf4a")
 map4 <- create_map(world_data, "GlobSol4", "Minimal Solidarity", "#984ea3")
 
-# Combine maps into a single image with a centered title
+# Combine maps 
 Figure2 <- (map3 + map1) / (map4 + map2) +
   plot_annotation(
     title = "",
     theme = theme(
       plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
-    )
-  )
+    ))
 
-# Save or display the final plot
- ggsave("C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure2.png", Figure2, width = 8, height = 6, dpi=600)
-print(Figure2)
+ggsave("Figure2.png", Figure2, width = 8, height = 6, dpi=600)
+
 ```
-
-
 
 ## Import data for Figure 3
 ```{r}
-## adgust path as needed
-coeff <- read_xlsx("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/coeff_Model_main.xlsx")
+## 1. Import the raw elasticity table (two-row header, rows for b/ll/ul)
+elas_raw <- read_xlsx("elas_Model_main.xlsx",col_names = FALSE)
 ```
 
 ## Plot and export Figure 3
 ```{r}
-## clean df
-coeff_plot <- coeff %>% 
-  filter(outcome != 4) %>% 
-  mutate(
-    outcome  = factor(outcome,
-                      levels = c(1, 2, 3),
-                      labels = c("Full Solidarity",
-                                 "Symbolic Solidarity",
-                                 "Transactional Solidarity")),
-    variable = factor(variable, 
-                      levels = c("ln_dis_death", "ln_gdp_lag_1", "nat_rent"),
-                      labels = c("Disaster fatalities",
-                                 "Economic size",
-                                 "Natural rents"))
-  )
-
-
-figure3<-ggplot(coeff_plot,
-       aes(x = variable, 
-           y = coef, 
-           ymin = ll95, 
-           ymax = ul95,
-           color = outcome)) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_pointrange() +
-  coord_flip() +
-  facet_wrap(~ outcome, nrow = 1) +
-  labs(
-    x = NULL,
-    y = "",
-    title = "Coefficient estimates with 95% confidence intervals"
-  ) +
-  scale_color_manual(
-    values = c(
-      "Full Solidarity"          = "#e41a1c",
-      "Symbolic Solidarity"      = "#377eb8",
-      "Transactional Solidarity" = "#4daf4a"
-    )
-  ) +
-  theme_bw() +
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    legend.position = "none"    # <- removes the legend
-  )
-
-ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure3.png", figure3, width = 8, height = 6, dpi=300)
-
-
-```
-
-## Import data for Figure 4
-```{r}
-## 1. Import the raw elasticity table (two-row header, rows for b/ll/ul)
-elas_raw <- read_xlsx(
-  "C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/elas_Model_main.xlsx",
-  col_names = FALSE
-)
-```
-
-## Plot and export Figure 4
-```{r}
-## 2. Identify the rows for b, ll, ul by their labels in the first column
+## Identify the rows for b, ll, ul by their labels in the first column
 row_b  <- which(elas_raw[[1]] == "b")
 row_ll <- which(elas_raw[[1]] == "ll")
 row_ul <- which(elas_raw[[1]] == "ul")
 
-## 3. Take variable names (row 1) and outcome names (row 2), columns 2:…
 varnames       <- as.character(elas_raw[1, -1])
 outcomes_stata <- as.character(elas_raw[2, -1])
 
-## 4. Build a tidy data frame with coefficients and CIs
 elas_long <- tibble(
   variable      = varnames,
   outcome_stata = outcomes_stata,
   coef          = as.numeric(elas_raw[row_b,  -1]),
   ll95          = as.numeric(elas_raw[row_ll, -1]),
-  ul95          = as.numeric(elas_raw[row_ul, -1])
-)
+  ul95          = as.numeric(elas_raw[row_ul, -1]))
 
-## 5. Keep only the three IVs of interest and relabel variables + outcomes
+## Keep only the three IVs of interest and relabel variables + outcomes
 elas_plot <- elas_long %>% 
   filter(variable %in% c("ln_dis_death", "ln_gdp_lag_1", "nat_rent")) %>% 
   mutate(
@@ -273,95 +198,65 @@ elas_plot <- elas_long %>%
       levels = c("ln_dis_death", "ln_gdp_lag_1", "nat_rent"),
       labels = c("Disaster fatalities",
                  "Economic size",
-                 "Natural rents")
-    ),
+                 "Natural rents")),
     outcome = dplyr::case_when(
       outcome_stata == "1bn._predict" ~ "Full Solidarity",
       outcome_stata == "2._predict"   ~ "Symbolic Solidarity",
       outcome_stata == "3._predict"   ~ "Transactional Solidarity",
       outcome_stata == "4._predict"   ~ "Minimal Solidarity",
-      TRUE                            ~ outcome_stata
-    ),
+      TRUE                            ~ outcome_stata),
     outcome = factor(
       outcome,
       levels = c("Full Solidarity",
                  "Symbolic Solidarity",
                  "Transactional Solidarity",
-                 "Minimal Solidarity")
-    ),
+                 "Minimal Solidarity")),
     outcome_display = factor(outcome,
                             levels = c("Transactional Solidarity",
                                       "Full Solidarity", 
                                       "Minimal Solidarity",
                                       "Symbolic Solidarity")))
 
-## Compute global limits for the coef axis (will become horizontal after coord_flip)
 coef_limits <- range(elas_plot$ll95, elas_plot$ul95, na.rm = TRUE)
 
-## 6. Coefficient (elasticity) plot with a common horizontal axis
-figure_elas <- ggplot(
-  elas_plot,
+## Coefficient (elasticity) plot
+figure_elas <- ggplot(elas_plot,
   aes(x = variable,
       y = coef,
       ymin = ll95,
       ymax = ul95,
-      color = outcome)
-) +
+      color = outcome)) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   geom_pointrange() +
   coord_flip() +
-  facet_wrap(~ outcome_display, nrow = 2, ncol = 2, scales = "fixed") +  # common scales across facets
-  scale_y_continuous(limits = coef_limits) +           # common coef (horizontal) axis
+  facet_wrap(~ outcome_display, nrow = 2, ncol = 2, scales = "fixed") +
+  scale_y_continuous(limits = coef_limits) +       
   scale_x_discrete(limits = rev)+
-  labs(
-    x = NULL,
-    y = "",
-    title = ""
-  ) +
+  labs(x = NULL,y = "",title = "") +
   scale_color_manual(
     values = c(
       "Full Solidarity"          = "#e41a1c",
       "Symbolic Solidarity"      = "#377eb8",
       "Transactional Solidarity" = "#4daf4a",
-      "Minimal Solidarity"       = "#984ea3"
-    )
-  ) +
+      "Minimal Solidarity"       = "#984ea3")) +
   theme_bw(base_size = 16) +
-  theme(
-    plot.title      = element_text(hjust = 0.5),
-    legend.position = "none"
-  )
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
 
-figure_elas
+ggsave("Figure3.png",figure_elas,width = 9,height = 5,dpi = 600)
 
-## 7. (Optional) Save to file
-ggsave(
-  "C:/Users/krogers/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure3.png",
-  figure_elas,
-  width = 9,
-  height = 5,
-  dpi = 300
-)
 ```
 
+# Appendix Figures
 
 ## Figure 1A
 ```{r}
 ## import  dataset
-Aiddata<- read.csv("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
+df_Aiddata_sectoral<- read.csv("AidDataCoreDonorRecipientYearPurpose_ResearchRelease_Level1_v3.0.csv")
 
-```
-
-```{r}
-
-#load dataset
-df_Aiddata_sectoral<-Aiddata
-
-#create schort code
 df_Aiddata_sectoral$Short_code<-c((substr(( c(df_Aiddata_sectoral$coalesced_purpose_code)), 1, 2)))
 
 ## rename codes
-# Define replacements using a named vector
 replacements <- c(
   "10" = "Social_Infra",
   "11" = "Education",
@@ -397,27 +292,25 @@ replacements <- c(
   "99" = "Unallocated"
 )
 
-# Apply replacements using named vector and %in% operator
+# Apply replacements 
 df_Aiddata_sectoral$Short_code <- replacements[as.character(df_Aiddata_sectoral$Short_code)]
 
-#change names countries
+# change names countries
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Yugoslavia"]            <- "Serbia"
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Serbia and Montenegro"] <- "Serbia"
 df_Aiddata_sectoral$recipient[df_Aiddata_sectoral$recipient=="Soviet Union"]          <- "Russia"
 
-#assign ISO3
+# assign ISO3
 df_Aiddata_sectoral$iso3c <- countrycode(df_Aiddata_sectoral$recipient, "country.name", "iso3c")
 
-#drop iso3c NAs
+# drop iso3c NAs
 df_Aiddata_sectoral<-df_Aiddata_sectoral[!is.na(df_Aiddata_sectoral$iso3c), ]
 
 ## aggregate at country recipient purpose level
 df_Aiddata_sectoral <- df_Aiddata_sectoral %>% 
   dplyr::group_by(iso3c, year, Short_code) %>% 
-  dplyr::summarise(
-    commitment_tot = sum(commitment_amount_usd_constant_sum, na.rm = TRUE),
-    .groups = "drop"
-  )
+  dplyr::summarise(commitment_tot = sum(commitment_amount_usd_constant_sum, na.rm = TRUE),
+    .groups = "drop")
 
 # Summarize data to identify recipient countries and aid types
 df_summary <- df_Aiddata_sectoral %>%
@@ -429,13 +322,9 @@ df_summary <- df_Aiddata_sectoral %>%
     Emergency_Humanitarian = any(Short_code %in% c("Humanitarian_Aid", "Emergency_Response"))
   )
 
-# Load world map
-world <- ne_countries(scale = "medium", returnclass = "sf")
+# Load and join world map
+world <- ne_countries(scale = "medium", returnclass = "sf") %>% filter(iso_a3 != "ATA")
 
-# Remove Antarctica
-world <- world %>% filter(iso_a3 != "ATA")
-
-# Join summarized data with world map
 world_data <- world %>%
   left_join(df_summary, by = c("iso_a3" = "iso3c")) %>%
   mutate(
@@ -445,40 +334,33 @@ world_data <- world %>%
     Emergency_Humanitarian = replace_na(Emergency_Humanitarian, FALSE)
   )
 
-# Define a function to create maps for each condition
+# Define a function to create maps 
 create_map <- function(data, column, title) {
   ggplot(data) +
     geom_sf(aes(fill = !!sym(column)), color = "black") + # Black borders
     scale_fill_manual(
       values = c("TRUE" = "gray", "FALSE" = "white"),
-      na.value = "white"
-    ) +
+      na.value = "white") +
     labs(title = title, fill = NULL) +
     theme_void() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-      legend.position = "none"
-    )
+    theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+          legend.position = "none")
 }
 
-# Create maps for each condition
+# Create maps 
 map1 <- create_map(world_data, "Received_Aid", "Recipient countries")
 map2 <- create_map(world_data, "Humanitarian_Aid", "Humanitarian aid receivers")
 map3 <- create_map(world_data, "Emergency_Response", "Emergency response receivers")
 map4 <- create_map(world_data, "Emergency_Humanitarian", "Emergency/Humanitarian receivers")
 
-# Combine maps into a single image with a centered title
+# Combine 
 final_plot <- (map1 + map2) / (map3 + map4) +
   plot_annotation(
     title = "AidData: Sample Description",
     theme = theme(
-      plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
-    )
-  )
+      plot.title = element_text(hjust = 0.5, size = 16, face = "bold")))
 
-# Save or display the final plot
-ggsave("C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure1A.png", final_plot, width = 8, height = 6)
-print(final_plot)
+ggsave("Figure1A.png", final_plot, width = 8, height = 6)
 
 ```
 
@@ -487,10 +369,10 @@ print(final_plot)
 ```{r}
 make_coef_plots <- function(dir_path) {
   
-  ## 1. Read all coeff_*.xlsx files in the folder ----
+  ## Read all coeff_*.xlsx files in the folder 
   files <- list.files(
     path       = dir_path,
-    pattern    = "^coeff_.*\\.xlsx$",   # adjust if some are .xls
+    pattern    = "^coeff_.*\\.xlsx$",  
     full.names = TRUE
   )
   
@@ -498,27 +380,21 @@ make_coef_plots <- function(dir_path) {
     stop("No files matching 'coeff_*.xlsx' found in this folder.")
   }
   
-  # Base names of files (without extension)
   model_names  <- tools::file_path_sans_ext(basename(files))
-  # Strip "coeff_" prefix for internal codes
+
   model_codes  <- gsub("^coeff_", "", model_names)
-  # Prettier labels for plotting (replace "_" with space)
+
   model_labels <- gsub("_", " ", model_codes)
   
-  ## 2. Import and stack all datasets ----
   all_coef <- purrr::map2_dfr(
     .x = files,
     .y = model_labels,
     ~ readxl::read_excel(.x) |>
-      dplyr::mutate(model = .y)           # use pretty label as model name in data
-  )
+      dplyr::mutate(model = .y))
   
-  # Make sure names are standard
   names(all_coef) <- tolower(names(all_coef))
-  # Expecting: outcome, variable, coef, ll95, ul95, model
   
-  ## 3. Define custom model order: "Model main" first, then Model 1A–19A ----
-  # Work with codes for ordering, not labels
+  ## Define custom model order
   main_code <- model_codes[grepl("main", model_codes, ignore.case = TRUE)]
   if (length(main_code) == 0) {
     warning("No 'Main' model detected in filenames; using first file as main.")
@@ -529,24 +405,19 @@ make_coef_plots <- function(dir_path) {
   }
   
   other_codes <- setdiff(model_codes, main_code)
-  # Order other models by numeric part in their names (1A, 2A, ..., 19A)
   num_part <- readr::parse_number(other_codes)
   other_codes_ordered <- other_codes[order(num_part)]
-  
-  # Final order in terms of codes and corresponding labels
   model_codes_ordered  <- c(main_code, other_codes_ordered)
   model_labels_ordered <- gsub("_", " ", model_codes_ordered)
-  main_label           <- gsub("_", " ", main_code)   # "Model main"
+  main_label           <- gsub("_", " ", main_code)  
   
-  ## 4. Clean coefficients: drop outcome 4 and enforce factor order ----
   coef_clean <- all_coef |>
     dplyr::filter(outcome != 4) |>
     dplyr::mutate(
       model   = factor(model, levels = model_labels_ordered),
-      outcome = factor(outcome)   # levels "1", "2", "3"
+      outcome = factor(outcome) 
     )
   
-  ## 5. Helper: one plot per conceptual variable, grouped & dodged by model ----
   plot_for_var <- function(var_names, plot_title) {
     
     dat <- coef_clean |>
@@ -560,9 +431,7 @@ make_coef_plots <- function(dir_path) {
       ggplot2::geom_errorbar(
         ggplot2::aes(ymin = ll95, ymax = ul95),
         position = dodge,
-        width = 0.2
-      ) +
-      # Custom colours and legend labels for outcomes
+        width = 0.2) +
       ggplot2::scale_colour_manual(
         name   = "Outcome",
         breaks = c("1", "2", "3"),
@@ -573,12 +442,11 @@ make_coef_plots <- function(dir_path) {
                    "2" = "#377eb8",
                    "3" = "#4daf4a")
       ) +
-      # Show "Model 1" (bold) instead of "Model main"
       ggplot2::scale_x_discrete(
         labels = function(x) {
           ifelse(
-            x == main_label,       # i.e. "Model main"
-            "**Model 1**",         # display label
+            x == main_label,    
+            "**Model 1**",  
             x
           )
         }
@@ -590,26 +458,25 @@ make_coef_plots <- function(dir_path) {
       ) +
       ggplot2::theme_bw() +
       ggplot2::theme(
-        axis.text.y = ggtext::element_markdown(),   # markdown for model labels
-        axis.text.x = ggplot2::element_text()       # numeric coef axis
+        axis.text.y = ggtext::element_markdown(),  
+        axis.text.x = ggplot2::element_text()     
       ) +
-      ggplot2::coord_flip()   # models on the y-axis, coefs on the x-axis
+      ggplot2::coord_flip() 
   }
   
-  ## 6. Create the three requested plots ----
-  # 6.1 Disaster severity: ln_dis_death everywhere
+  # Disaster severity: ln_dis_death
   p_ln_dis_death <- plot_for_var(
     var_names  = "ln_dis_death",
     plot_title = "Coefficients for Disaster fatalities"
   )
   
-  # 6.2 Economic size: ln_gdp_lag_1 normally, ln_milper in Models 10A & 12A
+  # Economic size: ln_gdp_lag_1, ln_milper in Models 10A & 12A
   p_ln_gdp_lag_1 <- plot_for_var(
     var_names  = c("ln_gdp_lag_1", "ln_milper"),
     plot_title = "Coefficients for Economic/Military size"
   )
   
-  # 6.3 Rents: nat_rent normally, strat in Models 11A & 12A
+  # Rents: nat_rent, strat in Models 11A & 12A
   p_nat_rent <- plot_for_var(
     var_names  = c("nat_rent", "strat"),
     plot_title = "Coefficients for Natural/Strategic rents"
@@ -626,59 +493,47 @@ make_coef_plots <- function(dir_path) {
 
 ```
 
-# Create figures
+### Create figures (change the folder path)
 ```{r}
-plots <- make_coef_plots(
-  "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity"
-)
+plots <- make_coef_plots("FOLDER_PATH")
 ```
 
-# Plot and epxort Fugure 8A
+### Export Figure 8A
 ```{r}
-# Show each plot:
-plots$ln_dis_death
-
-ggsave(
-  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure8A.png",   # or .pdf, .eps, .tiff, ...
+ggsave(filename = "Figure8A.png", 
   plot     = plots$ln_dis_death,
-  width    = 7,   # in inches
+  width    = 7,  
   height   = 5,
-  dpi      = 300  # for raster formats like png
-)
+  dpi      = 300)
 ```
 
-# Plot and epxort Fugure 9A
+### Export Figure 9A
 ```{r}
 plots$ln_gdp_lag_1
 
-ggsave(
-  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure9A.png",   # or .pdf, .eps, .tiff, ...
+ggsave(filename = "Figure9A.png", 
   plot     = plots$ln_gdp_lag_1,
-  width    = 7,   # in inches
+  width    = 7,  
   height   = 5,
-  dpi      = 300  # for raster formats like png
-)
+  dpi      = 300)
 ```
 
-# Plot and epxort Fugure 10A
+### Export Figure 10A
 ```{r}
 plots$nat_rent
 
-ggsave(
-  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure10A.png",   # or .pdf, .eps, .tiff, ...
+ggsave(filename = "Figure10A.png",  
   plot     = plots$nat_rent,
-  width    = 7,   # in inches
+  width    = 7,  
   height   = 5,
-  dpi      = 300  # for raster formats like png
-)
+  dpi      = 300)
 ```
-
 
 ## Figures 11A, 12A, 13A
 ```{r}
 make_elas_plots <- function(dir_path) {
 
-  ## 1. Find all elas_*.xls/xlsx files ----
+  ## Find all elas_*.xls/xlsx files ----
   files <- list.files(
     path       = dir_path,
     pattern    = "^elas_.*\\.xls[x]?$",
@@ -689,26 +544,20 @@ make_elas_plots <- function(dir_path) {
     stop("No files matching 'elas_*.xls[x]' found in this folder.")
   }
 
-  # Model codes from filenames (e.g. "Model_main", "Model_1A")
   model_names <- tools::file_path_sans_ext(basename(files))
   model_codes <- gsub("^elas_", "", model_names)
 
-  # Pretty labels for plotting: "Model main", "Model 1A", ...
   model_labels <- gsub("_", " ", model_codes)
 
-  ## 2. Read and tidy each elas file ----
   all_elas <- purrr::map2_dfr(
     .x = files,
-    .y = model_labels,     # use pretty label inside the data
+    .y = model_labels,   
     ~ {
       raw <- readxl::read_excel(.x, col_names = FALSE)
 
-      # First row: variable names
       header_var     <- as.character(raw[1, ])
-      # Second row: outcomes
       header_outcome <- as.character(raw[2, ])
 
-      # First column: row labels ("b", "ll", "ul", ...)
       stat_names <- as.character(raw[[1]])
 
       b_row  <- which(stat_names == "b")
@@ -727,12 +576,12 @@ make_elas_plots <- function(dir_path) {
         coef     = as.numeric(unlist(raw[b_row,  cols])),
         ll95     = as.numeric(unlist(raw[ll_row, cols])),
         ul95     = as.numeric(unlist(raw[ul_row, cols])),
-        model    = .y          # pretty model label
+        model    = .y         
       )
     }
   )
 
-  ## 3. Define custom model order: Model main, then Model 1A, 2A, ... ----
+  ## Define custom model order
   main_code <- model_codes[grepl("main", model_codes, ignore.case = TRUE)]
   if (length(main_code) == 0) {
     warning("No 'Main' model detected in filenames; using first file as main.")
@@ -748,9 +597,8 @@ make_elas_plots <- function(dir_path) {
 
   model_codes_ordered  <- c(main_code, other_codes_ordered)
   model_labels_ordered <- gsub("_", " ", model_codes_ordered)
-  main_label           <- gsub("_", " ", main_code)   # "Model main"
+  main_label           <- gsub("_", " ", main_code)  
 
-  ## 4. Keep variables of interest (including replacements) and clean factors ----
   elas_clean <- all_elas %>%
     dplyr::mutate(
       variable = tolower(trimws(variable)),
@@ -772,7 +620,6 @@ make_elas_plots <- function(dir_path) {
       )
     )
 
-  ## 5. Helper to build one plot per conceptual variable (can take multiple var names) ----
   plot_for_var <- function(var_names, plot_title) {
 
     dat <- elas_clean %>%
@@ -802,12 +649,12 @@ make_elas_plots <- function(dir_path) {
           "4._predict"   = "#984ea3"   # Minimal 
         )
       ) +
-      # Show "Model 1" (bold) instead of "Model main"
+
       ggplot2::scale_x_discrete(
         labels = function(x) {
           ifelse(
-            x == main_label,       # i.e. "Model main"
-            "**Model 1**",         # display label
+            x == main_label,    
+            "**Model 1**",       
             x
           )
         }
@@ -821,23 +668,22 @@ make_elas_plots <- function(dir_path) {
       ggplot2::theme(
         axis.text.y = ggtext::element_markdown()
       ) +
-      ggplot2::coord_flip()   # models on y-axis, elasticities on x-axis
+      ggplot2::coord_flip() 
   }
 
-  ## 6. Build the three requested plots ----
-  # 6.1 Disaster severity: ln_dis_death everywhere
+  # Disaster severity
   p_ln_dis_death <- plot_for_var(
     var_names  = "ln_dis_death",
     plot_title = "Semi-elasticities for Disaster fatalities"
   )
 
-  # 6.2 Economic size: ln_gdp_lag_1 normally, ln_milper in Models 10A & 12A
+  # Economic size
   p_ln_gdp_lag_1 <- plot_for_var(
     var_names  = c("ln_gdp_lag_1", "ln_milper"),
     plot_title = "Semi-elasticities for Economic/Military size"
   )
 
-  # 6.3 Rents: nat_rent normally, strat in Models 11A & 12A
+  # Rents
   p_nat_rent <- plot_for_var(
     var_names  = c("nat_rent", "strat"),
     plot_title = "Semi-elasticities for Natural/Strategic rents"
@@ -854,51 +700,40 @@ make_elas_plots <- function(dir_path) {
 
 ```
 
-
+### Create figures (change the folder path)
 ```{r}
-elas_plots <- make_elas_plots(
-  "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity"
-)
+elas_plots <- make_elas_plots("FOLDER_PATH")
 ```
 
-
+### Export figure 11A
 ```{r}
-elas_plots$ln_dis_death    # plot 1: ln_dis_death, 1bn–4._predict, by model
 
-ggsave(
-  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure11A.png",   # or .pdf, .eps, .tiff, ...
+ggsave(filename = "Figure11A.png",  
   plot     = elas_plots$ln_dis_death ,
-  width    = 7,   # in inches
+  width    = 7, 
   height   = 5,
-  dpi      = 300  # for raster formats like png
-)
+  dpi      = 300)
 ```
 
-
+### Export figure 12A
 ```{r}
-elas_plots$ln_gdp_lag_1    # plot 2: ln_gdp_lag_1
+elas_plots$ln_gdp_lag_1  
 
-ggsave(
-  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure12A.png",   # or .pdf, .eps, .tiff, ...
+ggsave(filename = "Figure12A.png",  
   plot     = elas_plots$ln_gdp_lag_1 ,
-  width    = 7,   # in inches
+  width    = 7,  
   height   = 5,
-  dpi      = 300  # for raster formats like png
-)
+  dpi      = 300)
 
 ```
 
-
+### Export figure 13A
 ```{r}
-elas_plots$nat_rent        # plot 3: nat_rent
-
-ggsave(
-  filename = "C:/Users/marco/Nextcloud/Global Solidarity/Paper on Natural Disasters/STATA dofile/Replication code for The Politics of International Solidarity/Figure13A.png",   # or .pdf, .eps, .tiff, ...
+ggsave(filename = "Figure13A.png",  
   plot     = elas_plots$nat_rent ,
-  width    = 7,   # in inches
+  width    = 7,   
   height   = 5,
-  dpi      = 300  # for raster formats like png
-)
+  dpi      = 300  )
 ```
 
 
